@@ -20,7 +20,7 @@
   </style>
 </head>
 <body>
-  <div id="build">BUILD v50 · rVFC + opacity restored · 2026-03-28</div>
+  <div id="build">BUILD v51 · UV REMAP permutations · 2026-03-28</div>
   <h2>All cells target screen.001 only. Different texture/material configs.</h2>
   <div id="status">Loading…</div>
   <div id="grid"></div>
@@ -44,12 +44,12 @@
     // UV offset/repeat approach — flips V in texture space (alt to geometry-baked flip)
     { label: 'repeat.y=-1\noffset.y=1\nflipY=true',  flipY: true,  encoding: THREE.sRGBEncoding,   matType: 'basic',  repeatFlip: true      },
     { label: 'repeat.y=-1\noffset.y=1\nflipY=false', flipY: false, encoding: THREE.sRGBEncoding,   matType: 'basic',  repeatFlip: true      },
-    // FrontSide only (after +PI/2 rotation, maybe normals face other way)
+    // FrontSide only
     { label: 'Basic\nFrontSide\nflipY=false',         flipY: false, encoding: THREE.sRGBEncoding,   matType: 'basic',  singleSide: true      },
-    // Emissive + repeat flip combo
-    { label: 'Emissive\nrepeat.y=-1\noffset.y=1',     flipY: true,  encoding: THREE.sRGBEncoding,   matType: 'emissive', repeatFlip: true    },
-    // Canvas tex flipY=true
-    { label: 'Canvas tex\nflipY=true',                flipY: true,  encoding: THREE.sRGBEncoding,   matType: 'canvas'                        },
+    // UV REMAP (planar projection from bounding box — fixes packed UV island)
+    { label: '⭐ UV REMAP\nflipY=false\nsRGB',         flipY: false, encoding: THREE.sRGBEncoding,   matType: 'basic',  uvRemap: true         },
+    { label: '⭐ UV REMAP\nflipY=true\nsRGB',          flipY: true,  encoding: THREE.sRGBEncoding,   matType: 'basic',  uvRemap: true         },
+    { label: '⭐ UV REMAP\nemissive\nflipY=false',      flipY: false, encoding: THREE.sRGBEncoding,   matType: 'emissive', uvRemap: true       },
   ];
 
   // Shared renderer
@@ -136,12 +136,31 @@
           model.rotation.set(0, Math.PI / 2, 0);
           model.scale.setScalar(1.5);
 
+          // UV remap helper: project bounding box onto XY plane (Z-facing screen)
+          // Replaces packed UV island with full 0-1 coverage across the mesh face
+          function remapUVs(mesh) {
+            const pos = mesh.geometry.attributes.position;
+            const box = new THREE.Box3().setFromBufferAttribute(pos);
+            const size = new THREE.Vector3(); box.getSize(size);
+            const min = box.min;
+            const uvArr = new Float32Array(pos.count * 2);
+            for (let i = 0; i < pos.count; i++) {
+              // Use X and Y extents (screen faces Z after rotation)
+              uvArr[i * 2]     = (pos.getX(i) - min.x) / (size.x || 1);
+              uvArr[i * 2 + 1] = (pos.getY(i) - min.y) / (size.y || 1);
+            }
+            mesh.geometry = mesh.geometry.clone();
+            mesh.geometry.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
+          }
+
           model.traverse(child => {
             if (!child.isMesh) return;
             const isArr = Array.isArray(child.material);
             const mats = isArr ? child.material : [child.material];
             const newMats = mats.map(mat => {
               if (!mat || mat.name !== TARGET_MAT) return mat;
+              // If this perm requests UV remap, do it now
+              if (perm.uvRemap) remapUVs(child);
               if (perm.matType === 'emissive') {
                 const m = new THREE.MeshStandardMaterial({
                   emissiveMap: tex,
