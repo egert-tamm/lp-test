@@ -318,7 +318,8 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // ─── Start video playback on interaction (mobile) ───
+    // ─── Start video playback immediately + fallback on interaction ───
+    videoEl.play().catch(() => {});
     document.addEventListener('click', () => {
       videoEl.play().catch(() => {});
     }, { once: true });
