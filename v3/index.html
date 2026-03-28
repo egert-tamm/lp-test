@@ -141,21 +141,21 @@
       { title: 'Powered by\nYolo Investment',     subtitle: '' },
     ];
 
-    // Phone keyframes per slide — position (x,y) + rotation (rotY, rotX)
-    // x: -2=far left, 0=center, 2=far right
-    // y: -1=low, 0=center, 1=high
+    // Phone + camera keyframes per slide
+    // phone: x/y position, rotY/rotX rotation
+    // cam: z (dolly distance), fov (zoom), cy (camera Y offset)
     const PHONE_KEYS = [
-      { x:  0.9, y: -0.1, rotY: -0.4, rotX:  0.05 },  // 1 — intro: right, angled
-      { x:  0.7, y:  0.2, rotY: -0.2, rotX:  0.02 },  // 2 — slight right
-      { x:  0.0, y:  0.0, rotY:  0.0, rotX:  0.00 },  // 3 — center, face on
-      { x: -0.8, y: -0.2, rotY:  0.2, rotX: -0.02 },  // 4 — left
-      { x:  0.0, y:  0.1, rotY:  0.0, rotX:  0.00 },  // 5 — back center
-      { x:  0.8, y:  0.2, rotY: -0.25,rotX:  0.03 },  // 6 — right
-      { x:  0.0, y: -0.1, rotY:  0.0, rotX:  0.00 },  // 7 — center
-      { x: -0.7, y:  0.1, rotY:  0.3, rotX: -0.03 },  // 8 — left
-      { x:  0.0, y:  0.0, rotY:  0.0, rotX:  0.00 },  // 9 — center
-      { x:  0.5, y:  0.2, rotY: -0.15,rotX:  0.02 },  // 10 — slight right
-      { x:  0.0, y:  0.0, rotY:  0.0, rotX:  0.00 },  // 11 — final center
+      { x:  0.9, y: -0.1, rotY: -0.4, rotX:  0.05, camZ: 5.5, fov: 38, camY:  0.0 },  // 1 — wide intro
+      { x:  0.6, y:  0.1, rotY: -0.2, rotX:  0.02, camZ: 4.2, fov: 34, camY:  0.1 },  // 2 — slight push in
+      { x:  0.0, y:  0.0, rotY:  0.0, rotX:  0.00, camZ: 3.5, fov: 30, camY:  0.0 },  // 3 — close, face on
+      { x: -0.8, y: -0.1, rotY:  0.2, rotX: -0.02, camZ: 4.5, fov: 36, camY: -0.1 },  // 4 — pull back left
+      { x:  0.0, y:  0.2, rotY:  0.0, rotX:  0.00, camZ: 4.0, fov: 32, camY:  0.2 },  // 5 — center, look up
+      { x:  0.8, y:  0.0, rotY: -0.25,rotX:  0.03, camZ: 4.8, fov: 38, camY:  0.0 },  // 6 — right, wider
+      { x:  0.0, y: -0.1, rotY:  0.0, rotX:  0.00, camZ: 3.2, fov: 28, camY: -0.1 },  // 7 — tight close up
+      { x: -0.6, y:  0.1, rotY:  0.3, rotX: -0.03, camZ: 5.0, fov: 40, camY:  0.0 },  // 8 — pull wide left
+      { x:  0.0, y:  0.0, rotY:  0.0, rotX:  0.00, camZ: 4.0, fov: 34, camY:  0.0 },  // 9 — center
+      { x:  0.4, y:  0.1, rotY: -0.15,rotX:  0.02, camZ: 3.8, fov: 32, camY:  0.1 },  // 10 — push in right
+      { x:  0.0, y:  0.0, rotY:  0.0, rotX:  0.00, camZ: 4.5, fov: 36, camY:  0.0 },  // 11 — final pull back
     ];
 
     // Build sections
@@ -350,6 +350,14 @@
           phoneGroup.position.y = from.y + (to.y - from.y) * t;
           phoneGroup.rotation.y = from.rotY + (to.rotY - from.rotY) * t;
           phoneGroup.rotation.x = from.rotX + (to.rotX - from.rotX) * t;
+
+          // Camera dolly + FOV
+          const camZ = from.camZ + (to.camZ - from.camZ) * t;
+          const fov  = from.fov  + (to.fov  - from.fov)  * t;
+          const camY = from.camY + (to.camY - from.camY) * t;
+          camera.position.set(0, camY, camZ);
+          camera.fov = fov;
+          camera.updateProjectionMatrix();
         }
       });
     }
