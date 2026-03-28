@@ -113,42 +113,69 @@
       'Powered by\nYolo Investment',
     ];
 
-    // Per-slide phone resting position + entry direction (from: 'right'|'left'|'bottom'|'top')
+    // Per-slide keyframes
+    // style: 'slide' | 'spin' | 'zoom' | 'tilt' | 'float' | 'snap'
+    // from: 'right' | 'left' | 'bottom' | 'top'
     const PHONE_KEYS = [
-      { x:  0.3, y:  0.0, rotY: -0.15, camZ: 4.2, fov: 34, from: 'right'  },
-      { x: -0.3, y:  0.0, rotY:  0.15, camZ: 4.2, fov: 34, from: 'left'   },
-      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.6, fov: 30, from: 'bottom' },
-      { x:  0.4, y: -0.1, rotY: -0.2,  camZ: 4.5, fov: 36, from: 'right'  },
-      { x:  0.0, y:  0.1, rotY:  0.0,  camZ: 3.8, fov: 32, from: 'top'    },
-      { x: -0.3, y:  0.0, rotY:  0.2,  camZ: 4.2, fov: 35, from: 'left'   },
-      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.2, fov: 28, from: 'bottom' },
-      { x:  0.3, y:  0.1, rotY: -0.15, camZ: 4.8, fov: 38, from: 'right'  },
-      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 4.0, fov: 34, from: 'left'   },
-      { x: -0.2, y:  0.0, rotY:  0.1,  camZ: 3.8, fov: 32, from: 'top'    },
-      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 4.5, fov: 36, from: 'bottom' },
+      { x:  0.3, y:  0.0, rotY: -0.15, camZ: 4.2, fov: 34, from: 'right',  style: 'zoom'  }, // 1 — rush in from distance
+      { x: -0.3, y:  0.0, rotY:  0.15, camZ: 4.2, fov: 34, from: 'left',   style: 'spin'  }, // 2 — spin Y on entry
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.6, fov: 30, from: 'bottom', style: 'float' }, // 3 — slow drift up
+      { x:  0.4, y: -0.1, rotY: -0.2,  camZ: 4.5, fov: 36, from: 'right',  style: 'tilt'  }, // 4 — tilts in on Z axis
+      { x:  0.0, y:  0.1, rotY:  0.0,  camZ: 3.8, fov: 32, from: 'top',    style: 'snap'  }, // 5 — snaps in fast
+      { x: -0.3, y:  0.0, rotY:  0.2,  camZ: 4.2, fov: 35, from: 'left',   style: 'zoom'  }, // 6 — zoom from far
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.2, fov: 28, from: 'bottom', style: 'tilt'  }, // 7 — tilts up
+      { x:  0.3, y:  0.1, rotY: -0.15, camZ: 4.8, fov: 38, from: 'right',  style: 'spin'  }, // 8 — spin in
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 4.0, fov: 34, from: 'left',   style: 'float' }, // 9 — drift
+      { x: -0.2, y:  0.0, rotY:  0.1,  camZ: 3.8, fov: 32, from: 'top',    style: 'snap'  }, // 10 — snap
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 4.5, fov: 36, from: 'bottom', style: 'zoom'  }, // 11 — final zoom
     ];
 
-    // Off-screen start positions per direction
+    // Start position per direction
     function hiddenPos(from) {
       switch(from) {
-        case 'left':   return { x: -3.2, y:  0.0 };
-        case 'bottom': return { x:  0.0, y: -4.0 };
-        case 'top':    return { x:  0.0, y:  4.0 };
-        default:       return { x:  3.2, y:  0.0 }; // right
+        case 'left':   return { x: -3.5, y:  0.0 };
+        case 'bottom': return { x:  0.0, y: -4.5 };
+        case 'top':    return { x:  0.0, y:  4.5 };
+        default:       return { x:  3.5, y:  0.0 };
       }
     }
-
-    // Exit direction: opposite of entry
     function exitPos(from) {
       switch(from) {
-        case 'left':   return { x:  3.2, y:  0.0 };
-        case 'bottom': return { x:  0.0, y:  4.0 };
-        case 'top':    return { x:  0.0, y: -4.0 };
-        default:       return { x: -3.2, y:  0.0 }; // right enters → exits left
+        case 'left':   return { x:  3.5, y:  0.0 };
+        case 'bottom': return { x:  0.0, y:  4.5 };
+        case 'top':    return { x:  0.0, y: -4.5 };
+        default:       return { x: -3.5, y:  0.0 };
       }
     }
 
-    const PHONE_HIDDEN = { x: 3.2, y: 0.0, rotY: -0.5, camZ: 5.0, fov: 38 };
+    // Per-style easing & extra transforms
+    function styleEase(style, t) {
+      switch(style) {
+        case 'snap':  return t < 0.7 ? (t/0.7)**3 : 1;           // slow then snap
+        case 'float': return t * t * (3 - 2*t);                    // smoothstep, dreamy
+        case 'zoom':  return 1 - Math.pow(1 - t, 3);              // ease-out cubic, rushes in
+        case 'spin':  return t < 0.5 ? 2*t*t : -1+(4-2*t)*t;     // standard easeInOut
+        case 'tilt':  return t;                                     // linear — tilt handled via rotZ
+        default:      return t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+      }
+    }
+    // Extra rotation Z for tilt style
+    function styleTiltZ(style, t) {
+      if (style === 'tilt') return (1 - t) * 0.5;  // starts tilted, straightens
+      return 0;
+    }
+    // Extra rotY for spin style (half rotation on entry)
+    function styleSpinY(style, t, restRotY) {
+      if (style === 'spin') return restRotY + (1 - t) * Math.PI * 0.6;
+      return null;
+    }
+    // Zoom: starts far (camZ * 2), rushes to resting camZ
+    function styleZoomCamZ(style, t, startCamZ, restCamZ) {
+      if (style === 'zoom') return lerp(startCamZ * 2.2, restCamZ, t);
+      return null;
+    }
+
+    const PHONE_HIDDEN = { rotY: -0.3, camZ: 6.0, fov: 40 };
 
     // Build slide spacers
     const sectionsEl = document.getElementById('sections');
@@ -321,13 +348,23 @@
           end: 'bottom top',
           scrub: 0.6,
           onUpdate: (self) => {
-            const t = eio(self.progress);
+            const raw = self.progress;
+            const t = styleEase(key.style, raw);
 
-            // Phone enters from its direction
+            // Position
             phoneGroup.position.x = lerp(startPos.x, key.x, t);
             phoneGroup.position.y = lerp(startPos.y, key.y, t);
-            phoneGroup.rotation.y = lerp(PHONE_HIDDEN.rotY, key.rotY, t);
-            camera.position.z = lerp(PHONE_HIDDEN.camZ, key.camZ, t);
+
+            // Rotation Y — spin style adds extra spin on top
+            const spinY = styleSpinY(key.style, t, key.rotY);
+            phoneGroup.rotation.y = spinY !== null ? spinY : lerp(PHONE_HIDDEN.rotY, key.rotY, t);
+
+            // Rotation Z — tilt style
+            phoneGroup.rotation.z = styleTiltZ(key.style, t);
+
+            // Camera Z — zoom rushes from far
+            const zoomZ = styleZoomCamZ(key.style, t, PHONE_HIDDEN.camZ, key.camZ);
+            camera.position.z = zoomZ !== null ? zoomZ : lerp(PHONE_HIDDEN.camZ, key.camZ, t);
             camera.fov = lerp(PHONE_HIDDEN.fov, key.fov, t);
             camera.updateProjectionMatrix();
 
