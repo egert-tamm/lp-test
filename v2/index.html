@@ -15,81 +15,49 @@
       overflow-x: hidden;
     }
 
-    /* Spline canvas: fixed right side */
-    #spline-wrap {
-      position: fixed;
-      top: 0; right: 0;
-      width: 55%;
-      height: 100vh;
-      z-index: 0;
-    }
-    #spline-canvas {
-      width: 100% !important;
-      height: 100% !important;
-      display: block;
-    }
-
-    /* Scrollable content: left side */
-    #scroll-content {
+    /* ── Hero ── */
+    .hero {
       position: relative;
-      z-index: 1;
-      width: 45%;
-      min-height: 400vh;
-      padding: 0 4rem 0 5rem;
-      pointer-events: none;
-    }
-    #scroll-content a { pointer-events: auto; }
-
-    .section {
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 4rem 0;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6rem;
+      gap: 4rem;
     }
+
+    .hero-text {
+      flex: 0 0 auto;
+      max-width: 480px;
+      z-index: 1;
+    }
+
     .eyebrow {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: 600;
-      letter-spacing: 0.15em;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
       color: rgba(255,255,255,0.35);
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
     }
+
     h1 {
-      font-size: clamp(2.5rem, 4vw, 4rem);
+      font-size: clamp(2.8rem, 4.5vw, 4.5rem);
       font-weight: 700;
-      line-height: 1.05;
+      line-height: 1.02;
       letter-spacing: -0.03em;
     }
-    h2 {
-      font-size: clamp(1.75rem, 3vw, 2.75rem);
-      font-weight: 600;
-      line-height: 1.1;
-      letter-spacing: -0.02em;
-    }
-    .section p {
-      margin-top: 1.25rem;
-      font-size: 1.05rem;
-      line-height: 1.65;
-      color: rgba(255,255,255,0.55);
-      max-width: 380px;
-    }
-    .pill-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
+
+    .hero-text p {
       margin-top: 1.5rem;
+      font-size: 1.1rem;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.5);
     }
-    .pill {
-      padding: 0.4rem 1rem;
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 999px;
-      font-size: 0.85rem;
-      color: rgba(255,255,255,0.6);
-    }
+
     .cta-button {
       display: inline-block;
-      margin-top: 2rem;
+      margin-top: 2.5rem;
       padding: 1rem 2.5rem;
       background: #fff;
       color: #080808;
@@ -104,150 +72,192 @@
       box-shadow: 0 0 40px rgba(255,255,255,0.12);
     }
 
-    /* Mobile */
-    @media (max-width: 768px) {
-      #spline-wrap { position: relative; width: 100%; height: 60vh; }
-      #scroll-content { width: 100%; padding: 0 2rem; min-height: auto; }
-      .section { min-height: auto; padding: 3rem 0; }
+    /* ── Phone mockup with video ── */
+    .phone-wrap {
+      flex: 0 0 auto;
+      position: relative;
+      width: 280px;
     }
 
-    /* Loading overlay */
-    #loading {
-      position: fixed; inset: 0;
+    .phone-frame {
+      position: relative;
+      width: 280px;
+      height: 580px;
+      background: #1a1a1a;
+      border-radius: 44px;
+      border: 2px solid rgba(255,255,255,0.12);
+      box-shadow:
+        0 0 0 1px rgba(0,0,0,0.5),
+        0 40px 80px rgba(0,0,0,0.6),
+        inset 0 0 0 1px rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+
+    /* Dynamic island */
+    .phone-frame::before {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90px;
+      height: 28px;
       background: #080808;
-      display: flex; align-items: center; justify-content: center;
-      z-index: 10;
-      transition: opacity 0.5s ease;
+      border-radius: 999px;
+      z-index: 2;
     }
-    #loading .spinner {
-      width: 36px; height: 36px;
-      border: 2px solid rgba(255,255,255,0.1);
-      border-top-color: rgba(255,255,255,0.6);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+
+    /* Side buttons */
+    .phone-frame::after {
+      content: '';
+      position: absolute;
+      right: -3px;
+      top: 100px;
+      width: 3px;
+      height: 60px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 0 2px 2px 0;
+      box-shadow: 0 80px 0 rgba(255,255,255,0.1);
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .phone-screen {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      border-radius: 42px;
+      overflow: hidden;
+    }
+
+    .phone-screen video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Subtle reflection */
+    .phone-reflection {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 50%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%);
+      border-radius: 44px 44px 0 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* ── Sections ── */
+    .sections {
+      padding: 6rem 6rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 4rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .feature h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.75rem;
+    }
+
+    .feature p {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.45);
+    }
+
+    .feature-icon {
+      font-size: 1.5rem;
+      margin-bottom: 1.25rem;
+      display: block;
+    }
+
+    /* ── Footer CTA ── */
+    .footer-cta {
+      padding: 8rem 6rem;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .footer-cta h2 {
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.5rem;
+    }
+
+    .footer-cta p {
+      font-size: 1.1rem;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 2.5rem;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 900px) {
+      .hero {
+        flex-direction: column;
+        padding: 5rem 2rem 4rem;
+        text-align: center;
+        align-items: center;
+      }
+      .hero-text { max-width: 100%; }
+      .phone-wrap { width: 220px; }
+      .phone-frame { width: 220px; height: 456px; border-radius: 36px; }
+      .phone-frame::before { width: 72px; height: 22px; }
+      .sections { grid-template-columns: 1fr; padding: 4rem 2rem; gap: 3rem; }
+      .footer-cta { padding: 5rem 2rem; }
+    }
   </style>
 </head>
 <body>
 
-  <div id="loading"><div class="spinner"></div></div>
-
-  <!-- Hidden video for screen texture -->
-  <video id="screen-vid"
-    src="https://cdn.star.io/videos/screen-recording.mp4"
-    muted loop playsinline autoplay
-    crossorigin="anonymous"
-    style="position:fixed;width:1px;height:1px;opacity:0;top:0;left:0;pointer-events:none">
-  </video>
-
-  <!-- Spline renders here -->
-  <div id="spline-wrap">
-    <canvas id="spline-canvas"></canvas>
-  </div>
-
-  <!-- Scrollable text -->
-  <div id="scroll-content">
-    <section class="section">
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-text">
       <p class="eyebrow">Introducing star.io</p>
       <h1>The Gaming &amp; Payments Platform</h1>
-      <p>Full-stack iGaming infrastructure for operators who move fast. Payments, compliance, player management — unified.</p>
+      <p>Full-stack iGaming infrastructure for operators who move fast. Payments, compliance, and player management — unified.</p>
       <a href="mailto:hello@star.io" class="cta-button">Book a Demo →</a>
-    </section>
-    <section class="section">
-      <p class="eyebrow">Payments</p>
-      <h2>Every payment method. One integration.</h2>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <video autoplay muted loop playsinline
+            src="https://cdn.star.io/videos/screen-recording.mp4">
+          </video>
+        </div>
+        <div class="phone-reflection"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="sections">
+    <div class="feature">
+      <span class="feature-icon">💳</span>
+      <h3>Unified Payments</h3>
       <p>PSD2 open banking, cards, crypto, and local methods — all routed through a single API with real-time settlement.</p>
-      <div class="pill-list">
-        <span class="pill">Brite</span>
-        <span class="pill">Cards</span>
-        <span class="pill">Apple Pay</span>
-        <span class="pill">Crypto</span>
-      </div>
-    </section>
-    <section class="section">
-      <p class="eyebrow">Compliance</p>
-      <h2>Regulated markets, handled.</h2>
-      <p>KYC, AML, responsible gambling, and jurisdiction-specific rules baked in — not bolted on.</p>
-      <div class="pill-list">
-        <span class="pill">Estonia</span>
-        <span class="pill">UAE</span>
-        <span class="pill">GLI-16</span>
-        <span class="pill">GLI-19</span>
-      </div>
-    </section>
-    <section class="section">
-      <p class="eyebrow">Built for operators</p>
-      <h2>Ship faster. Scale further.</h2>
+    </div>
+    <div class="feature">
+      <span class="feature-icon">🛡️</span>
+      <h3>Built-in Compliance</h3>
+      <p>KYC, AML, responsible gambling, and jurisdiction-specific rules baked in — not bolted on. Estonia, UAE, and beyond.</p>
+    </div>
+    <div class="feature">
+      <span class="feature-icon">⚡</span>
+      <h3>Edge-Native Stack</h3>
       <p>Rust microservices, Cloudflare edge, TigerBeetle ledger. Enterprise-grade reliability without enterprise timelines.</p>
-      <a href="mailto:hello@star.io" class="cta-button">Get in touch →</a>
-    </section>
-  </div>
+    </div>
+  </section>
 
-  <script type="module">
-    import { Application } from 'https://unpkg.com/@splinetool/runtime@1.12.73/build/runtime.js';
-    import * as THREE from 'https://unpkg.com/three@0.163.0/build/three.module.js';
-
-    const canvas = document.getElementById('spline-canvas');
-    const vid = document.getElementById('screen-vid');
-    const loading = document.getElementById('loading');
-
-    const app = new Application(canvas);
-
-    app.load('https://prod.spline.design/BZqVYwlAY1MvyUKE/scene.splinecode')
-      .then(() => {
-        // Hide loader
-        loading.style.opacity = '0';
-        setTimeout(() => loading.remove(), 500);
-
-        // Start video
-        vid.play().catch(() => {});
-
-        // Try to access the internal Three.js scene
-        const scene =
-          app._renderer?._scene ||
-          app._renderer?.scene ||
-          app._scene ||
-          app.scene;
-
-        if (!scene) return; // graceful degradation — phone still renders
-
-        const videoTex = new THREE.VideoTexture(vid);
-        videoTex.minFilter = THREE.LinearFilter;
-        videoTex.magFilter = THREE.LinearFilter;
-        videoTex.colorSpace = THREE.SRGBColorSpace;
-
-        scene.traverse(child => {
-          if (!child.isMesh) return;
-          const mats = Array.isArray(child.material) ? child.material : [child.material];
-          mats.forEach((mat, i) => {
-            if (!mat) return;
-            const name = (mat.name || '').toLowerCase();
-            if (name.includes('screen')) {
-              const vidMat = new THREE.MeshBasicMaterial({
-                map: videoTex,
-                side: THREE.FrontSide,
-                toneMapped: false,
-              });
-              if (Array.isArray(child.material)) {
-                child.material[i] = vidMat;
-              } else {
-                child.material = vidMat;
-              }
-            }
-          });
-        });
-      })
-      .catch(() => {
-        loading.style.opacity = '0';
-        setTimeout(() => loading.remove(), 500);
-      });
-
-    // Fallback: start video on first interaction (iOS)
-    ['click', 'touchstart'].forEach(e =>
-      document.addEventListener(e, () => vid.play().catch(() => {}), { once: true })
-    );
-  </script>
+  <!-- Footer CTA -->
+  <section class="footer-cta">
+    <h2>Ready to build?</h2>
+    <p>Join the operators powering the next generation of iGaming.</p>
+    <a href="mailto:hello@star.io" class="cta-button">Get in touch →</a>
+  </section>
 
 </body>
 </html>
