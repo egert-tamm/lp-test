@@ -184,7 +184,7 @@
     // ── Phone group ──
     const phoneGroup = new THREE.Group();
     phoneGroup.position.set(1.0, 0, 0);
-    phoneGroup.rotation.set(0.1, 0.4, 0); // positive Y = slight right angle facing front
+    phoneGroup.rotation.set(0.1, -0.4, 0); // slight angle from front
     scene.add(phoneGroup);
 
     // ── Load GLB ──
@@ -212,9 +212,7 @@
 
         const debugLines = [];
 
-        // Flip model to face front (cameras were facing camera = model loaded backwards)
-        model.rotation.y = Math.PI;
-
+        // Model loads front-facing by default — no flip needed
         model.traverse((child) => {
           if (!child.isMesh) return;
 
@@ -313,7 +311,7 @@
         tl.to(phoneGroup.rotation, { y: Math.PI * 2, duration: 1 }, 1);
 
         // Phase 3 (66–100%): tilt back, slide left
-        tl.to(phoneGroup.rotation, { y: 0.4, x: -0.1, duration: 1 }, 2)
+        tl.to(phoneGroup.rotation, { y: -0.4, x: -0.1, duration: 1 }, 2)
           .to(phoneGroup.position, { x: -1.0, duration: 1 }, 2);
       },
       null,
