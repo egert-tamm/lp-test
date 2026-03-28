@@ -20,7 +20,7 @@
   </style>
 </head>
 <body>
-  <div id="build">BUILD v49 · requestVideoFrameCallback · 2026-03-28</div>
+  <div id="build">BUILD v50 · rVFC + opacity restored · 2026-03-28</div>
   <h2>All cells target screen.001 only. Different texture/material configs.</h2>
   <div id="status">Loading…</div>
   <div id="grid"></div>
@@ -148,7 +148,6 @@
                   emissive: new THREE.Color(0xffffff),
                   side: THREE.DoubleSide,
                   toneMapped: false,
-                  transparent: true, opacity: 0.5,
                 });
                 if (perm.repeatFlip) { tex.repeat.set(1, -1); tex.offset.set(0, 1); }
                 return m;
@@ -157,7 +156,6 @@
                 map: tex,
                 side: perm.singleSide ? THREE.FrontSide : THREE.DoubleSide,
                 toneMapped: false,
-                transparent: true, opacity: 0.5,
               });
             });
             child.material = isArr ? newMats : newMats[0];
