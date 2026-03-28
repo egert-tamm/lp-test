@@ -61,8 +61,8 @@
     }
     .cta-button:hover { transform: scale(1.04); box-shadow: 0 0 30px rgba(255,255,255,0.1); }
     #phone-video {
-      position: fixed; width: 2px; height: 2px;
-      opacity: 0.01; top: 0; left: 0; pointer-events: none;
+      position: fixed; width: 1px; height: 1px;
+      left: -200px; top: -200px; pointer-events: none;
     }
     @media (max-width: 768px) {
       .hero { padding: 0 1.5rem 4rem; align-items: flex-end; }
@@ -170,8 +170,8 @@
     }
 
     const phoneGroup = new THREE.Group();
-    phoneGroup.position.set(1.2, 0, 0);
-    phoneGroup.rotation.set(0.08, -0.3, 0); // slight tilt; model.rotation.y=PI/2 handles sideways correction
+    phoneGroup.position.set(0.9, -0.1, 0);
+    phoneGroup.rotation.set(0.05, -0.15, 0); // slight tilt toward viewer
     scene.add(phoneGroup);
 
     const loader = new THREE.GLTFLoader();
