@@ -20,7 +20,7 @@
   </style>
 </head>
 <body>
-  <div id="build">BUILD v51 · UV REMAP permutations · 2026-03-28</div>
+  <div id="build">BUILD v52 · UV REMAP Y/Z axis fix · 2026-03-28</div>
   <h2>All cells target screen.001 only. Different texture/material configs.</h2>
   <div id="status">Loading…</div>
   <div id="grid"></div>
@@ -145,8 +145,8 @@
             const min = box.min;
             const uvArr = new Float32Array(pos.count * 2);
             for (let i = 0; i < pos.count; i++) {
-              // Use X and Y extents (screen faces Z after rotation)
-              uvArr[i * 2]     = (pos.getX(i) - min.x) / (size.x || 1);
+              // Screen faces +X in local space (model loads sideways) → project onto Y/Z plane
+              uvArr[i * 2]     = (pos.getZ(i) - min.z) / (size.z || 1);
               uvArr[i * 2 + 1] = (pos.getY(i) - min.y) / (size.y || 1);
             }
             mesh.geometry = mesh.geometry.clone();
