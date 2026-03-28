@@ -224,11 +224,17 @@
             const name = (mat.name || '').toLowerCase();
             debugLines.push(`${name} | metalness:${mat.metalness?.toFixed(2)} roughness:${mat.roughness?.toFixed(2)}`);
 
-            // ── glass.002 = flat front display face → VIDEO TEXTURE ──
+            // ── glass.002 = CAMERA LENS glass (back) → hide/darken ──
             if (name === 'glass.002') {
+              child.visible = false;
+              return;
+            }
+
+            // ── lensinglass = front display panel → VIDEO TEXTURE ──
+            if (name === 'lensinglass') {
               const vidMat = new THREE.MeshBasicMaterial({
                 map: videoTex,
-                side: THREE.FrontSide,
+                side: THREE.DoubleSide,
                 toneMapped: false,
               });
               if (Array.isArray(child.material)) {
@@ -239,7 +245,7 @@
               return;
             }
 
-            // ── screen.001 = thin edge/chamfer → black bezel, no video ──
+            // ── screen.001 = thin edge chamfer → black bezel ──
             if (name === 'screen.001') {
               mat.color = new THREE.Color(0x000000);
               mat.metalness = 0;
