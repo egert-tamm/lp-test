@@ -4,11 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>star.io — The Gaming &amp; Payments Platform</title>
-  <!-- v57: correct flipU+flipV, aspect-ratio-preserving UV remap -->
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
-      height: 400vh;
       background: #080808;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -16,12 +14,14 @@
       -webkit-font-smoothing: antialiased;
     }
     #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+
     #loading {
       position: fixed; inset: 0;
       background: #080808;
-      display: flex; align-items: center; justify-content: center;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
       z-index: 20;
       transition: opacity 0.6s ease;
+      gap: 1rem;
     }
     #loading .spinner {
       width: 36px; height: 36px;
@@ -30,64 +30,96 @@
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
+    #loading .load-label { font-size: 0.75rem; color: rgba(255,255,255,0.35); letter-spacing: 0.08em; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    #content { position: relative; z-index: 1; pointer-events: none; }
-    #content a { pointer-events: auto; }
-    .hero {
-      min-height: 100vh;
-      display: flex; align-items: flex-end;
-      padding: 0 5rem 8rem;
+
+    /* Scroll sections — each is 100vh, stacked */
+    #sections { position: relative; z-index: 1; }
+    .section {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      pointer-events: none;
     }
-    .hero .text-block {
-      background: rgba(0,0,0,0.5);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-radius: 16px;
-      padding: 2.5rem 3rem;
-      max-width: 520px;
+
+    /* Slide text — left side */
+    .slide-text {
+      position: absolute;
+      left: 6vw;
+      max-width: 380px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
     }
-    h1 {
-      font-size: clamp(2rem, 4vw, 3.5rem);
-      font-weight: 700; letter-spacing: -0.02em; line-height: 1.08;
+    .slide-text.visible {
+      opacity: 1;
+      transform: translateY(0);
     }
-    .hero p { margin-top: 0.85rem; font-size: 1rem; color: rgba(255,255,255,0.55); }
-    .cta-button {
-      display: inline-block; margin-top: 1.75rem;
-      padding: 0.85rem 2.25rem;
-      background: #fff; color: #080808;
-      text-decoration: none; border-radius: 999px;
-      font-size: 0.95rem; font-weight: 600;
-      transition: transform 0.2s, box-shadow 0.2s;
+    .slide-number {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.25);
+      letter-spacing: 0.15em;
+      margin-bottom: 0.5rem;
     }
-    .cta-button:hover { transform: scale(1.04); box-shadow: 0 0 30px rgba(255,255,255,0.1); }
+    .slide-title {
+      font-size: clamp(1.6rem, 3.5vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    /* Progress bar */
+    #progress-bar {
+      position: fixed;
+      right: 2rem;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .progress-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      transition: background 0.3s, transform 0.3s;
+    }
+    .progress-dot.active {
+      background: #fff;
+      transform: scale(1.4);
+    }
+
     #phone-video {
       position: fixed; width: 1px; height: 1px;
       left: -200px; top: -200px; pointer-events: none;
     }
+
     @media (max-width: 768px) {
-      .hero { padding: 0 1.5rem 4rem; align-items: flex-end; }
-      .hero .text-block { padding: 1.75rem 1.75rem; }
+      .slide-text { left: 5vw; max-width: 60vw; }
+      .slide-title { font-size: 1.3rem; }
+      #progress-bar { right: 0.75rem; }
     }
   </style>
 </head>
 <body>
-  <div id="loading"><div class="spinner"></div></div>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <div class="load-label">Loading…</div>
+  </div>
 
   <video id="phone-video"
     src="https://cdn.star.io/videos/screen-recording.mp4"
-    autoplay muted loop playsinline crossorigin="anonymous">
+    preload="auto" muted playsinline crossorigin="anonymous">
   </video>
 
   <canvas id="canvas"></canvas>
 
-  <div id="content">
-    <section class="hero">
-      <div class="text-block">
-        <h1>The Gaming &amp; Payments Platform</h1>
-        <p>Powering the next generation of iGaming infrastructure.</p>
-        <a href="mailto:hello@star.io" class="cta-button">Book a Demo →</a>
-      </div>
-    </section>
+  <div id="progress-bar"></div>
+
+  <div id="sections">
+    <!-- 11 slides -->
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -95,12 +127,68 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script>
+    const SLIDES = [
+      { title: 'Introducing\nYapp App',          subtitle: '' },
+      { title: 'Find Your\nFast Edge',            subtitle: '' },
+      { title: 'Play What\'s\nTrending',          subtitle: '' },
+      { title: 'Bet Your Way',                    subtitle: '' },
+      { title: 'AI When\nYou Want It',            subtitle: '' },
+      { title: 'Built-In\nNative Games',          subtitle: '' },
+      { title: 'Fast Deposits,\nFull Control',    subtitle: '' },
+      { title: 'Built Different',                  subtitle: '' },
+      { title: 'Powered by AI',                   subtitle: '' },
+      { title: 'Designed to Win',                 subtitle: '' },
+      { title: 'Powered by\nYolo Investment',     subtitle: '' },
+    ];
+
+    // Phone rotation keyframes per slide (Y angle in radians)
+    // Phone starts angled right, rotates through as user scrolls
+    const PHONE_ROTATIONS = [
+      { y: -0.4, x:  0.05 },  // 1 — angled intro
+      { y: -0.2, x:  0.03 },  // 2
+      { y:  0.0, x:  0.00 },  // 3 — face on
+      { y:  0.15,x: -0.02 },  // 4
+      { y:  0.0, x:  0.00 },  // 5 — back to center
+      { y: -0.25,x:  0.04 },  // 6
+      { y:  0.0, x:  0.00 },  // 7
+      { y:  0.3, x: -0.03 },  // 8
+      { y:  0.0, x:  0.00 },  // 9
+      { y: -0.15,x:  0.02 },  // 10
+      { y:  0.0, x:  0.00 },  // 11 — final face on
+    ];
+
+    // Build sections
+    const sectionsEl = document.getElementById('sections');
+    const progressBar = document.getElementById('progress-bar');
+    const textEls = [];
+    const dots = [];
+
+    SLIDES.forEach((slide, i) => {
+      const sec = document.createElement('div');
+      sec.className = 'section';
+      sec.id = `slide-${i}`;
+
+      const txt = document.createElement('div');
+      txt.className = 'slide-text';
+      txt.innerHTML = `
+        <div class="slide-number">${String(i+1).padStart(2,'0')} / ${SLIDES.length}</div>
+        <div class="slide-title">${slide.title.replace(/\n/g,'<br>')}</div>
+      `;
+      sec.appendChild(txt);
+      sectionsEl.appendChild(sec);
+      textEls.push(txt);
+
+      const dot = document.createElement('div');
+      dot.className = 'progress-dot';
+      progressBar.appendChild(dot);
+      dots.push(dot);
+    });
+
+    // Three.js setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x080808);
-
     const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.01, 100);
     camera.position.set(0, 0, 4.5);
-
     const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -116,13 +204,6 @@
     fill.position.set(-4, 0, -2); scene.add(fill);
 
     const vid = document.getElementById('phone-video');
-
-    // Confirmed working texture config (from debug grid v55 cell #7 + axis fix):
-    // - generateMipmaps=false: non-POT video dims → silent black otherwise
-    // - flipY=false: GLTFLoader pre-flips UVs
-    // - remap Y→U, Z→V: screen.001 UV island is packed; planar projection fills full face
-    // - no flip on U/V: flipU+flipV = 180° rotation (wrong); no flips = correct portrait
-    // - requestVideoFrameCallback: explicit per-frame GPU upload (mobile-safe)
     const videoTex = new THREE.VideoTexture(vid);
     videoTex.minFilter = THREE.LinearFilter;
     videoTex.magFilter = THREE.LinearFilter;
@@ -130,26 +211,17 @@
     videoTex.flipY = false;
     videoTex.encoding = THREE.sRGBEncoding;
 
-    if ('requestVideoFrameCallback' in vid) {
-      const onFrame = () => { videoTex.needsUpdate = true; vid.requestVideoFrameCallback(onFrame); };
-      vid.requestVideoFrameCallback(onFrame);
-    } else {
-      setInterval(() => { if (vid.readyState >= 2) videoTex.needsUpdate = true; }, 33);
-    }
+    // Scroll-driven: we set needsUpdate manually each frame
+    let videoReady = false;
+    vid.addEventListener('canplaythrough', () => { videoReady = true; }, { once: true });
 
-    // UV remap: planar projection Y→U, Z→V, aspect-ratio-preserving (letterbox)
-    // v55 cell #7 confirmed correct: flipU=true, flipV=true, flipY=false
-    // Letterbox: scale UV so video fills longest axis without stretching
     function remapUVs(mesh) {
       const pos = mesh.geometry.attributes.position;
       const box = new THREE.Box3().setFromBufferAttribute(pos);
       const size = new THREE.Vector3(); box.getSize(size);
-      // Screen mesh Y/Z extents
       const meshW = size.y, meshH = size.z;
-      // Use actual video dimensions when available, fallback to 9:16
       const vidAR = (vid.videoWidth && vid.videoHeight) ? vid.videoWidth / vid.videoHeight : 9 / 16;
       const meshAR = meshW / (meshH || 1);
-      // Cover: scale UVs so video fills mesh face (crops edges, no letterbox)
       let scaleU = 1, scaleV = 1, offU = 0, offV = 0;
       if (meshAR > vidAR) {
         scaleV = meshAR / vidAR; offV = (1 - scaleV) / 2;
@@ -160,10 +232,9 @@
       for (let i = 0; i < pos.count; i++) {
         let u = (pos.getY(i) - box.min.y) / (meshW || 1);
         let v = (pos.getZ(i) - box.min.z) / (meshH || 1);
-        u = 1 - (u * scaleU + offU); // flipU=true
-        v = 1 - (v * scaleV + offV); // flipV=true
-        uvArr[i * 2]     = u;
-        uvArr[i * 2 + 1] = v;
+        u = 1 - (u * scaleU + offU);
+        v = 1 - (v * scaleV + offV);
+        uvArr[i * 2] = u; uvArr[i * 2 + 1] = v;
       }
       mesh.geometry = mesh.geometry.clone();
       mesh.geometry.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
@@ -171,8 +242,10 @@
 
     const phoneGroup = new THREE.Group();
     phoneGroup.position.set(0.9, -0.1, 0);
-    phoneGroup.rotation.set(0.05, -0.15, 0); // slight tilt toward viewer
+    phoneGroup.rotation.set(0.05, PHONE_ROTATIONS[0].y, 0);
     scene.add(phoneGroup);
+
+    let currentSlide = 0;
 
     const loader = new THREE.GLTFLoader();
     loader.load('https://cdn.star.io/models/iphone17.glb', (gltf) => {
@@ -186,47 +259,27 @@
         mats.forEach((mat, idx) => {
           if (!mat) return;
           const name = mat.name || '';
-
           if (name === 'screen.001') {
             remapUVs(child);
-            const vidMat = new THREE.MeshBasicMaterial({
-              map: videoTex,
-              side: THREE.DoubleSide,
-              toneMapped: false,
-            });
+            const vidMat = new THREE.MeshBasicMaterial({ map: videoTex, side: THREE.DoubleSide, toneMapped: false });
             if (Array.isArray(child.material)) child.material[idx] = vidMat;
             else child.material = vidMat;
             return;
           }
-
-          if (name === 'glass.002' || name === 'lensinglass') {
-            child.visible = false; return;
-          }
-
-          const bodyNames = ['basecolor.001', 'backpanel.001', 'Material.005', 'Material.006', 'Material.007', 'gray.001'];
+          if (name === 'glass.002' || name === 'lensinglass') { child.visible = false; return; }
+          const bodyNames = ['basecolor.001','backpanel.001','Material.005','Material.006','Material.007','gray.001'];
           if (bodyNames.includes(name)) {
-            mat.color?.set(0x1c1c1e);
-            if (mat.metalness !== undefined) { mat.metalness = 0.7; mat.roughness = 0.25; }
+            mat.color?.set(0x1c1c1e); if (mat.metalness !== undefined) { mat.metalness = 0.7; mat.roughness = 0.25; }
           }
-
           if (name === 'metalframe.002' || name === 'metaL.001') {
-            mat.color?.set(0x3a3a3c);
-            if (mat.metalness !== undefined) { mat.metalness = 0.95; mat.roughness = 0.1; }
+            mat.color?.set(0x3a3a3c); if (mat.metalness !== undefined) { mat.metalness = 0.95; mat.roughness = 0.1; }
           }
-
           if (name === 'black.002') mat.color?.set(0x000000);
         });
       });
-
       phoneGroup.add(model);
 
-      const loadEl = document.getElementById('loading');
-      if (loadEl) { loadEl.style.opacity = '0'; setTimeout(() => loadEl.remove(), 600); }
-
-      vid.load();
-      vid.play().catch(() => {});
-
-      // Re-apply UV remap once video dimensions are known (in case GLB loaded before video metadata)
+      // Re-apply UVs when video dimensions are known
       if (!vid.videoWidth) {
         vid.addEventListener('loadedmetadata', () => {
           model.traverse((child) => {
@@ -237,27 +290,73 @@
         }, { once: true });
       }
 
-      gsap.registerPlugin(ScrollTrigger);
-      const tl = gsap.timeline({
-        scrollTrigger: { trigger: 'body', start: 'top top', end: 'bottom bottom', scrub: 1.5 }
-      });
+      // Hide loader
+      const loadEl = document.getElementById('loading');
+      if (loadEl) { loadEl.style.opacity = '0'; setTimeout(() => loadEl.remove(), 600); }
 
-      tl.to(phoneGroup.position, { x: 0, duration: 1 }, 0)
-        .to(phoneGroup.rotation, { y: 0, x: 0, duration: 1 }, 0);
-      tl.to(phoneGroup.rotation, { y: Math.PI * 2, duration: 1 }, 1);
-      tl.to(phoneGroup.rotation, { y: 0.3, x: -0.08, duration: 1 }, 2)
-        .to(phoneGroup.position, { x: -1.2, duration: 1 }, 2);
-
+      setupScroll();
     }, null, (err) => {
       console.error(err);
-      const loadEl = document.getElementById('loading');
-      if (loadEl) loadEl.style.opacity = '0';
+      document.getElementById('loading').style.opacity = '0';
     });
 
-    ['click', 'touchstart'].forEach(e =>
-      document.addEventListener(e, () => vid.play().catch(() => {}), { once: true })
-    );
+    function setupScroll() {
+      gsap.registerPlugin(ScrollTrigger);
 
+      // Show first slide text
+      textEls[0].classList.add('visible');
+      dots[0].classList.add('active');
+
+      SLIDES.forEach((_, i) => {
+        ScrollTrigger.create({
+          trigger: `#slide-${i}`,
+          start: 'top 60%',
+          end: 'bottom 40%',
+          onEnter: () => activateSlide(i),
+          onEnterBack: () => activateSlide(i),
+        });
+      });
+
+      // Master scrub: scroll drives video.currentTime + phone rotation
+      ScrollTrigger.create({
+        trigger: '#sections',
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: 0.8,
+        onUpdate: (self) => {
+          const p = self.progress; // 0 → 1
+
+          // Scrub video
+          if (videoReady && vid.duration) {
+            const targetTime = p * vid.duration;
+            if (Math.abs(vid.currentTime - targetTime) > 0.04) {
+              vid.currentTime = targetTime;
+            }
+            videoTex.needsUpdate = true;
+          }
+
+          // Interpolate phone rotation across slide keyframes
+          const slideF = p * (SLIDES.length - 1);
+          const slideIdx = Math.min(Math.floor(slideF), SLIDES.length - 2);
+          const t = slideF - slideIdx;
+          const from = PHONE_ROTATIONS[slideIdx];
+          const to   = PHONE_ROTATIONS[slideIdx + 1];
+          phoneGroup.rotation.y = from.y + (to.y - from.y) * t;
+          phoneGroup.rotation.x = from.x + (to.x - from.x) * t;
+        }
+      });
+    }
+
+    function activateSlide(i) {
+      if (i === currentSlide) return;
+      textEls[currentSlide]?.classList.remove('visible');
+      dots[currentSlide]?.classList.remove('active');
+      currentSlide = i;
+      textEls[i]?.classList.add('visible');
+      dots[i]?.classList.add('active');
+    }
+
+    // Render loop
     (function render() { requestAnimationFrame(render); renderer.render(scene, camera); })();
 
     window.addEventListener('resize', () => {
@@ -265,6 +364,10 @@
       camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
     });
+
+    ['click','touchstart'].forEach(e =>
+      document.addEventListener(e, () => vid.play().then(() => vid.pause()).catch(() => {}), { once: true })
+    );
   </script>
 </body>
 </html>
