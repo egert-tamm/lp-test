@@ -19,62 +19,48 @@
     #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
 
     #loading {
-      position: fixed; inset: 0;
-      background: #080808;
+      position: fixed; inset: 0; background: #080808;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 20;
-      transition: opacity 0.6s ease;
-      gap: 1rem;
+      z-index: 20; transition: opacity 0.6s ease; gap: 1rem;
     }
     #loading .spinner {
       width: 36px; height: 36px;
-      border: 2px solid rgba(255,255,255,0.1);
-      border-top-color: rgba(255,255,255,0.6);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      border: 2px solid rgba(255,255,255,0.1); border-top-color: rgba(255,255,255,0.6);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
     }
     #loading .load-label { font-size: 0.75rem; color: rgba(255,255,255,0.35); letter-spacing: 0.08em; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Scroll sections — each is 100vh, stacked */
+    /*
+      Layout: each slide = 200vh
+        - First 100vh: text dominates, phone peeking at right edge
+        - Second 100vh: phone slides to center, text fades, video visible
+      The canvas is fixed — Three.js phone moves based on scroll progress within each slide
+    */
     #sections { position: relative; z-index: 1; }
-    .section {
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      pointer-events: none;
-    }
 
-    /* Slide text — left side */
     .slide-text {
-      position: absolute;
-      left: 6vw;
-      max-width: 380px;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100vh;
+      display: flex; align-items: flex-end;
+      padding: 0 6vw 10vh;
+      pointer-events: none;
+      z-index: 2;
       opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 0.5s ease, transform 0.5s ease;
-    }
-    .slide-text.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .slide-number {
-      font-size: 0.7rem;
-      font-weight: 400;
-      color: rgba(255,255,255,0.25);
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      margin-bottom: 0.75rem;
+      transition: none;
     }
     .slide-title {
-      font-size: clamp(3.2rem, 10vw, 6.5rem);
+      font-size: clamp(3.2rem, 10vw, 7rem);
       font-weight: 800;
       letter-spacing: -0.03em;
       line-height: 0.95;
       font-optical-sizing: auto;
+      max-width: 70vw;
     }
 
-    #progress-bar { display: none; }
+    /* Each slide is 200vh: 100vh for text reveal, 100vh for phone reveal */
+    .slide { height: 200vh; }
 
     #phone-video {
       position: fixed; width: 1px; height: 1px;
@@ -82,8 +68,8 @@
     }
 
     @media (max-width: 768px) {
-      .slide-text { left: 5vw; max-width: 80vw; }
-      #progress-bar { right: 0.5rem; }
+      .slide-title { max-width: 85vw; }
+      .slide-text { padding: 0 5vw 8vh; }
     }
   </style>
 </head>
@@ -101,11 +87,12 @@
 
   <canvas id="canvas"></canvas>
 
-  <div id="progress-bar"></div>
-
-  <div id="sections">
-    <!-- 11 slides -->
+  <!-- Single fixed text overlay — content swaps as you scroll -->
+  <div class="slide-text" id="slide-text">
+    <div class="slide-title" id="slide-title"></div>
   </div>
+
+  <div id="sections"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -113,61 +100,46 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script>
     const SLIDES = [
-      { title: 'Introducing\nYapp App',          subtitle: '' },
-      { title: 'Find Your\nFast Edge',            subtitle: '' },
-      { title: 'Play What\'s\nTrending',          subtitle: '' },
-      { title: 'Bet Your Way',                    subtitle: '' },
-      { title: 'AI When\nYou Want It',            subtitle: '' },
-      { title: 'Built-In\nNative Games',          subtitle: '' },
-      { title: 'Fast Deposits,\nFull Control',    subtitle: '' },
-      { title: 'Built Different',                  subtitle: '' },
-      { title: 'Powered by AI',                   subtitle: '' },
-      { title: 'Designed to Win',                 subtitle: '' },
-      { title: 'Powered by\nYolo Investment',     subtitle: '' },
+      'Introducing\nYapp App',
+      'Find Your\nFast Edge',
+      'Play What\'s\nTrending',
+      'Bet Your Way',
+      'AI When\nYou Want It',
+      'Built-In\nNative Games',
+      'Fast Deposits,\nFull Control',
+      'Built Different',
+      'Powered by AI',
+      'Designed to Win',
+      'Powered by\nYolo Investment',
     ];
 
-    // Phone + camera keyframes per slide
-    // phone: x/y position, rotY/rotX rotation
-    // cam: z (dolly distance), fov (zoom), cy (camera Y offset)
+    // Per-slide phone resting position (when phone is "revealed" in 2nd half of slide)
     const PHONE_KEYS = [
-      { x:  0.9, y: -0.1, rotY: -0.4, rotX:  0.05, camZ: 5.5, fov: 38, camY:  0.0 },  // 1 — wide intro
-      { x:  0.6, y:  0.1, rotY: -0.2, rotX:  0.02, camZ: 4.2, fov: 34, camY:  0.1 },  // 2 — slight push in
-      { x:  0.0, y:  0.0, rotY:  0.0, rotX:  0.00, camZ: 3.5, fov: 30, camY:  0.0 },  // 3 — close, face on
-      { x: -0.8, y: -0.1, rotY:  0.2, rotX: -0.02, camZ: 4.5, fov: 36, camY: -0.1 },  // 4 — pull back left
-      { x:  0.0, y:  0.2, rotY:  0.0, rotX:  0.00, camZ: 4.0, fov: 32, camY:  0.2 },  // 5 — center, look up
-      { x:  0.8, y:  0.0, rotY: -0.25,rotX:  0.03, camZ: 4.8, fov: 38, camY:  0.0 },  // 6 — right, wider
-      { x:  0.0, y: -0.1, rotY:  0.0, rotX:  0.00, camZ: 3.2, fov: 28, camY: -0.1 },  // 7 — tight close up
-      { x: -0.6, y:  0.1, rotY:  0.3, rotX: -0.03, camZ: 5.0, fov: 40, camY:  0.0 },  // 8 — pull wide left
-      { x:  0.0, y:  0.0, rotY:  0.0, rotX:  0.00, camZ: 4.0, fov: 34, camY:  0.0 },  // 9 — center
-      { x:  0.4, y:  0.1, rotY: -0.15,rotX:  0.02, camZ: 3.8, fov: 32, camY:  0.1 },  // 10 — push in right
-      { x:  0.0, y:  0.0, rotY:  0.0, rotX:  0.00, camZ: 4.5, fov: 36, camY:  0.0 },  // 11 — final pull back
+      { x:  0.3, y:  0.0, rotY: -0.15, camZ: 4.2, fov: 34 },
+      { x: -0.3, y:  0.0, rotY:  0.15, camZ: 4.2, fov: 34 },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.6, fov: 30 },
+      { x:  0.4, y: -0.1, rotY: -0.2,  camZ: 4.5, fov: 36 },
+      { x:  0.0, y:  0.1, rotY:  0.0,  camZ: 3.8, fov: 32 },
+      { x: -0.3, y:  0.0, rotY:  0.2,  camZ: 4.2, fov: 35 },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.2, fov: 28 },
+      { x:  0.3, y:  0.1, rotY: -0.15, camZ: 4.8, fov: 38 },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 4.0, fov: 34 },
+      { x: -0.2, y:  0.0, rotY:  0.1,  camZ: 3.8, fov: 32 },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 4.5, fov: 36 },
     ];
 
-    // Build sections
+    // Phone "hidden" position — peeking at right edge
+    const PHONE_HIDDEN = { x: 2.8, y: 0.0, rotY: -0.5, camZ: 5.0, fov: 38 };
+
+    // Build slide spacers
     const sectionsEl = document.getElementById('sections');
-    const progressBar = document.getElementById('progress-bar');
-    const textEls = [];
-    const dots = [];
-
-    SLIDES.forEach((slide, i) => {
-      const sec = document.createElement('div');
-      sec.className = 'section';
-      sec.id = `slide-${i}`;
-
-      const txt = document.createElement('div');
-      txt.className = 'slide-text';
-      txt.innerHTML = `<div class="slide-title">${slide.title.replace(/\n/g,'<br>')}</div>`;
-      sec.appendChild(txt);
-      sectionsEl.appendChild(sec);
-      textEls.push(txt);
-
-      const dot = document.createElement('div');
-      dot.className = 'progress-dot';
-      progressBar.appendChild(dot);
-      dots.push(dot);
+    SLIDES.forEach((_, i) => {
+      const div = document.createElement('div');
+      div.className = 'slide'; div.id = `slide-${i}`;
+      sectionsEl.appendChild(div);
     });
 
-    // Three.js setup
+    // Three.js
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.01, 100);
     camera.position.set(0, 0, 4.5);
@@ -178,65 +150,43 @@
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.4;
     renderer.physicallyCorrectLights = true;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-    // Gradient background via CSS (renderer alpha:true lets it show through)
     document.getElementById('canvas').style.background =
       'radial-gradient(ellipse at 60% 40%, #0d1f2d 0%, #080808 60%, #050505 100%)';
 
-    // Lights — cinematic 3-point + rim
     scene.add(new THREE.AmbientLight(0x112233, 1.0));
     const key = new THREE.DirectionalLight(0xffffff, 3.0);
-    key.position.set(4, 6, 5); key.castShadow = true; scene.add(key);
+    key.position.set(4, 6, 5); scene.add(key);
     const fill = new THREE.DirectionalLight(0x4488ff, 1.2);
     fill.position.set(-5, 1, -3); scene.add(fill);
     const rim = new THREE.DirectionalLight(0x00ffcc, 0.6);
     rim.position.set(0, -4, -5); scene.add(rim);
-    // Moving point light for specular glints on metal
     const glint = new THREE.PointLight(0xffffff, 2.5, 8);
     glint.position.set(2, 2, 3); scene.add(glint);
 
-    // Floating particles
-    (function addParticles() {
-      const count = 220;
-      const positions = new Float32Array(count * 3);
-      const speeds    = new Float32Array(count);
+    // Particles
+    (function() {
+      const count = 220, pos = new Float32Array(count * 3), spd = new Float32Array(count);
       for (let i = 0; i < count; i++) {
-        positions[i*3]   = (Math.random() - 0.5) * 12;
-        positions[i*3+1] = (Math.random() - 0.5) * 12;
-        positions[i*3+2] = (Math.random() - 0.5) * 8;
-        speeds[i] = 0.0003 + Math.random() * 0.0005;
+        pos[i*3]=(Math.random()-.5)*12; pos[i*3+1]=(Math.random()-.5)*12; pos[i*3+2]=(Math.random()-.5)*8;
+        spd[i] = 0.0003 + Math.random() * 0.0005;
       }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       const mat = new THREE.PointsMaterial({ color: 0x336688, size: 0.035, sizeAttenuation: true, transparent: true, opacity: 0.55 });
       const pts = new THREE.Points(geo, mat);
-      scene.add(pts);
-      // Store for animation
-      pts.userData.speeds = speeds;
-      pts.userData.positions = positions;
-      scene.userData.particles = pts;
+      scene.add(pts); pts.userData.speeds = spd; pts.userData.positions = pos; scene.userData.particles = pts;
     })();
 
-    // Screen glow plane (sits just in front of screen.001)
-    const glowGeo = new THREE.PlaneGeometry(0.72, 1.55);
-    const glowMat = new THREE.MeshBasicMaterial({
-      color: 0x00aaff, transparent: true, opacity: 0.0, side: THREE.FrontSide, depthWrite: false
-    });
-    const glowPlane = new THREE.Mesh(glowGeo, glowMat);
+    // Glow plane
+    const glowPlane = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.72, 1.55),
+      new THREE.MeshBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.0, depthWrite: false })
+    );
     glowPlane.position.set(0, 0, 0.01);
-    scene.userData.glowPlane = glowPlane;
 
     const vid = document.getElementById('phone-video');
     const videoTex = new THREE.VideoTexture(vid);
-    videoTex.minFilter = THREE.LinearFilter;
-    videoTex.magFilter = THREE.LinearFilter;
-    videoTex.generateMipmaps = false;
-    videoTex.flipY = false;
-    videoTex.encoding = THREE.sRGBEncoding;
-
-    // Scroll-driven: we set needsUpdate manually each frame
+    videoTex.minFilter = THREE.LinearFilter; videoTex.magFilter = THREE.LinearFilter;
+    videoTex.generateMipmaps = false; videoTex.flipY = false; videoTex.encoding = THREE.sRGBEncoding;
     let videoReady = false;
     vid.addEventListener('canplaythrough', () => { videoReady = true; }, { once: true });
 
@@ -245,222 +195,174 @@
       const box = new THREE.Box3().setFromBufferAttribute(pos);
       const size = new THREE.Vector3(); box.getSize(size);
       const meshW = size.y, meshH = size.z;
-      // Actual video: 576x1280 portrait (AR=0.45). Runtime detection preferred, hardcoded fallback.
       const vidAR = (vid.videoWidth && vid.videoHeight) ? vid.videoWidth / vid.videoHeight : 576 / 1280;
       const meshAR = meshW / (meshH || 1);
       let scaleU = 1, scaleV = 1, offU = 0, offV = 0;
-      if (meshAR > vidAR) {
-        scaleV = meshAR / vidAR; offV = (1 - scaleV) / 2;
-      } else {
-        scaleU = vidAR / meshAR; offU = (1 - scaleU) / 2;
-      }
+      if (meshAR > vidAR) { scaleV = meshAR / vidAR; offV = (1 - scaleV) / 2; }
+      else { scaleU = vidAR / meshAR; offU = (1 - scaleU) / 2; }
       const uvArr = new Float32Array(pos.count * 2);
       for (let i = 0; i < pos.count; i++) {
         let u = (pos.getY(i) - box.min.y) / (meshW || 1);
         let v = (pos.getZ(i) - box.min.z) / (meshH || 1);
-        u = 1 - (u * scaleU + offU);
-        v = 1 - (v * scaleV + offV);
-        uvArr[i * 2] = u; uvArr[i * 2 + 1] = v;
+        u = 1 - (u * scaleU + offU); v = 1 - (v * scaleV + offV);
+        uvArr[i*2] = u; uvArr[i*2+1] = v;
       }
       mesh.geometry = mesh.geometry.clone();
       mesh.geometry.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
     }
 
     const phoneGroup = new THREE.Group();
-    phoneGroup.position.set(PHONE_KEYS[0].x, PHONE_KEYS[0].y, 0);
-    phoneGroup.rotation.set(PHONE_KEYS[0].rotX, PHONE_KEYS[0].rotY, 0);
+    phoneGroup.position.set(PHONE_HIDDEN.x, PHONE_HIDDEN.y, 0);
+    phoneGroup.rotation.set(0, PHONE_HIDDEN.rotY, 0);
     scene.add(phoneGroup);
 
-    let currentSlide = 0;
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function eio(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+
+    const slideTitle = document.getElementById('slide-title');
+    const slideTextEl = document.getElementById('slide-text');
+    let currentSlideIdx = -1;
 
     const loader = new THREE.GLTFLoader();
     loader.load('https://cdn.star.io/models/iphone17.glb', (gltf) => {
       const model = gltf.scene;
       model.scale.setScalar(1.6);
       model.rotation.y = Math.PI / 2;
-
       model.traverse((child) => {
         if (!child.isMesh) return;
         const mats = Array.isArray(child.material) ? child.material : [child.material];
         mats.forEach((mat, idx) => {
-          if (!mat) return;
-          const name = mat.name || '';
+          if (!mat) return; const name = mat.name || '';
           if (name === 'screen.001') {
             remapUVs(child);
-            const vidMat = new THREE.MeshBasicMaterial({ map: videoTex, side: THREE.DoubleSide, toneMapped: false });
-            if (Array.isArray(child.material)) child.material[idx] = vidMat;
-            else child.material = vidMat;
-            return;
+            const vm = new THREE.MeshBasicMaterial({ map: videoTex, side: THREE.DoubleSide, toneMapped: false });
+            if (Array.isArray(child.material)) child.material[idx] = vm; else child.material = vm; return;
           }
           if (name === 'glass.002' || name === 'lensinglass') { child.visible = false; return; }
-          const bodyNames = ['basecolor.001','backpanel.001','Material.005','Material.006','Material.007','gray.001'];
-          if (bodyNames.includes(name)) {
-            mat.color?.set(0x1c1c1e); if (mat.metalness !== undefined) { mat.metalness = 0.7; mat.roughness = 0.25; }
-          }
-          if (name === 'metalframe.002' || name === 'metaL.001') {
-            mat.color?.set(0x3a3a3c); if (mat.metalness !== undefined) { mat.metalness = 0.95; mat.roughness = 0.1; }
-          }
-          if (name === 'black.002') mat.color?.set(0x000000);
+          const body = ['basecolor.001','backpanel.001','Material.005','Material.006','Material.007','gray.001'];
+          if (body.includes(name)) { mat.color?.set(0x1c1c1e); if (mat.metalness!==undefined){mat.metalness=0.7;mat.roughness=0.25;} }
+          if (name==='metalframe.002'||name==='metaL.001') { mat.color?.set(0x3a3a3c); if(mat.metalness!==undefined){mat.metalness=0.95;mat.roughness=0.1;} }
+          if (name==='black.002') mat.color?.set(0x000000);
         });
       });
       phoneGroup.add(model);
+      phoneGroup.add(glowPlane);
 
-      // Attach glow plane to phone screen face
-      const gp = scene.userData.glowPlane;
-      if (gp) phoneGroup.add(gp);
-
-      // Pulse glow opacity
-      (function pulseGlow() {
-        requestAnimationFrame(pulseGlow);
-        const t = Date.now() / 1000;
-        gp.material.opacity = 0.04 + Math.sin(t * 1.2) * 0.02;
-      })();
-
-      // Re-apply UVs when video dimensions are known
       if (!vid.videoWidth) {
         vid.addEventListener('loadedmetadata', () => {
-          model.traverse((child) => {
+          model.traverse(child => {
             if (!child.isMesh) return;
-            const mats = Array.isArray(child.material) ? child.material : [child.material];
-            if (mats.some(m => m && m.map === videoTex)) remapUVs(child);
+            const m = Array.isArray(child.material) ? child.material : [child.material];
+            if (m.some(x => x && x.map === videoTex)) remapUVs(child);
           });
         }, { once: true });
       }
 
-      // Hide loader
-      const loadEl = document.getElementById('loading');
-      if (loadEl) { loadEl.style.opacity = '0'; setTimeout(() => loadEl.remove(), 600); }
+      document.getElementById('loading').style.opacity = '0';
+      setTimeout(() => document.getElementById('loading')?.remove(), 600);
 
       setupScroll();
-    }, null, (err) => {
-      console.error(err);
-      document.getElementById('loading').style.opacity = '0';
-    });
-
-    function easeInOut(t) {
-      return t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
-    }
+    }, null, err => { console.error(err); document.getElementById('loading').style.opacity='0'; });
 
     function setupScroll() {
       gsap.registerPlugin(ScrollTrigger);
 
-      // Show first slide text
-      textEls[0].classList.add('visible');
-      dots[0].classList.add('active');
+      // Per-slide scroll trigger
+      // Each slide is 200vh. First 100vh = text phase, second 100vh = phone phase.
+      SLIDES.forEach((title, i) => {
+        const key = PHONE_KEYS[i];
 
-      SLIDES.forEach((_, i) => {
+        // Phase 1: text fades in as slide enters, phone stays hidden (peeking)
         ScrollTrigger.create({
           trigger: `#slide-${i}`,
-          start: 'top 60%',
-          end: 'bottom 40%',
-          onEnter: () => activateSlide(i),
-          onEnterBack: () => activateSlide(i),
+          start: 'top 80%',
+          end: 'top top',
+          onEnter: () => {
+            if (currentSlideIdx !== i) {
+              currentSlideIdx = i;
+              gsap.to(slideTextEl, { opacity: 0, duration: 0.2, onComplete: () => {
+                slideTitle.innerHTML = title.replace(/\n/g, '<br>');
+                gsap.to(slideTextEl, { opacity: 1, duration: 0.5 });
+              }});
+            }
+          },
+          onEnterBack: () => {
+            currentSlideIdx = i;
+            slideTitle.innerHTML = title.replace(/\n/g, '<br>');
+            gsap.to(slideTextEl, { opacity: 1, duration: 0.3 });
+          },
+        });
+
+        // Phase 2: phone slides in during second half, video scrubs
+        ScrollTrigger.create({
+          trigger: `#slide-${i}`,
+          start: '50% top',     // midpoint of the 200vh slide
+          end: 'bottom top',
+          scrub: 0.6,
+          onUpdate: (self) => {
+            const t = eio(self.progress);
+
+            // Phone moves from hidden (right edge) to resting position
+            phoneGroup.position.x = lerp(PHONE_HIDDEN.x, key.x, t);
+            phoneGroup.position.y = lerp(PHONE_HIDDEN.y, key.y, t);
+            phoneGroup.rotation.y = lerp(PHONE_HIDDEN.rotY, key.rotY, t);
+            camera.position.z = lerp(PHONE_HIDDEN.camZ, key.camZ, t);
+            camera.fov = lerp(PHONE_HIDDEN.fov, key.fov, t);
+            camera.updateProjectionMatrix();
+
+            // Scrub video into this slide's segment
+            if (videoReady && vid.duration) {
+              const segStart = (i / SLIDES.length) * vid.duration;
+              const segEnd   = ((i + 1) / SLIDES.length) * vid.duration;
+              const target = segStart + t * (segEnd - segStart);
+              if (Math.abs(vid.currentTime - target) > 0.04) vid.currentTime = target;
+              videoTex.needsUpdate = true;
+            }
+
+            // Fade text out as phone comes in
+            slideTextEl.style.opacity = String(1 - t * 0.5);
+          },
+          onLeave: () => {
+            // Phone exits: slide out left as next slide's text phase begins
+            gsap.to(phoneGroup.position, { x: -2.8, duration: 0.4, ease: 'power2.in' });
+          },
+          onEnterBack: () => {
+            // Coming back up — re-show
+            gsap.to(phoneGroup.position, { x: key.x, duration: 0.4, ease: 'power2.out' });
+          },
         });
       });
-
-      // Master scrub: scroll drives video.currentTime + phone rotation
-      ScrollTrigger.create({
-        trigger: '#sections',
-        start: 'top top',
-        end: 'bottom bottom',
-        scrub: 0.8,
-        onUpdate: (self) => {
-          const p = self.progress; // 0 → 1
-
-          // Scrub video
-          if (videoReady && vid.duration) {
-            const targetTime = p * vid.duration;
-            if (Math.abs(vid.currentTime - targetTime) > 0.04) {
-              vid.currentTime = targetTime;
-            }
-            videoTex.needsUpdate = true;
-          }
-
-          // Interpolate phone position + rotation across slide keyframes
-          const slideF = p * (SLIDES.length - 1);
-          const slideIdx = Math.min(Math.floor(slideF), SLIDES.length - 2);
-          const t = easeInOut(slideF - slideIdx);
-          const from = PHONE_KEYS[slideIdx];
-          const to   = PHONE_KEYS[slideIdx + 1];
-          phoneGroup.position.x = from.x + (to.x - from.x) * t;
-          phoneGroup.position.y = from.y + (to.y - from.y) * t;
-          phoneGroup.rotation.y = from.rotY + (to.rotY - from.rotY) * t;
-          phoneGroup.rotation.x = from.rotX + (to.rotX - from.rotX) * t;
-
-          // Camera dolly + FOV
-          const camZ = from.camZ + (to.camZ - from.camZ) * t;
-          const fov  = from.fov  + (to.fov  - from.fov)  * t;
-          const camY = from.camY + (to.camY - from.camY) * t;
-          camera.position.set(0, camY, camZ);
-          camera.fov = fov;
-          camera.updateProjectionMatrix();
-        }
-      });
-    }
-
-    function activateSlide(i) {
-      if (i === currentSlide) return;
-      textEls[currentSlide]?.classList.remove('visible');
-      dots[currentSlide]?.classList.remove('active');
-      currentSlide = i;
-      textEls[i]?.classList.add('visible');
-      dots[i]?.classList.add('active');
     }
 
     // Mouse parallax
-    let mouseX = 0, mouseY = 0, targetMX = 0, targetMY = 0;
-    window.addEventListener('mousemove', e => {
-      targetMX = (e.clientX / innerWidth  - 0.5) * 2;
-      targetMY = (e.clientY / innerHeight - 0.5) * 2;
-    });
+    let mouseX = 0, mouseY = 0, tMX = 0, tMY = 0;
+    window.addEventListener('mousemove', e => { tMX=(e.clientX/innerWidth-.5)*2; tMY=(e.clientY/innerHeight-.5)*2; });
+    let glintAngle = 0, lastTime = 0;
 
-    // Glint orbit
-    let glintAngle = 0;
-
-    // Render loop
-    let lastTime = 0;
     (function render(now) {
       requestAnimationFrame(render);
       const dt = Math.min((now - lastTime) / 1000, 0.05); lastTime = now;
-
-      // Smooth mouse
-      mouseX += (targetMX - mouseX) * 0.06;
-      mouseY += (targetMY - mouseY) * 0.06;
-
-      // Parallax: nudge phoneGroup slightly toward mouse
-      if (phoneGroup) {
-        phoneGroup.rotation.y += mouseX * 0.04;
-        phoneGroup.rotation.x -= mouseY * 0.02;
-      }
-
-      // Orbit glint light around phone
+      mouseX += (tMX - mouseX) * 0.05; mouseY += (tMY - mouseY) * 0.05;
+      phoneGroup.rotation.y += mouseX * 0.025;
+      phoneGroup.rotation.x -= mouseY * 0.015;
       glintAngle += dt * 0.4;
-      glint.position.set(Math.sin(glintAngle) * 3.5, Math.cos(glintAngle * 0.7) * 2, 3);
-
-      // Animate particles drift upward
+      glint.position.set(Math.sin(glintAngle)*3.5, Math.cos(glintAngle*0.7)*2, 3);
+      const t2 = now / 1000;
+      glowPlane.material.opacity = 0.04 + Math.sin(t2 * 1.2) * 0.02;
       const pts = scene.userData.particles;
       if (pts) {
-        const pos = pts.userData.positions;
-        const spd = pts.userData.speeds;
-        for (let i = 0; i < spd.length; i++) {
-          pos[i*3+1] += spd[i];
-          if (pos[i*3+1] > 6) pos[i*3+1] = -6;
-        }
+        const p = pts.userData.positions, s = pts.userData.speeds;
+        for (let i = 0; i < s.length; i++) { p[i*3+1] += s[i]; if(p[i*3+1]>6)p[i*3+1]=-6; }
         pts.geometry.attributes.position.needsUpdate = true;
       }
-
       renderer.render(scene, camera);
     })(0);
 
     window.addEventListener('resize', () => {
-      camera.aspect = innerWidth / innerHeight;
-      camera.updateProjectionMatrix();
+      camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
     });
-
-    ['click','touchstart'].forEach(e =>
-      document.addEventListener(e, () => vid.play().then(() => vid.pause()).catch(() => {}), { once: true })
-    );
+    ['click','touchstart'].forEach(e => document.addEventListener(e, () => vid.play().then(()=>vid.pause()).catch(()=>{}), {once:true}));
   </script>
 </body>
 </html>
