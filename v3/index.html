@@ -141,20 +141,21 @@
       { title: 'Powered by\nYolo Investment',     subtitle: '' },
     ];
 
-    // Phone rotation keyframes per slide (Y angle in radians)
-    // Phone starts angled right, rotates through as user scrolls
-    const PHONE_ROTATIONS = [
-      { y: -0.4, x:  0.05 },  // 1 — angled intro
-      { y: -0.2, x:  0.03 },  // 2
-      { y:  0.0, x:  0.00 },  // 3 — face on
-      { y:  0.15,x: -0.02 },  // 4
-      { y:  0.0, x:  0.00 },  // 5 — back to center
-      { y: -0.25,x:  0.04 },  // 6
-      { y:  0.0, x:  0.00 },  // 7
-      { y:  0.3, x: -0.03 },  // 8
-      { y:  0.0, x:  0.00 },  // 9
-      { y: -0.15,x:  0.02 },  // 10
-      { y:  0.0, x:  0.00 },  // 11 — final face on
+    // Phone keyframes per slide — position (x,y) + rotation (rotY, rotX)
+    // x: -2=far left, 0=center, 2=far right
+    // y: -1=low, 0=center, 1=high
+    const PHONE_KEYS = [
+      { x:  0.9, y: -0.1, rotY: -0.4, rotX:  0.05 },  // 1 — intro: right, angled
+      { x:  0.7, y:  0.2, rotY: -0.2, rotX:  0.02 },  // 2 — slight right
+      { x:  0.0, y:  0.0, rotY:  0.0, rotX:  0.00 },  // 3 — center, face on
+      { x: -0.8, y: -0.2, rotY:  0.2, rotX: -0.02 },  // 4 — left
+      { x:  0.0, y:  0.1, rotY:  0.0, rotX:  0.00 },  // 5 — back center
+      { x:  0.8, y:  0.2, rotY: -0.25,rotX:  0.03 },  // 6 — right
+      { x:  0.0, y: -0.1, rotY:  0.0, rotX:  0.00 },  // 7 — center
+      { x: -0.7, y:  0.1, rotY:  0.3, rotX: -0.03 },  // 8 — left
+      { x:  0.0, y:  0.0, rotY:  0.0, rotX:  0.00 },  // 9 — center
+      { x:  0.5, y:  0.2, rotY: -0.15,rotX:  0.02 },  // 10 — slight right
+      { x:  0.0, y:  0.0, rotY:  0.0, rotX:  0.00 },  // 11 — final center
     ];
 
     // Build sections
@@ -241,8 +242,8 @@
     }
 
     const phoneGroup = new THREE.Group();
-    phoneGroup.position.set(0.9, -0.1, 0);
-    phoneGroup.rotation.set(0.05, PHONE_ROTATIONS[0].y, 0);
+    phoneGroup.position.set(PHONE_KEYS[0].x, PHONE_KEYS[0].y, 0);
+    phoneGroup.rotation.set(PHONE_KEYS[0].rotX, PHONE_KEYS[0].rotY, 0);
     scene.add(phoneGroup);
 
     let currentSlide = 0;
@@ -300,6 +301,10 @@
       document.getElementById('loading').style.opacity = '0';
     });
 
+    function easeInOut(t) {
+      return t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+    }
+
     function setupScroll() {
       gsap.registerPlugin(ScrollTrigger);
 
@@ -335,14 +340,16 @@
             videoTex.needsUpdate = true;
           }
 
-          // Interpolate phone rotation across slide keyframes
+          // Interpolate phone position + rotation across slide keyframes
           const slideF = p * (SLIDES.length - 1);
           const slideIdx = Math.min(Math.floor(slideF), SLIDES.length - 2);
-          const t = slideF - slideIdx;
-          const from = PHONE_ROTATIONS[slideIdx];
-          const to   = PHONE_ROTATIONS[slideIdx + 1];
-          phoneGroup.rotation.y = from.y + (to.y - from.y) * t;
-          phoneGroup.rotation.x = from.x + (to.x - from.x) * t;
+          const t = easeInOut(slideF - slideIdx);
+          const from = PHONE_KEYS[slideIdx];
+          const to   = PHONE_KEYS[slideIdx + 1];
+          phoneGroup.position.x = from.x + (to.x - from.x) * t;
+          phoneGroup.position.y = from.y + (to.y - from.y) * t;
+          phoneGroup.rotation.y = from.rotY + (to.rotY - from.rotY) * t;
+          phoneGroup.rotation.x = from.rotX + (to.rotX - from.rotX) * t;
         }
       });
     }
