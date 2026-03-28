@@ -266,17 +266,26 @@
 
             const name = (mat.name || '').toLowerCase();
 
-            // Screen → video texture — match any mesh that looks like a screen
-            if (name.includes('screen')) {
+            // Screen → video texture
+            if (name === 'screen.001') {
               child.material = new THREE.MeshBasicMaterial({
                 map: videoTexture,
                 side: THREE.DoubleSide
               });
+              child.renderOrder = 2;
             }
 
-            // Recolor orange body materials → dark titanium
-            const orangeNames = ['basecolor.001', 'metalframe.002', 'backpanel.001', 'material.005', 'material.006', 'material.007'];
-            if (orangeNames.includes(name)) {
+            // Glass panel → make nearly invisible so screen shows through
+            if (name === 'glass.002') {
+              mat.transparent = true;
+              mat.opacity = 0.08;
+              mat.depthWrite = false;
+              child.renderOrder = 3;
+            }
+
+            // Recolor orange body → dark titanium
+            const bodyNames = ['basecolor.001', 'metalframe.002', 'backpanel.001', 'material.005', 'material.006', 'material.007'];
+            if (bodyNames.includes(name)) {
               mat.color.set(0x1c1c1e);
               mat.metalness = 0.85;
               mat.roughness = 0.15;
