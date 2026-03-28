@@ -23,7 +23,12 @@
     }
     .label .num { color: #ff0; font-size: 0.9rem; }
     #status { margin-bottom: 1rem; color: #888; font-size: 0.8rem; }
-    video { display: none; }
+    video {
+      position: fixed;
+      width: 1px; height: 1px;
+      opacity: 0; top: 0; left: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
