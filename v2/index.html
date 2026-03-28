@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>star.io — The Gaming &amp; Payments Platform</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 400vh;
+      background: #080808;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    #content {
+      position: relative;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    #content a, #content button {
+      pointer-events: auto;
+    }
+
+    section {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 4rem;
+    }
+
+    .hero {
+      min-height: 100vh;
+      justify-content: flex-start;
+      align-items: flex-end;
+      padding-bottom: 8rem;
+    }
+
+    .hero .text-block {
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 2.5rem 3rem;
+      max-width: 640px;
+      opacity: 0;
+      transform: translateY(30px);
+      animation: fadeInUp 1s ease 0.4s forwards;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .hero p {
+      margin-top: 1rem;
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .mid {
+      min-height: 100vh;
+      margin-top: 50vh;
+      justify-content: flex-end;
+    }
+
+    .mid .text-block {
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 2.5rem 3rem;
+      max-width: 540px;
+      text-align: right;
+    }
+
+    .mid h2 {
+      font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+
+    .cta-section {
+      min-height: 100vh;
+      margin-top: 50vh;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .cta-section .text-block {
+      text-align: center;
+    }
+
+    .cta-button {
+      display: inline-block;
+      padding: 1rem 3rem;
+      background: #fff;
+      color: #080808;
+      text-decoration: none;
+      border-radius: 999px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      pointer-events: auto;
+    }
+
+    .cta-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 40px rgba(255, 255, 255, 0.15);
+    }
+
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    #phone-video {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <video id="phone-video" src="https://cdn.star.io/videos/part-1_10_compressed_26-03-28.mp4" autoplay muted loop playsinline crossorigin="anonymous"></video>
+
+  <canvas id="canvas"></canvas>
+
+  <div id="content">
+    <section class="hero">
+      <div class="text-block">
+        <h1>The Gaming &amp; Payments Platform</h1>
+        <p>Powering the next generation of iGaming infrastructure.</p>
+      </div>
+    </section>
+
+    <section class="mid">
+      <div class="text-block">
+        <h2>Built for operators.<br>Designed for players.</h2>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="text-block">
+        <a href="mailto:hello@star.io" class="cta-button">Book a Demo →</a>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <script>
+    // ─── Scene Setup ───
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x080808);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.z = 5;
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: document.getElementById('canvas'),
+      antialias: true
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+
+    // ─── Lighting ───
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffeedd, 0.9);
+    dirLight.position.set(3, 5, 4);
+    scene.add(dirLight);
+
+    const fillLight = new THREE.DirectionalLight(0xaaccff, 0.3);
+    fillLight.position.set(-3, 2, -2);
+    scene.add(fillLight);
+
+    // ─── Phone Model ───
+    const phone = new THREE.Group();
+
+    // Body
+    const bodyGeo = new THREE.BoxGeometry(1.2, 2.4, 0.12);
+    // Round edges slightly with bevel (approximate with standard box for r128 compat)
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: 0x1a1a1a,
+      metalness: 0.8,
+      roughness: 0.2
+    });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    phone.add(body);
+
+    // Screen bezel frame (subtle lighter edge)
+    const bezelGeo = new THREE.PlaneGeometry(1.08, 2.0);
+    const bezelMat = new THREE.MeshStandardMaterial({
+      color: 0x111111,
+      metalness: 0.5,
+      roughness: 0.4
+    });
+    const bezel = new THREE.Mesh(bezelGeo, bezelMat);
+    bezel.position.z = 0.062;
+    phone.add(bezel);
+
+    // Screen with video texture
+    const videoEl = document.getElementById('phone-video');
+    const videoTexture = new THREE.VideoTexture(videoEl);
+    videoTexture.minFilter = THREE.LinearFilter;
+    videoTexture.magFilter = THREE.LinearFilter;
+
+    const screenGeo = new THREE.PlaneGeometry(1.0, 1.9);
+    const screenMat = new THREE.MeshBasicMaterial({ map: videoTexture });
+    const screen = new THREE.Mesh(screenGeo, screenMat);
+    screen.position.z = 0.065;
+    phone.add(screen);
+
+    // Camera notch
+    const notchGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.01, 16);
+    const notchMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, metalness: 0.9, roughness: 0.1 });
+    const notch = new THREE.Mesh(notchGeo, notchMat);
+    notch.rotation.x = Math.PI / 2;
+    notch.position.set(0, 0.85, 0.07);
+    phone.add(notch);
+
+    // Home indicator
+    const homeGeo = new THREE.BoxGeometry(0.3, 0.015, 0.01);
+    const homeMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
+    const homeIndicator = new THREE.Mesh(homeGeo, homeMat);
+    homeIndicator.position.set(0, -1.05, 0.07);
+    phone.add(homeIndicator);
+
+    // Side buttons (power + volume)
+    const buttonGeo = new THREE.BoxGeometry(0.02, 0.2, 0.06);
+    const buttonMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.9, roughness: 0.15 });
+
+    const powerBtn = new THREE.Mesh(buttonGeo, buttonMat);
+    powerBtn.position.set(0.61, 0.3, 0);
+    phone.add(powerBtn);
+
+    const volUp = new THREE.Mesh(buttonGeo, buttonMat);
+    volUp.position.set(-0.61, 0.5, 0);
+    phone.add(volUp);
+
+    const volDown = new THREE.Mesh(buttonGeo, buttonMat);
+    volDown.position.set(-0.61, 0.2, 0);
+    phone.add(volDown);
+
+    // Initial state
+    phone.rotation.x = 0.3;
+    phone.rotation.y = -0.6;
+    phone.position.x = 1.5;
+
+    scene.add(phone);
+
+    // ─── Scroll Animation ───
+    gsap.registerPlugin(ScrollTrigger);
+
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: "body",
+        start: "top top",
+        end: "bottom bottom",
+        scrub: 1
+      }
+    });
+
+    // Phase 1 (0–33%): rotate to face-on, move to center
+    tl.to(phone.rotation, { y: 0, x: 0, duration: 1 }, 0)
+      .to(phone.position, { x: 0, duration: 1 }, 0);
+
+    // Phase 2 (33–66%): spin 360° and scale up slightly
+    tl.to(phone.rotation, { y: Math.PI * 2, duration: 1 }, 1)
+      .to(phone.scale, { x: 1.2, y: 1.2, z: 1.2, duration: 1 }, 1);
+
+    // Phase 3 (66–100%): tilt back, move left, scale down
+    tl.to(phone.rotation, { y: 0.6, x: -0.2, duration: 1 }, 2)
+      .to(phone.position, { x: -1.5, duration: 1 }, 2)
+      .to(phone.scale, { x: 1, y: 1, z: 1, duration: 1 }, 2);
+
+    // ─── Render Loop ───
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // ─── Resize Handler ───
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // ─── Start video playback on interaction (mobile) ───
+    document.addEventListener('click', () => {
+      videoEl.play().catch(() => {});
+    }, { once: true });
+    document.addEventListener('touchstart', () => {
+      videoEl.play().catch(() => {});
+    }, { once: true });
+  </script>
+</body>
+</html>
