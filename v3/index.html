@@ -184,7 +184,7 @@
     // ── Phone group ──
     const phoneGroup = new THREE.Group();
     phoneGroup.position.set(1.0, 0, 0);
-    phoneGroup.rotation.set(0.1, -0.4, 0); // slight angle from front
+    phoneGroup.rotation.set(0.1, 0.4, 0); // after PI flip, positive Y = slight left angle showing front
     scene.add(phoneGroup);
 
     // ── Load GLB ──
@@ -212,7 +212,9 @@
 
         const debugLines = [];
 
-        // Model loads front-facing by default — no flip needed
+        // Model loads BACK-facing — flip to show front
+        model.rotation.y = Math.PI;
+
         model.traverse((child) => {
           if (!child.isMesh) return;
 
@@ -234,11 +236,11 @@
               return;
             }
 
-            // ── black.002 = main display face → VIDEO TEXTURE ──
+            // ── black.002 = main display face → VIDEO TEXTURE (DoubleSide after PI flip) ──
             if (name === 'black.002') {
               const vidMat = new THREE.MeshBasicMaterial({
                 map: videoTex,
-                side: THREE.FrontSide,
+                side: THREE.DoubleSide,
                 toneMapped: false,
               });
               if (Array.isArray(child.material)) {
