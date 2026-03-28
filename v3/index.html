@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>star.io — The Gaming &amp; Payments Platform</title>
+  <!-- v57: correct flipU+flipV, aspect-ratio-preserving UV remap -->
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
@@ -136,15 +137,33 @@
       setInterval(() => { if (vid.readyState >= 2) videoTex.needsUpdate = true; }, 33);
     }
 
-    // UV remap: planar projection Y→U, Z→V from bounding box
+    // UV remap: planar projection Y→U, Z→V, aspect-ratio-preserving (letterbox)
+    // v55 cell #7 confirmed correct: flipU=true, flipV=true, flipY=false
+    // Letterbox: scale UV so video fills longest axis without stretching
     function remapUVs(mesh) {
       const pos = mesh.geometry.attributes.position;
       const box = new THREE.Box3().setFromBufferAttribute(pos);
       const size = new THREE.Vector3(); box.getSize(size);
+      // Screen mesh Y/Z extents
+      const meshW = size.y, meshH = size.z;
+      // screen-recording.mp4 is portrait (9:16 approx)
+      const vidAR = 9 / 16;
+      const meshAR = meshW / (meshH || 1);
+      // Scale UVs to preserve video aspect ratio (letterbox/pillarbox)
+      let scaleU = 1, scaleV = 1, offU = 0, offV = 0;
+      if (meshAR > vidAR) {
+        scaleU = vidAR / meshAR; offU = (1 - scaleU) / 2;
+      } else {
+        scaleV = meshAR / vidAR; offV = (1 - scaleV) / 2;
+      }
       const uvArr = new Float32Array(pos.count * 2);
       for (let i = 0; i < pos.count; i++) {
-        uvArr[i * 2]     = (pos.getY(i) - box.min.y) / (size.y || 1);
-        uvArr[i * 2 + 1] = (pos.getZ(i) - box.min.z) / (size.z || 1);
+        let u = (pos.getY(i) - box.min.y) / (meshW || 1);
+        let v = (pos.getZ(i) - box.min.z) / (meshH || 1);
+        u = 1 - (u * scaleU + offU); // flipU=true
+        v = 1 - (v * scaleV + offV); // flipV=true
+        uvArr[i * 2]     = u;
+        uvArr[i * 2 + 1] = v;
       }
       mesh.geometry = mesh.geometry.clone();
       mesh.geometry.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
