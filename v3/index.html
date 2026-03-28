@@ -192,7 +192,7 @@
     }
 
     const isMobileViewport = innerWidth < 768;
-    const CAM_SCALE = isMobileViewport ? 1.5 : 1.0; // push camera back on mobile
+    const CAM_SCALE = isMobileViewport ? 1.2 : 1.0; // push camera back on mobile
     const PHONE_HIDDEN = { rotY: -0.3, camZ: 6.0 * CAM_SCALE, fov: 40 };
 
     // Build slide spacers
@@ -291,7 +291,7 @@
     loader.load('https://cdn.star.io/models/iphone17.glb', (gltf) => {
       const model = gltf.scene;
       const isMobile = innerWidth < 768;
-      model.scale.setScalar(isMobile ? 1.0 : 1.6);
+      model.scale.setScalar(isMobile ? 1.25 : 1.6);
       model.rotation.y = Math.PI / 2;
       model.traverse((child) => {
         if (!child.isMesh) return;
