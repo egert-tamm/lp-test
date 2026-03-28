@@ -3,215 +3,134 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>star.io — The Gaming &amp; Payments Platform</title>
+  <title>star.io v3 — GLB Layer Debug</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
-      height: 400vh;
-      background: #080808;
-      color: #fff;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
+    body { background: #111; color: #fff; font-family: monospace; padding: 1rem; }
+    h2 { margin-bottom: 0.5rem; font-size: 0.9rem; color: #888; }
+    #status { margin-bottom: 1rem; color: #0f0; font-size: 0.75rem; word-break: break-all; }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
     }
-    #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
-    #loading {
-      position: fixed; inset: 0;
-      background: #080808;
-      display: flex; align-items: center; justify-content: center;
-      z-index: 20;
-      transition: opacity 0.5s ease;
-    }
-    #loading .spinner {
-      width: 36px; height: 36px;
-      border: 2px solid rgba(255,255,255,0.1);
-      border-top-color: rgba(255,255,255,0.6);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #content { position: relative; z-index: 1; pointer-events: none; }
-    #content a { pointer-events: auto; }
-    .hero {
-      min-height: 100vh;
-      display: flex; align-items: flex-end;
-      padding: 0 5rem 8rem;
-    }
-    .hero .text-block {
-      background: rgba(0,0,0,0.5);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-radius: 16px;
-      padding: 2.5rem 3rem;
-      max-width: 560px;
-    }
-    h1 {
-      font-size: clamp(2rem, 4vw, 3.5rem);
-      font-weight: 700; letter-spacing: -0.02em; line-height: 1.08;
-    }
-    .hero p { margin-top: 0.85rem; font-size: 1rem; color: rgba(255,255,255,0.55); }
-    .cta-button {
-      display: inline-block; margin-top: 1.75rem;
-      padding: 0.85rem 2.25rem;
-      background: #fff; color: #080808;
-      text-decoration: none; border-radius: 999px;
-      font-size: 0.95rem; font-weight: 600;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .cta-button:hover { transform: scale(1.04); box-shadow: 0 0 30px rgba(255,255,255,0.1); }
-    #phone-video {
+    .cell { text-align: center; }
+    .cell canvas { width: 100% !important; height: auto !important; display: block; background: #1a1a1a; border-radius: 6px; }
+    .label { margin-top: 0.3rem; font-size: 0.65rem; color: #0f0; word-break: break-all; }
+    .label .num { color: #ff0; font-size: 0.85rem; font-weight: bold; }
+    video {
       position: fixed; width: 1px; height: 1px;
       opacity: 0; top: 0; left: 0; pointer-events: none;
     }
   </style>
 </head>
 <body>
-  <div id="loading"><div class="spinner"></div></div>
+  <h2>GLB Layer Debug — phone front-facing (+PI/2), video on each material separately. Tell me which number shows video on the SCREEN.</h2>
+  <div id="status">Loading GLB…</div>
+  <div id="grid"></div>
 
-  <video id="phone-video"
+  <video id="src-vid"
     src="https://cdn.star.io/videos/screen-recording.mp4"
     autoplay muted loop playsinline crossorigin="anonymous">
   </video>
 
-  <canvas id="canvas"></canvas>
-
-  <div id="content">
-    <section class="hero">
-      <div class="text-block">
-        <h1>The Gaming &amp; Payments Platform</h1>
-        <p>Powering the next generation of iGaming infrastructure.</p>
-        <a href="mailto:hello@star.io" class="cta-button">Book a Demo →</a>
-      </div>
-    </section>
-  </div>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script>
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x080808);
-
-    const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.01, 100);
-    camera.position.set(0, 0, 4.5);
-
-    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
-    renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.setClearColor(0x080808, 1);
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-    renderer.physicallyCorrectLights = true;
-
-    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-    const key = new THREE.DirectionalLight(0xffffff, 2.2);
-    key.position.set(3, 5, 5); scene.add(key);
-    const fill = new THREE.DirectionalLight(0xb0c8ff, 0.8);
-    fill.position.set(-4, 0, -2); scene.add(fill);
-
-    const vid = document.getElementById('phone-video');
-    const videoTex = new THREE.VideoTexture(vid);
-    videoTex.minFilter = THREE.LinearFilter;
-    videoTex.magFilter = THREE.LinearFilter;
-    videoTex.encoding = THREE.sRGBEncoding;
-
-    const phoneGroup = new THREE.Group();
-    // Model loads sideways (right side toward camera), +PI/2 = front facing
-    // Then offset and tilt for hero composition
-    phoneGroup.position.set(1.2, 0, 0);
-    phoneGroup.rotation.set(0.1, Math.PI / 2 - 0.35, 0);
-    scene.add(phoneGroup);
+    const vid = document.getElementById('src-vid');
+    vid.play().catch(() => {});
+    document.addEventListener('click', () => vid.play().catch(() => {}), { once: true });
+    document.addEventListener('touchstart', () => vid.play().catch(() => {}), { once: true });
 
     const loader = new THREE.GLTFLoader();
     loader.load('https://cdn.star.io/models/iphone17.glb', (gltf) => {
-      const model = gltf.scene;
-      model.scale.setScalar(1.6);
-      // Apply base rotation to face front
-      model.rotation.y = Math.PI / 2;
 
-      model.traverse((child) => {
+      // Collect all unique material names
+      const matNames = new Set();
+      gltf.scene.traverse(child => {
         if (!child.isMesh) return;
         const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((mat, idx) => {
-          if (!mat) return;
-          const name = (mat.name || '').toLowerCase();
+        mats.forEach(m => { if (m && m.name) matNames.add(m.name); });
+      });
 
-          // ✅ CONFIRMED: screen.001 = main display face
-          if (name === 'screen.001') {
-            const vidMat = new THREE.MeshBasicMaterial({
-              map: videoTex,
-              side: THREE.DoubleSide,
-              toneMapped: false,
-            });
-            if (Array.isArray(child.material)) child.material[idx] = vidMat;
-            else child.material = vidMat;
-            return;
-          }
+      const names = [...matNames];
+      document.getElementById('status').textContent =
+        `${names.length} materials found: ${names.join(' | ')}`;
 
-          // Hide camera lenses (confirmed)
-          if (name === 'glass.002' || name === 'lensinglass') {
-            child.visible = false;
-            return;
-          }
+      const grid = document.getElementById('grid');
 
-          // Recolor orange body → titanium dark
-          const bodyNames = ['basecolor.001', 'backpanel.001', 'material.005', 'material.006', 'material.007'];
-          if (bodyNames.includes(name)) {
-            mat.color.set(0x1c1c1e);
-            mat.metalness = 0.7;
-            mat.roughness = 0.25;
-          }
+      names.forEach((targetName, i) => {
+        const scene = gltf.scene.clone(true);
 
-          // Metal frame → polished titanium
-          if (name === 'metalframe.002' || name === 'metal.001') {
-            mat.color.set(0x3a3a3c);
-            mat.metalness = 0.95;
-            mat.roughness = 0.1;
-          }
+        // Video texture per instance
+        const videoTex = new THREE.VideoTexture(vid);
+        videoTex.minFilter = THREE.LinearFilter;
+        videoTex.magFilter = THREE.LinearFilter;
+        videoTex.encoding = THREE.sRGBEncoding;
+
+        // Apply video ONLY to target material
+        scene.traverse(child => {
+          if (!child.isMesh) return;
+          const isArray = Array.isArray(child.material);
+          const mats = isArray ? child.material : [child.material];
+          const newMats = mats.map(mat => {
+            if (!mat) return mat;
+            if (mat.name === targetName) {
+              return new THREE.MeshBasicMaterial({
+                map: videoTex,
+                side: THREE.DoubleSide,
+                toneMapped: false,
+              });
+            }
+            return mat.clone ? mat.clone() : mat;
+          });
+          child.material = isArray ? newMats : newMats[0];
         });
+
+        // +PI/2 = front facing (confirmed: model loads with right side toward camera)
+        scene.rotation.set(0, Math.PI / 2, 0);
+        scene.scale.setScalar(1.5);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 280;
+        canvas.height = 480;
+
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.setSize(280, 480);
+        renderer.setClearColor(0x1a1a1a, 1);
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+
+        const cam = new THREE.PerspectiveCamera(38, 280 / 480, 0.01, 100);
+        cam.position.set(0, 0, 4.5);
+
+        const threeScene = new THREE.Scene();
+        threeScene.background = new THREE.Color(0x1a1a1a);
+        threeScene.add(new THREE.AmbientLight(0xffffff, 1.5));
+        const key = new THREE.DirectionalLight(0xffffff, 2.2);
+        key.position.set(3, 5, 5);
+        threeScene.add(key);
+        threeScene.add(scene);
+
+        (function render() {
+          requestAnimationFrame(render);
+          renderer.render(threeScene, cam);
+        })();
+
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.appendChild(canvas);
+
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.innerHTML = `<span class="num">#${i + 1}</span> ${targetName}`;
+        cell.appendChild(label);
+        grid.appendChild(cell);
       });
-
-      phoneGroup.add(model);
-
-      document.getElementById('loading').style.opacity = '0';
-      setTimeout(() => document.getElementById('loading')?.remove(), 500);
-
-      vid.load();
-      vid.play().catch(() => {});
-
-      gsap.registerPlugin(ScrollTrigger);
-      const tl = gsap.timeline({
-        scrollTrigger: { trigger: 'body', start: 'top top', end: 'bottom bottom', scrub: 1.5 }
-      });
-
-      // Phase 1: face-on, center
-      tl.to(phoneGroup.rotation, { y: Math.PI / 2, x: 0, duration: 1 }, 0)
-        .to(phoneGroup.position, { x: 0, duration: 1 }, 0);
-
-      // Phase 2: 360 spin
-      tl.to(phoneGroup.rotation, { y: Math.PI / 2 + Math.PI * 2, duration: 1 }, 1);
-
-      // Phase 3: tilt, slide left
-      tl.to(phoneGroup.rotation, { y: Math.PI / 2 + 0.35, x: -0.1, duration: 1 }, 2)
-        .to(phoneGroup.position, { x: -1.2, duration: 1 }, 2);
 
     }, null, (err) => {
-      console.error(err);
-      document.getElementById('loading').style.opacity = '0';
-    });
-
-    ['click', 'touchstart'].forEach(e =>
-      document.addEventListener(e, () => vid.play().catch(() => {}), { once: true })
-    );
-
-    (function render() { requestAnimationFrame(render); renderer.render(scene, camera); })();
-
-    window.addEventListener('resize', () => {
-      camera.aspect = innerWidth / innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(innerWidth, innerHeight);
+      document.getElementById('status').textContent = 'GLB load error: ' + err.message;
     });
   </script>
 </body>
