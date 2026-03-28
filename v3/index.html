@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>star.io — v3</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 400vh;
+      background: #080808;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+    }
+
+    /* Debug overlay — lists all mesh/material names after load */
+    #debug {
+      position: fixed;
+      top: 1rem; left: 1rem;
+      z-index: 10;
+      background: rgba(0,0,0,0.75);
+      color: #0f0;
+      font-family: monospace;
+      font-size: 11px;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      max-width: 360px;
+      max-height: 80vh;
+      overflow-y: auto;
+      pointer-events: none;
+      display: none; /* toggle to block to enable */
+    }
+
+    #loading {
+      position: fixed; inset: 0;
+      background: #080808;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 20;
+      transition: opacity 0.5s ease;
+    }
+    #loading .spinner {
+      width: 36px; height: 36px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: rgba(255,255,255,0.6);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Content overlay */
+    #content {
+      position: relative;
+      z-index: 1;
+      pointer-events: none;
+    }
+    #content a { pointer-events: auto; }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-end;
+      padding: 0 5rem 8rem;
+    }
+    .hero .text-block {
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 16px;
+      padding: 2.5rem 3rem;
+      max-width: 560px;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.08;
+    }
+    .hero p {
+      margin-top: 0.85rem;
+      font-size: 1rem;
+      color: rgba(255,255,255,0.55);
+    }
+    .cta-button {
+      display: inline-block;
+      margin-top: 1.75rem;
+      padding: 0.85rem 2.25rem;
+      background: #fff;
+      color: #080808;
+      text-decoration: none;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .cta-button:hover { transform: scale(1.04); box-shadow: 0 0 30px rgba(255,255,255,0.1); }
+
+    #phone-video {
+      position: fixed;
+      width: 1px; height: 1px;
+      opacity: 0; top: 0; left: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loading"><div class="spinner"></div></div>
+  <div id="debug"></div>
+
+  <video id="phone-video"
+    src="https://cdn.star.io/videos/screen-recording.mp4"
+    autoplay muted loop playsinline
+    crossorigin="anonymous">
+  </video>
+
+  <canvas id="canvas"></canvas>
+
+  <div id="content">
+    <section class="hero">
+      <div class="text-block">
+        <h1>The Gaming &amp; Payments Platform</h1>
+        <p>Powering the next generation of iGaming infrastructure.</p>
+        <a href="mailto:hello@star.io" class="cta-button">Book a Demo →</a>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <script>
+    // ── Scene ──
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x080808);
+
+    const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.01, 100);
+    camera.position.set(0, 0, 4.5);
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: document.getElementById('canvas'),
+      antialias: true,
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x080808, 1);
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    renderer.physicallyCorrectLights = true;
+
+    // ── Lights ──
+    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+
+    const key = new THREE.DirectionalLight(0xffffff, 2.2);
+    key.position.set(3, 5, 5);
+    scene.add(key);
+
+    const fill = new THREE.DirectionalLight(0xb0c8ff, 0.8);
+    fill.position.set(-4, 0, -2);
+    scene.add(fill);
+
+    const rim = new THREE.DirectionalLight(0xffffff, 0.6);
+    rim.position.set(0, -4, -4);
+    scene.add(rim);
+
+    // ── Video texture ──
+    const vid = document.getElementById('phone-video');
+    const videoTex = new THREE.VideoTexture(vid);
+    videoTex.minFilter = THREE.LinearFilter;
+    videoTex.magFilter = THREE.LinearFilter;
+    videoTex.encoding = THREE.sRGBEncoding;
+
+    // ── Phone group ──
+    const phoneGroup = new THREE.Group();
+    phoneGroup.position.set(1.0, 0, 0);
+    phoneGroup.rotation.set(0.1, -0.4, 0);
+    scene.add(phoneGroup);
+
+    // ── Load GLB ──
+    const debugEl = document.getElementById('debug');
+    const loader = new THREE.GLTFLoader();
+
+    loader.load(
+      'https://cdn.star.io/models/iphone17.glb',
+      (gltf) => {
+        const model = gltf.scene;
+        model.scale.setScalar(1.6);
+
+        // ── Layer analysis ──
+        // Known layers (from GLB inspection):
+        //   screen.001    — the screen panel (apply video texture)
+        //   glass.002     — front glass, occludes screen → HIDE
+        //   lensinglass   — camera lens glass → keep
+        //   black.002     — bezels
+        //   basecolor.001 — body color panel (orange in model → recolor titanium)
+        //   metalframe.002— metal rails
+        //   metaL.001     — metal accents
+        //   backpanel.001 — back glass (orange → recolor)
+        //   Material.005/006/007 — misc body (orange → recolor)
+        //   gray.001      — internal gray parts
+
+        const debugLines = [];
+
+        model.traverse((child) => {
+          if (!child.isMesh) return;
+
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach((mat) => {
+            if (!mat) return;
+            const name = (mat.name || '').toLowerCase();
+            debugLines.push(`${name} | metalness:${mat.metalness?.toFixed(2)} roughness:${mat.roughness?.toFixed(2)}`);
+
+            // ── Screen: video texture, render first ──
+            if (name === 'screen.001') {
+              const screenMat = new THREE.MeshBasicMaterial({
+                map: videoTex,
+                side: THREE.FrontSide,
+                toneMapped: false,
+              });
+              if (Array.isArray(child.material)) {
+                const idx = child.material.indexOf(mat);
+                child.material[idx] = screenMat;
+              } else {
+                child.material = screenMat;
+              }
+              child.renderOrder = 0;
+              return;
+            }
+
+            // ── Glass: hide — it sits on top of screen and occludes it ──
+            if (name === 'glass.002') {
+              child.visible = false;
+              return;
+            }
+
+            // ── Recolor orange/default body → titanium dark ──
+            const recolorNames = [
+              'basecolor.001', 'backpanel.001',
+              'material.005', 'material.006', 'material.007'
+            ];
+            if (recolorNames.includes(name)) {
+              mat.color.set(0x1c1c1e);
+              mat.metalness = 0.7;
+              mat.roughness = 0.25;
+            }
+
+            // ── Metal frame → polished titanium ──
+            if (name === 'metalframe.002' || name === 'metal.001') {
+              mat.color.set(0x3a3a3c);
+              mat.metalness = 0.95;
+              mat.roughness = 0.1;
+            }
+          });
+        });
+
+        // Show debug overlay (set display:block above to enable)
+        debugEl.innerHTML = debugLines.map(l => `<div>${l}</div>`).join('');
+
+        phoneGroup.add(model);
+
+        // ── Hide loader ──
+        const loading = document.getElementById('loading');
+        loading.style.opacity = '0';
+        setTimeout(() => loading.remove(), 500);
+
+        // ── Start video ──
+        vid.load();
+        vid.play().catch(() => {});
+
+        // ── Scroll animation ──
+        gsap.registerPlugin(ScrollTrigger);
+
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: 'body',
+            start: 'top top',
+            end: 'bottom bottom',
+            scrub: 1.5
+          }
+        });
+
+        // Phase 1 (0–33%): face-on, center
+        tl.to(phoneGroup.rotation, { y: 0, x: 0, duration: 1 }, 0)
+          .to(phoneGroup.position, { x: 0, duration: 1 }, 0);
+
+        // Phase 2 (33–66%): 360° spin
+        tl.to(phoneGroup.rotation, { y: Math.PI * 2, duration: 1 }, 1);
+
+        // Phase 3 (66–100%): tilt back, slide left
+        tl.to(phoneGroup.rotation, { y: 0.4, x: -0.1, duration: 1 }, 2)
+          .to(phoneGroup.position, { x: -1.0, duration: 1 }, 2);
+      },
+      null,
+      (err) => {
+        console.error('GLB error:', err);
+        const loading = document.getElementById('loading');
+        loading.style.opacity = '0';
+        setTimeout(() => loading.remove(), 500);
+      }
+    );
+
+    // Fallback video start on interaction
+    ['click', 'touchstart'].forEach(e =>
+      document.addEventListener(e, () => vid.play().catch(() => {}), { once: true })
+    );
+
+    // ── Render loop ──
+    (function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    })();
+
+    // ── Resize ──
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
