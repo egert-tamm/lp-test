@@ -187,22 +187,64 @@
 
     // Three.js setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x080808);
     const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.01, 100);
     camera.position.set(0, 0, 4.5);
-    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true, alpha: true });
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.4;
     renderer.physicallyCorrectLights = true;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-    const key = new THREE.DirectionalLight(0xffffff, 2.2);
-    key.position.set(3, 5, 5); scene.add(key);
-    const fill = new THREE.DirectionalLight(0xb0c8ff, 0.8);
-    fill.position.set(-4, 0, -2); scene.add(fill);
+    // Gradient background via CSS (renderer alpha:true lets it show through)
+    document.getElementById('canvas').style.background =
+      'radial-gradient(ellipse at 60% 40%, #0d1f2d 0%, #080808 60%, #050505 100%)';
+
+    // Lights — cinematic 3-point + rim
+    scene.add(new THREE.AmbientLight(0x112233, 1.0));
+    const key = new THREE.DirectionalLight(0xffffff, 3.0);
+    key.position.set(4, 6, 5); key.castShadow = true; scene.add(key);
+    const fill = new THREE.DirectionalLight(0x4488ff, 1.2);
+    fill.position.set(-5, 1, -3); scene.add(fill);
+    const rim = new THREE.DirectionalLight(0x00ffcc, 0.6);
+    rim.position.set(0, -4, -5); scene.add(rim);
+    // Moving point light for specular glints on metal
+    const glint = new THREE.PointLight(0xffffff, 2.5, 8);
+    glint.position.set(2, 2, 3); scene.add(glint);
+
+    // Floating particles
+    (function addParticles() {
+      const count = 220;
+      const positions = new Float32Array(count * 3);
+      const speeds    = new Float32Array(count);
+      for (let i = 0; i < count; i++) {
+        positions[i*3]   = (Math.random() - 0.5) * 12;
+        positions[i*3+1] = (Math.random() - 0.5) * 12;
+        positions[i*3+2] = (Math.random() - 0.5) * 8;
+        speeds[i] = 0.0003 + Math.random() * 0.0005;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const mat = new THREE.PointsMaterial({ color: 0x336688, size: 0.035, sizeAttenuation: true, transparent: true, opacity: 0.55 });
+      const pts = new THREE.Points(geo, mat);
+      scene.add(pts);
+      // Store for animation
+      pts.userData.speeds = speeds;
+      pts.userData.positions = positions;
+      scene.userData.particles = pts;
+    })();
+
+    // Screen glow plane (sits just in front of screen.001)
+    const glowGeo = new THREE.PlaneGeometry(0.72, 1.55);
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: 0x00aaff, transparent: true, opacity: 0.0, side: THREE.FrontSide, depthWrite: false
+    });
+    const glowPlane = new THREE.Mesh(glowGeo, glowMat);
+    glowPlane.position.set(0, 0, 0.01);
+    scene.userData.glowPlane = glowPlane;
 
     const vid = document.getElementById('phone-video');
     const videoTex = new THREE.VideoTexture(vid);
@@ -279,6 +321,17 @@
         });
       });
       phoneGroup.add(model);
+
+      // Attach glow plane to phone screen face
+      const gp = scene.userData.glowPlane;
+      if (gp) phoneGroup.add(gp);
+
+      // Pulse glow opacity
+      (function pulseGlow() {
+        requestAnimationFrame(pulseGlow);
+        const t = Date.now() / 1000;
+        gp.material.opacity = 0.04 + Math.sin(t * 1.2) * 0.02;
+      })();
 
       // Re-apply UVs when video dimensions are known
       if (!vid.videoWidth) {
@@ -371,8 +424,50 @@
       dots[i]?.classList.add('active');
     }
 
+    // Mouse parallax
+    let mouseX = 0, mouseY = 0, targetMX = 0, targetMY = 0;
+    window.addEventListener('mousemove', e => {
+      targetMX = (e.clientX / innerWidth  - 0.5) * 2;
+      targetMY = (e.clientY / innerHeight - 0.5) * 2;
+    });
+
+    // Glint orbit
+    let glintAngle = 0;
+
     // Render loop
-    (function render() { requestAnimationFrame(render); renderer.render(scene, camera); })();
+    let lastTime = 0;
+    (function render(now) {
+      requestAnimationFrame(render);
+      const dt = Math.min((now - lastTime) / 1000, 0.05); lastTime = now;
+
+      // Smooth mouse
+      mouseX += (targetMX - mouseX) * 0.06;
+      mouseY += (targetMY - mouseY) * 0.06;
+
+      // Parallax: nudge phoneGroup slightly toward mouse
+      if (phoneGroup) {
+        phoneGroup.rotation.y += mouseX * 0.04;
+        phoneGroup.rotation.x -= mouseY * 0.02;
+      }
+
+      // Orbit glint light around phone
+      glintAngle += dt * 0.4;
+      glint.position.set(Math.sin(glintAngle) * 3.5, Math.cos(glintAngle * 0.7) * 2, 3);
+
+      // Animate particles drift upward
+      const pts = scene.userData.particles;
+      if (pts) {
+        const pos = pts.userData.positions;
+        const spd = pts.userData.speeds;
+        for (let i = 0; i < spd.length; i++) {
+          pos[i*3+1] += spd[i];
+          if (pos[i*3+1] > 6) pos[i*3+1] = -6;
+        }
+        pts.geometry.attributes.position.needsUpdate = true;
+      }
+
+      renderer.render(scene, camera);
+    })(0);
 
     window.addEventListener('resize', () => {
       camera.aspect = innerWidth / innerHeight;
