@@ -7,29 +7,21 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #111; color: #fff; font-family: monospace; padding: 1rem; }
-    h2 { margin-bottom: 0.5rem; font-size: 0.9rem; color: #888; }
+    #build { background:#ff0;color:#000;font-size:1.1rem;font-weight:900;padding:0.4rem 0.8rem;margin-bottom:0.5rem;border-radius:6px; }
+    h2 { margin-bottom: 0.5rem; font-size: 0.85rem; color: #888; }
     #status { margin-bottom: 1rem; color: #0f0; font-size: 0.75rem; word-break: break-all; }
-    #grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-    }
+    #grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
     .cell { text-align: center; }
     .cell canvas { width: 100% !important; height: auto !important; display: block; background: #1a1a1a; border-radius: 6px; }
     .label { margin-top: 0.3rem; font-size: 0.65rem; color: #0f0; word-break: break-all; }
     .label .num { color: #ff0; font-size: 0.85rem; font-weight: bold; }
-    video {
-      position: fixed; width: 1px; height: 1px;
-      opacity: 0; top: 0; left: 0; pointer-events: none;
-    }
+    video { position: fixed; width: 1px; height: 1px; opacity: 0; top: 0; left: 0; pointer-events: none; }
   </style>
 </head>
 <body>
-  <div style="background:#ff0;color:#000;font-size:1.4rem;font-weight:900;padding:0.5rem 1rem;margin-bottom:0.75rem;border-radius:6px;letter-spacing:0.05em;">
-    BUILD v41 · SHARED RENDERER · 2026-03-28 12:15 UTC
-  </div>
-  <h2>GLB Layer Debug — phone front-facing (+PI/2), video on each material separately. Tell me which number shows video on the SCREEN.</h2>
-  <div id="status">Loading GLB…</div>
+  <div id="build">BUILD v43 · FRESH GLB PER CELL · 2026-03-28</div>
+  <h2>Each phone = independent GLB parse. Video on one material only per cell.</h2>
+  <div id="status">Fetching GLB…</div>
   <div id="grid"></div>
 
   <video id="src-vid"
@@ -40,113 +32,126 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script>
+    const GLB_URL = 'https://cdn.star.io/models/iphone17.glb';
+
     const vid = document.getElementById('src-vid');
     vid.play().catch(() => {});
-    document.addEventListener('click', () => vid.play().catch(() => {}), { once: true });
-    document.addEventListener('touchstart', () => vid.play().catch(() => {}), { once: true });
+    ['click','touchstart'].forEach(e => document.addEventListener(e, () => vid.play().catch(()=>{}), {once:true}));
 
-    const loader = new THREE.GLTFLoader();
-    loader.load('https://cdn.star.io/models/iphone17.glb', (gltf) => {
+    // Shared single WebGL renderer (blit to 2D canvas)
+    const sharedCanvas = document.createElement('canvas');
+    sharedCanvas.width = 280; sharedCanvas.height = 480;
+    const sharedRenderer = new THREE.WebGLRenderer({ canvas: sharedCanvas, antialias: true, preserveDrawingBuffer: true });
+    sharedRenderer.setSize(280, 480);
+    sharedRenderer.outputEncoding = THREE.sRGBEncoding;
+    sharedRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+    sharedRenderer.toneMappingExposure = 1.2;
 
-      // Collect all unique material names
-      const matNames = new Set();
-      gltf.scene.traverse(child => {
-        if (!child.isMesh) return;
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach(m => { if (m && m.name) matNames.add(m.name); });
+    const cells = [];
+    (function renderLoop() {
+      requestAnimationFrame(renderLoop);
+      cells.forEach(({ scene3, cam, ctx2d }) => {
+        sharedRenderer.render(scene3, cam);
+        ctx2d.drawImage(sharedCanvas, 0, 0);
       });
+    })();
 
-      const names = [...matNames];
-      document.getElementById('status').textContent =
-        `${names.length} materials found: ${names.join(' | ')}`;
+    // Step 1: fetch GLB as ArrayBuffer once (browser caches it)
+    fetch(GLB_URL)
+      .then(r => r.arrayBuffer())
+      .then(buffer => {
+        // Step 2: parse once to get material name list
+        const probe = new THREE.GLTFLoader();
+        probe.parse(buffer.slice(0), '', (gltf) => {
+          const matNames = new Set();
+          gltf.scene.traverse(child => {
+            if (!child.isMesh) return;
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(m => { if (m && m.name) matNames.add(m.name); });
+          });
+          const names = [...matNames];
+          document.getElementById('status').textContent =
+            `${names.length} materials: ${names.join(' | ')}`;
 
+          // Step 3: for each material, parse GLB fresh → independent materials
+          spawnCells(buffer, names);
+        }, err => {
+          document.getElementById('status').textContent = 'Parse error: ' + err;
+        });
+      })
+      .catch(e => document.getElementById('status').textContent = 'Fetch error: ' + e);
+
+    function spawnCells(buffer, names) {
       const grid = document.getElementById('grid');
+      let spawned = 0;
 
       names.forEach((targetName, i) => {
-        const scene = gltf.scene.clone(true);
+        const loader = new THREE.GLTFLoader();
+        // Each parse gets a copy of the buffer → fully independent material objects
+        loader.parse(buffer.slice(0), '', (gltf) => {
+          const model = gltf.scene;
+          model.rotation.set(0, Math.PI / 2, 0); // front-facing
+          model.scale.setScalar(1.5);
 
-        // Video texture per instance
-        const videoTex = new THREE.VideoTexture(vid);
-        videoTex.minFilter = THREE.LinearFilter;
-        videoTex.magFilter = THREE.LinearFilter;
-        videoTex.encoding = THREE.sRGBEncoding;
+          // Fresh VideoTexture per cell
+          const videoTex = new THREE.VideoTexture(vid);
+          videoTex.minFilter = THREE.LinearFilter;
+          videoTex.magFilter = THREE.LinearFilter;
+          videoTex.encoding = THREE.sRGBEncoding;
 
-        // Apply video ONLY to target material
-        scene.traverse(child => {
-          if (!child.isMesh) return;
-          const isArray = Array.isArray(child.material);
-          const mats = isArray ? child.material : [child.material];
-          const newMats = mats.map(mat => {
-            if (!mat) return mat;
-            if (mat.name === targetName) {
-              return new THREE.MeshBasicMaterial({
-                map: videoTex,
-                side: THREE.DoubleSide,
-                toneMapped: false,
-              });
-            }
-            return mat.clone ? mat.clone() : mat;
+          model.traverse(child => {
+            if (!child.isMesh) return;
+            const isArr = Array.isArray(child.material);
+            const mats = isArr ? child.material : [child.material];
+            const newMats = mats.map(mat => {
+              if (!mat) return mat;
+              if (mat.name === targetName) {
+                return new THREE.MeshBasicMaterial({
+                  map: videoTex,
+                  side: THREE.DoubleSide,
+                  toneMapped: false,
+                });
+              }
+              // All other materials: keep as-is (no shared reference issue since fresh parse)
+              return mat;
+            });
+            child.material = isArr ? newMats : newMats[0];
           });
-          child.material = isArray ? newMats : newMats[0];
-        });
 
-        // +PI/2 = front facing (confirmed: model loads with right side toward camera)
-        scene.rotation.set(0, Math.PI / 2, 0);
-        scene.scale.setScalar(1.5);
+          const scene3 = new THREE.Scene();
+          scene3.background = new THREE.Color(0x1a1a1a);
+          scene3.add(new THREE.AmbientLight(0xffffff, 1.5));
+          const key = new THREE.DirectionalLight(0xffffff, 2.2);
+          key.position.set(3, 5, 5);
+          scene3.add(key);
+          scene3.add(model);
 
-        // Use 2D canvas — copy from shared WebGL renderer each frame
-        const canvas = document.createElement('canvas');
-        canvas.width = 280;
-        canvas.height = 480;
-        const ctx2d = canvas.getContext('2d');
+          const cam = new THREE.PerspectiveCamera(38, 280 / 480, 0.01, 100);
+          cam.position.set(0, 0, 4.5);
 
-        const cam = new THREE.PerspectiveCamera(38, 280 / 480, 0.01, 100);
-        cam.position.set(0, 0, 4.5);
+          // 2D canvas for this cell
+          const cellCanvas = document.createElement('canvas');
+          cellCanvas.width = 280; cellCanvas.height = 480;
+          const ctx2d = cellCanvas.getContext('2d');
+          cells.push({ scene3, cam, ctx2d });
 
-        const threeScene = new THREE.Scene();
-        threeScene.background = new THREE.Color(0x1a1a1a);
-        threeScene.add(new THREE.AmbientLight(0xffffff, 1.5));
-        const key = new THREE.DirectionalLight(0xffffff, 2.2);
-        key.position.set(3, 5, 5);
-        threeScene.add(key);
-        threeScene.add(scene);
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.appendChild(cellCanvas);
+          const label = document.createElement('div');
+          label.className = 'label';
+          label.innerHTML = `<span class="num">#${i + 1}</span> ${targetName}`;
+          cell.appendChild(label);
+          grid.appendChild(cell);
 
-        // Register for shared render loop
-        window._debugCells = window._debugCells || [];
-        window._debugCells.push({ threeScene, cam, ctx2d });
-
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.appendChild(canvas);
-
-        const label = document.createElement('div');
-        label.className = 'label';
-        label.innerHTML = `<span class="num">#${i + 1}</span> ${targetName}`;
-        cell.appendChild(label);
-        grid.appendChild(cell);
+          spawned++;
+          if (spawned === names.length) {
+            document.getElementById('status').textContent =
+              `✅ All ${names.length} cells loaded. Tap screen to start video.`;
+          }
+        }, err => console.error('cell parse error', targetName, err));
       });
-
-      // Shared single WebGL renderer — renders each scene sequentially, blits to 2D canvas
-      const sharedCanvas = document.createElement('canvas');
-      sharedCanvas.width = 280; sharedCanvas.height = 480;
-      const sharedRenderer = new THREE.WebGLRenderer({ canvas: sharedCanvas, antialias: true, preserveDrawingBuffer: true });
-      sharedRenderer.setSize(280, 480);
-      sharedRenderer.outputEncoding = THREE.sRGBEncoding;
-      sharedRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-      sharedRenderer.toneMappingExposure = 1.2;
-
-      (function renderLoop() {
-        requestAnimationFrame(renderLoop);
-        const cells = window._debugCells || [];
-        cells.forEach(({ threeScene, cam, ctx2d }) => {
-          sharedRenderer.render(threeScene, cam);
-          ctx2d.drawImage(sharedCanvas, 0, 0);
-        });
-      })();
-
-    }, null, (err) => {
-      document.getElementById('status').textContent = 'GLB load error: ' + err.message;
-    });
+    }
   </script>
 </body>
 </html>
