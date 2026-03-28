@@ -257,11 +257,11 @@
             const mat = child.material;
             if (!mat) return;
 
-            // Screen → video texture
+            // Screen → video texture (DoubleSide because model is flipped 180°)
             if (mat.name === 'screen.001') {
               child.material = new THREE.MeshBasicMaterial({
                 map: videoTexture,
-                side: THREE.FrontSide
+                side: THREE.DoubleSide
               });
             }
 
