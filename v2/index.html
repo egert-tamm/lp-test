@@ -275,12 +275,9 @@
               child.renderOrder = 2;
             }
 
-            // Glass panel → make nearly invisible so screen shows through
+            // Glass panel — hide it entirely, it blocks the screen
             if (name === 'glass.002') {
-              mat.transparent = true;
-              mat.opacity = 0.08;
-              mat.depthWrite = false;
-              child.renderOrder = 3;
+              child.visible = false;
             }
 
             // Recolor orange body → dark titanium
