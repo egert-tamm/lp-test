@@ -147,7 +147,13 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    #phone-video { display: none; }
+    #phone-video {
+      position: fixed;
+      width: 1px; height: 1px;
+      opacity: 0;
+      pointer-events: none;
+      top: 0; left: 0;
+    }
   </style>
 </head>
 <body>
@@ -258,8 +264,10 @@
             const mat = child.material;
             if (!mat) return;
 
-            // Screen → video texture (DoubleSide because model is flipped 180°)
-            if (mat.name === 'screen.001') {
+            const name = (mat.name || '').toLowerCase();
+
+            // Screen → video texture — match any mesh that looks like a screen
+            if (name.includes('screen')) {
               child.material = new THREE.MeshBasicMaterial({
                 map: videoTexture,
                 side: THREE.DoubleSide
@@ -267,8 +275,8 @@
             }
 
             // Recolor orange body materials → dark titanium
-            const orangeNames = ['basecolor.001', 'metalframe.002', 'backpanel.001', 'Material.005', 'Material.006', 'Material.007'];
-            if (orangeNames.includes(mat.name)) {
+            const orangeNames = ['basecolor.001', 'metalframe.002', 'backpanel.001', 'material.005', 'material.006', 'material.007'];
+            if (orangeNames.includes(name)) {
               mat.color.set(0x1c1c1e);
               mat.metalness = 0.85;
               mat.roughness = 0.15;
@@ -308,7 +316,8 @@
           .to(phoneGroup.position, { x: -1.2, duration: 1 }, 2)
           .to(phoneGroup.scale, { x: 1, y: 1, z: 1, duration: 1 }, 2);
 
-        // Start video
+        // Force video playback — must be in DOM and visible (not display:none) for iOS
+        videoEl.load();
         videoEl.play().catch(() => {});
       },
       (xhr) => {
