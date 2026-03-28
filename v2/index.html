@@ -5,11 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>star.io — The Gaming &amp; Payments Platform</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
       height: 400vh;
@@ -22,10 +18,8 @@
 
     #canvas {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       z-index: 0;
     }
 
@@ -35,9 +29,7 @@
       pointer-events: none;
     }
 
-    #content a, #content button {
-      pointer-events: auto;
-    }
+    #content a, #content button { pointer-events: auto; }
 
     section {
       min-height: 100vh;
@@ -54,7 +46,7 @@
     }
 
     .hero .text-block {
-      background: rgba(0, 0, 0, 0.45);
+      background: rgba(0,0,0,0.45);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-radius: 16px;
@@ -75,7 +67,7 @@
     .hero p {
       margin-top: 1rem;
       font-size: 1.1rem;
-      color: rgba(255, 255, 255, 0.6);
+      color: rgba(255,255,255,0.6);
     }
 
     .mid {
@@ -85,7 +77,7 @@
     }
 
     .mid .text-block {
-      background: rgba(0, 0, 0, 0.45);
+      background: rgba(0,0,0,0.45);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-radius: 16px;
@@ -109,9 +101,7 @@
       flex-direction: column;
     }
 
-    .cta-section .text-block {
-      text-align: center;
-    }
+    .cta-section .text-block { text-align: center; }
 
     .cta-button {
       display: inline-block;
@@ -129,24 +119,46 @@
 
     .cta-button:hover {
       transform: scale(1.05);
-      box-shadow: 0 0 40px rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 40px rgba(255,255,255,0.15);
     }
 
     @keyframes fadeInUp {
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    #phone-video {
-      display: none;
+    #loading {
+      position: fixed;
+      inset: 0;
+      background: #080808;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: opacity 0.5s ease;
     }
+
+    #loading .spinner {
+      width: 40px; height: 40px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: rgba(255,255,255,0.6);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #phone-video { display: none; }
   </style>
 </head>
 <body>
 
-  <video id="phone-video" src="https://cdn.star.io/videos/screen-recording.mp4" autoplay muted loop playsinline crossorigin="anonymous"></video>
+  <div id="loading"><div class="spinner"></div></div>
+
+  <video id="phone-video"
+    src="https://cdn.star.io/videos/screen-recording.mp4"
+    autoplay muted loop playsinline
+    crossorigin="anonymous">
+  </video>
 
   <canvas id="canvas"></canvas>
 
@@ -172,137 +184,132 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
   <script>
-    // ─── Scene Setup ───
+    // ─── Scene ───
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x080808);
 
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.z = 5;
+    const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.01, 100);
+    camera.position.set(0, 0, 4);
 
     const renderer = new THREE.WebGLRenderer({
       canvas: document.getElementById('canvas'),
-      antialias: true
+      antialias: true,
+      alpha: false
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.4;
+    renderer.physicallyCorrectLights = true;
 
     // ─── Lighting ───
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffeedd, 2.0);
-    dirLight.position.set(3, 5, 4);
-    scene.add(dirLight);
+    const keyLight = new THREE.DirectionalLight(0xfff5ee, 2.5);
+    keyLight.position.set(2, 4, 5);
+    scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0xaaccff, 1.2);
-    fillLight.position.set(-3, 2, -2);
+    const fillLight = new THREE.DirectionalLight(0xaac8ff, 1.0);
+    fillLight.position.set(-4, 1, -2);
     scene.add(fillLight);
 
-    // ─── Phone Model ───
-    const phone = new THREE.Group();
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    rimLight.position.set(0, -3, -3);
+    scene.add(rimLight);
 
-    // Body
-    const bodyGeo = new THREE.BoxGeometry(1.2, 2.4, 0.12);
-    // Round edges slightly with bevel (approximate with standard box for r128 compat)
-    const bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x3a3a3a,
-      metalness: 0.6,
-      roughness: 0.3
-    });
-    const body = new THREE.Mesh(bodyGeo, bodyMat);
-    phone.add(body);
-
-    // Screen bezel frame (subtle lighter edge)
-    const bezelGeo = new THREE.PlaneGeometry(1.08, 2.0);
-    const bezelMat = new THREE.MeshStandardMaterial({
-      color: 0x111111,
-      metalness: 0.5,
-      roughness: 0.4
-    });
-    const bezel = new THREE.Mesh(bezelGeo, bezelMat);
-    bezel.position.z = 0.062;
-    phone.add(bezel);
-
-    // Screen with video texture
+    // ─── Video Texture ───
     const videoEl = document.getElementById('phone-video');
     const videoTexture = new THREE.VideoTexture(videoEl);
     videoTexture.minFilter = THREE.LinearFilter;
     videoTexture.magFilter = THREE.LinearFilter;
+    videoTexture.encoding = THREE.sRGBEncoding;
 
-    const screenGeo = new THREE.PlaneGeometry(1.0, 1.9);
-    const screenMat = new THREE.MeshBasicMaterial({ map: videoTexture });
-    const screen = new THREE.Mesh(screenGeo, screenMat);
-    screen.position.z = 0.065;
-    phone.add(screen);
+    // ─── Wrapper group for scroll animation ───
+    const phoneGroup = new THREE.Group();
+    phoneGroup.position.x = 1.2;
+    phoneGroup.rotation.y = -0.5;
+    phoneGroup.rotation.x = 0.15;
+    scene.add(phoneGroup);
 
-    // Camera notch
-    const notchGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.01, 16);
-    const notchMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, metalness: 0.9, roughness: 0.1 });
-    const notch = new THREE.Mesh(notchGeo, notchMat);
-    notch.rotation.x = Math.PI / 2;
-    notch.position.set(0, 0.85, 0.07);
-    phone.add(notch);
+    // ─── Load GLB ───
+    const loader = new THREE.GLTFLoader();
+    loader.load(
+      'https://cdn.star.io/models/iphone17.glb',
+      (gltf) => {
+        const model = gltf.scene;
 
-    // Home indicator
-    const homeGeo = new THREE.BoxGeometry(0.3, 0.015, 0.01);
-    const homeMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
-    const homeIndicator = new THREE.Mesh(homeGeo, homeMat);
-    homeIndicator.position.set(0, -1.05, 0.07);
-    phone.add(homeIndicator);
+        // The Sketchfab model is scaled via its hierarchy — fits roughly 1.6 units tall
+        // Scale up to fill the viewport nicely
+        model.scale.set(1.5, 1.5, 1.5);
 
-    // Side buttons (power + volume)
-    const buttonGeo = new THREE.BoxGeometry(0.02, 0.2, 0.06);
-    const buttonMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.9, roughness: 0.15 });
+        // Replace screen material with video texture
+        model.traverse((child) => {
+          if (child.isMesh) {
+            const mat = child.material;
+            if (mat && mat.name === 'screen.001') {
+              child.material = new THREE.MeshBasicMaterial({
+                map: videoTexture,
+                side: THREE.FrontSide
+              });
+            }
+          }
+        });
 
-    const powerBtn = new THREE.Mesh(buttonGeo, buttonMat);
-    powerBtn.position.set(0.61, 0.3, 0);
-    phone.add(powerBtn);
+        phoneGroup.add(model);
 
-    const volUp = new THREE.Mesh(buttonGeo, buttonMat);
-    volUp.position.set(-0.61, 0.5, 0);
-    phone.add(volUp);
+        // Hide loader
+        const loading = document.getElementById('loading');
+        loading.style.opacity = '0';
+        setTimeout(() => loading.remove(), 500);
 
-    const volDown = new THREE.Mesh(buttonGeo, buttonMat);
-    volDown.position.set(-0.61, 0.2, 0);
-    phone.add(volDown);
+        // ─── Scroll Animation ───
+        gsap.registerPlugin(ScrollTrigger);
 
-    // Initial state
-    phone.rotation.x = 0.3;
-    phone.rotation.y = -0.6;
-    phone.position.x = 1.5;
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: 'body',
+            start: 'top top',
+            end: 'bottom bottom',
+            scrub: 1.2
+          }
+        });
 
-    scene.add(phone);
+        // Phase 1 (0–33%): rotate to face camera, slide to center
+        tl.to(phoneGroup.rotation, { y: 0, x: 0, duration: 1 }, 0)
+          .to(phoneGroup.position, { x: 0, duration: 1 }, 0);
 
-    // ─── Scroll Animation ───
-    gsap.registerPlugin(ScrollTrigger);
+        // Phase 2 (33–66%): slow spin + slight zoom
+        tl.to(phoneGroup.rotation, { y: Math.PI * 2, duration: 1 }, 1)
+          .to(phoneGroup.scale, { x: 1.15, y: 1.15, z: 1.15, duration: 1 }, 1);
 
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: "body",
-        start: "top top",
-        end: "bottom bottom",
-        scrub: 1
+        // Phase 3 (66–100%): tilt, slide to left, scale back
+        tl.to(phoneGroup.rotation, { y: 0.5, x: -0.15, duration: 1 }, 2)
+          .to(phoneGroup.position, { x: -1.2, duration: 1 }, 2)
+          .to(phoneGroup.scale, { x: 1, y: 1, z: 1, duration: 1 }, 2);
+
+        // Start video
+        videoEl.play().catch(() => {});
+      },
+      (xhr) => {
+        // progress — optional
+      },
+      (err) => {
+        console.error('GLB load error:', err);
+        document.getElementById('loading').style.opacity = '0';
       }
+    );
+
+    // ─── Fallback video start on interaction ───
+    ['click', 'touchstart'].forEach(evt => {
+      document.addEventListener(evt, () => videoEl.play().catch(() => {}), { once: true });
     });
-
-    // Phase 1 (0–33%): rotate to face-on, move to center
-    tl.to(phone.rotation, { y: 0, x: 0, duration: 1 }, 0)
-      .to(phone.position, { x: 0, duration: 1 }, 0);
-
-    // Phase 2 (33–66%): spin 360° and scale up slightly
-    tl.to(phone.rotation, { y: Math.PI * 2, duration: 1 }, 1)
-      .to(phone.scale, { x: 1.2, y: 1.2, z: 1.2, duration: 1 }, 1);
-
-    // Phase 3 (66–100%): tilt back, move left, scale down
-    tl.to(phone.rotation, { y: 0.6, x: -0.2, duration: 1 }, 2)
-      .to(phone.position, { x: -1.5, duration: 1 }, 2)
-      .to(phone.scale, { x: 1, y: 1, z: 1, duration: 1 }, 2);
 
     // ─── Render Loop ───
     function animate() {
@@ -311,21 +318,12 @@
     }
     animate();
 
-    // ─── Resize Handler ───
+    // ─── Resize ───
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
-
-    // ─── Start video playback immediately + fallback on interaction ───
-    videoEl.play().catch(() => {});
-    document.addEventListener('click', () => {
-      videoEl.play().catch(() => {});
-    }, { once: true });
-    document.addEventListener('touchstart', () => {
-      videoEl.play().catch(() => {});
-    }, { once: true });
   </script>
 </body>
 </html>
