@@ -146,8 +146,8 @@
       const size = new THREE.Vector3(); box.getSize(size);
       // Screen mesh Y/Z extents
       const meshW = size.y, meshH = size.z;
-      // screen-recording.mp4 is portrait (9:16 approx)
-      const vidAR = 9 / 16;
+      // Use actual video dimensions when available, fallback to 9:16
+      const vidAR = (vid.videoWidth && vid.videoHeight) ? vid.videoWidth / vid.videoHeight : 9 / 16;
       const meshAR = meshW / (meshH || 1);
       // Cover: scale UVs so video fills mesh face (crops edges, no letterbox)
       let scaleU = 1, scaleV = 1, offU = 0, offV = 0;
