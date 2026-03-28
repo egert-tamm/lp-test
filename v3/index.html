@@ -97,8 +97,8 @@
           child.material = Array.isArray(child.material) ? newMats : newMats[0];
         });
 
-        // No rotation — raw model orientation
-        scene.rotation.set(0, 0, 0);
+        // Rotate to face front: model loads sideways (right side toward camera), -90° on Y fixes it
+        scene.rotation.set(0, -Math.PI / 2, 0);
         scene.scale.setScalar(1.5);
 
         // Mini renderer
