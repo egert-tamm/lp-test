@@ -171,7 +171,7 @@
 
     const phoneGroup = new THREE.Group();
     phoneGroup.position.set(1.2, 0, 0);
-    phoneGroup.rotation.set(0.1, Math.PI / 2 - 0.3, 0);
+    phoneGroup.rotation.set(0.08, -0.3, 0); // slight tilt; model.rotation.y=PI/2 handles sideways correction
     scene.add(phoneGroup);
 
     const loader = new THREE.GLTFLoader();
@@ -232,9 +232,9 @@
       });
 
       tl.to(phoneGroup.position, { x: 0, duration: 1 }, 0)
-        .to(phoneGroup.rotation, { y: Math.PI / 2, x: 0, duration: 1 }, 0);
-      tl.to(phoneGroup.rotation, { y: Math.PI / 2 + Math.PI * 2, duration: 1 }, 1);
-      tl.to(phoneGroup.rotation, { y: Math.PI / 2 + 0.3, x: -0.08, duration: 1 }, 2)
+        .to(phoneGroup.rotation, { y: 0, x: 0, duration: 1 }, 0);
+      tl.to(phoneGroup.rotation, { y: Math.PI * 2, duration: 1 }, 1);
+      tl.to(phoneGroup.rotation, { y: 0.3, x: -0.08, duration: 1 }, 2)
         .to(phoneGroup.position, { x: -1.2, duration: 1 }, 2);
 
     }, null, (err) => {
