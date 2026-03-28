@@ -91,16 +91,11 @@
         scene.rotation.set(0, Math.PI / 2, 0);
         scene.scale.setScalar(1.5);
 
+        // Use 2D canvas — copy from shared WebGL renderer each frame
         const canvas = document.createElement('canvas');
         canvas.width = 280;
         canvas.height = 480;
-
-        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-        renderer.setSize(280, 480);
-        renderer.setClearColor(0x1a1a1a, 1);
-        renderer.outputEncoding = THREE.sRGBEncoding;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
+        const ctx2d = canvas.getContext('2d');
 
         const cam = new THREE.PerspectiveCamera(38, 280 / 480, 0.01, 100);
         cam.position.set(0, 0, 4.5);
@@ -113,10 +108,9 @@
         threeScene.add(key);
         threeScene.add(scene);
 
-        (function render() {
-          requestAnimationFrame(render);
-          renderer.render(threeScene, cam);
-        })();
+        // Register for shared render loop
+        window._debugCells = window._debugCells || [];
+        window._debugCells.push({ threeScene, cam, ctx2d });
 
         const cell = document.createElement('div');
         cell.className = 'cell';
@@ -128,6 +122,24 @@
         cell.appendChild(label);
         grid.appendChild(cell);
       });
+
+      // Shared single WebGL renderer — renders each scene sequentially, blits to 2D canvas
+      const sharedCanvas = document.createElement('canvas');
+      sharedCanvas.width = 280; sharedCanvas.height = 480;
+      const sharedRenderer = new THREE.WebGLRenderer({ canvas: sharedCanvas, antialias: true, preserveDrawingBuffer: true });
+      sharedRenderer.setSize(280, 480);
+      sharedRenderer.outputEncoding = THREE.sRGBEncoding;
+      sharedRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+      sharedRenderer.toneMappingExposure = 1.2;
+
+      (function renderLoop() {
+        requestAnimationFrame(renderLoop);
+        const cells = window._debugCells || [];
+        cells.forEach(({ threeScene, cam, ctx2d }) => {
+          sharedRenderer.render(threeScene, cam);
+          ctx2d.drawImage(sharedCanvas, 0, 0);
+        });
+      })();
 
     }, null, (err) => {
       document.getElementById('status').textContent = 'GLB load error: ' + err.message;
