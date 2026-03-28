@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>star — The Gaming & Payments Platform</title>
+  <meta name="description" content="star is the enterprise gaming and payments platform. Book a demo today.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #000;
+      color: #fff;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Full-screen video background */
+    .video-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      overflow: hidden;
+      background: linear-gradient(135deg, #0a0a0a 0%, #111 50%, #0a0a0a 100%);
+    }
+
+    .video-bg video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Gradient overlay on video */
+    .video-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.4) 0%,
+        rgba(0, 0, 0, 0.2) 40%,
+        rgba(0, 0, 0, 0.3) 70%,
+        rgba(0, 0, 0, 0.7) 100%
+      );
+      pointer-events: none;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 28px 40px;
+    }
+
+    .nav-logo {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .nav-cta {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #fff;
+      text-decoration: none;
+      padding: 10px 24px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      letter-spacing: -0.01em;
+    }
+
+    .nav-cta:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Centered hero content */
+    .hero {
+      position: relative;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      padding: 0 24px;
+    }
+
+    .hero-brand {
+      font-size: clamp(4rem, 10vw, 8rem);
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+
+    .hero-tagline {
+      font-size: clamp(1rem, 2.5vw, 1.375rem);
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.7);
+      letter-spacing: -0.01em;
+      margin-bottom: 48px;
+    }
+
+    .hero-cta {
+      display: inline-block;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #000;
+      background: #fff;
+      text-decoration: none;
+      padding: 14px 36px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      letter-spacing: -0.01em;
+    }
+
+    .hero-cta:hover {
+      background: rgba(255, 255, 255, 0.9);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 24px rgba(255, 255, 255, 0.15);
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 640px) {
+      nav {
+        padding: 20px 24px;
+      }
+
+      .hero-brand {
+        margin-bottom: 12px;
+      }
+
+      .hero-tagline {
+        margin-bottom: 36px;
+      }
+    }
+
+    /* Fade-in animation */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(12px);
+      animation: fadeUp 0.8s ease forwards;
+    }
+
+    .fade-in:nth-child(2) { animation-delay: 0.15s; }
+    .fade-in:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes fadeUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background video -->
+  <div class="video-bg">
+    <video autoplay muted loop playsinline>
+      <source src="https://cdn.star.io/videos/part-1_10_compressed_26-03-28.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <!-- Gradient overlay -->
+  <div class="video-overlay"></div>
+
+  <!-- Navigation -->
+  <nav>
+    <a href="/" class="nav-logo">star</a>
+    <a href="mailto:hello@star.io" class="nav-cta">Book a Demo</a>
+  </nav>
+
+  <!-- Hero -->
+  <main class="hero">
+    <h1 class="hero-brand fade-in">star</h1>
+    <p class="hero-tagline fade-in">The Gaming & Payments Platform</p>
+    <a href="mailto:hello@star.io" class="hero-cta fade-in">Book a Demo</a>
+  </main>
+
+  <script>
+    // Fallback: if video fails to load, the CSS gradient background on .video-bg handles it
+    const video = document.querySelector('.video-bg video');
+    if (video) {
+      video.addEventListener('error', function() {
+        this.style.display = 'none';
+      });
+    }
+  </script>
+
+</body>
+</html>
