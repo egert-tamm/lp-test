@@ -20,7 +20,7 @@
   </style>
 </head>
 <body>
-  <div id="build">BUILD v45 · screen.001 PERMUTATIONS · 2026-03-28</div>
+  <div id="build">BUILD v46 · generateMipmaps=false FIX · 2026-03-28</div>
   <h2>All cells target screen.001 only. Different texture/material configs.</h2>
   <div id="status">Loading…</div>
   <div id="grid"></div>
@@ -103,11 +103,13 @@
           tex = new THREE.CanvasTexture(offCanvas);
           tex.flipY = perm.flipY;
           tex.encoding = perm.encoding;
+          tex.generateMipmaps = false;
           canvasSrc = { offCtx, vidEl };
         } else {
           tex = new THREE.VideoTexture(vidEl);
           tex.minFilter = THREE.LinearFilter;
           tex.magFilter = THREE.LinearFilter;
+          tex.generateMipmaps = false; // CRITICAL: video dims rarely POT, mipmapping fails silently → black
           tex.flipY = perm.flipY;
           tex.encoding = perm.encoding;
         }
