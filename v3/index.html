@@ -19,7 +19,7 @@
   </style>
 </head>
 <body>
-  <div id="build">BUILD v43 · FRESH GLB PER CELL · 2026-03-28</div>
+  <div id="build">BUILD v44 · flipY=false UV FIX · 2026-03-28</div>
   <h2>Each phone = independent GLB parse. Video on one material only per cell.</h2>
   <div id="status">Fetching GLB…</div>
   <div id="grid"></div>
@@ -94,10 +94,12 @@
           model.scale.setScalar(1.5);
 
           // Fresh VideoTexture per cell
+          // flipY=false: GLTF UVs are pre-flipped by GLTFLoader, VideoTexture must NOT re-flip
           const videoTex = new THREE.VideoTexture(vid);
           videoTex.minFilter = THREE.LinearFilter;
           videoTex.magFilter = THREE.LinearFilter;
           videoTex.encoding = THREE.sRGBEncoding;
+          videoTex.flipY = false;
 
           model.traverse(child => {
             if (!child.isMesh) return;
