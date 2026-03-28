@@ -48,6 +48,7 @@
       pointer-events: none;
       z-index: 2;
       opacity: 0;
+      transform: translateY(40px);
       transition: none;
     }
     .slide-title {
@@ -57,7 +58,22 @@
       line-height: 0.95;
       font-optical-sizing: auto;
       max-width: 70vw;
+      will-change: transform, opacity;
     }
+    .slide-title .word {
+      display: inline-block;
+      overflow: hidden;
+    }
+    .slide-title .word-inner {
+      display: inline-block;
+      transform: translateY(100%);
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .slide-text.visible .word-inner {
+      transform: translateY(0);
+    }
+    .slide-title .word-inner:nth-child(2) { transition-delay: 0.06s; }
+    .slide-title .word-inner:nth-child(3) { transition-delay: 0.12s; }
 
     /* Each slide is 200vh: 100vh for text reveal, 100vh for phone reveal */
     .slide { height: 200vh; }
@@ -310,8 +326,29 @@
       setupScroll();
     }, null, err => { console.error(err); document.getElementById('loading').style.opacity='0'; });
 
+    function setSlideText(title) {
+      // Split into words, each wrapped for mask animation
+      const lines = title.split('\n');
+      slideTitle.innerHTML = lines.map(line =>
+        line.split(' ').map(word =>
+          `<span class="word"><span class="word-inner">${word}</span></span>`
+        ).join(' ')
+      ).join('<br>');
+    }
+
     function setupScroll() {
       gsap.registerPlugin(ScrollTrigger);
+
+      // Show first slide text on load
+      setSlideText(SLIDES[0]);
+      currentSlideIdx = 0;
+      gsap.fromTo(slideTextEl,
+        { opacity: 0, y: 40 },
+        { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', delay: 0.3 }
+      );
+      slideTextEl.querySelectorAll('.word-inner').forEach((el, wi) => {
+        gsap.fromTo(el, { y: '100%' }, { y: '0%', duration: 0.6, ease: 'power3.out', delay: 0.3 + wi * 0.08 });
+      });
 
       // Per-slide scroll trigger
       // Each slide is 200vh. First 100vh = text phase, second 100vh = phone phase.
@@ -326,16 +363,44 @@
           onEnter: () => {
             if (currentSlideIdx !== i) {
               currentSlideIdx = i;
-              gsap.to(slideTextEl, { opacity: 0, duration: 0.2, onComplete: () => {
-                slideTitle.innerHTML = title.replace(/\n/g, '<br>');
-                gsap.to(slideTextEl, { opacity: 1, duration: 0.5 });
-              }});
+              // Slide old text out downward, swap, slide new text up
+              gsap.to(slideTextEl, {
+                opacity: 0, y: -30, duration: 0.25, ease: 'power2.in',
+                onComplete: () => {
+                  setSlideText(title);
+                  gsap.fromTo(slideTextEl,
+                    { opacity: 0, y: 50 },
+                    { opacity: 1, y: 0, duration: 0.55, ease: 'power3.out' }
+                  );
+                  // Stagger word reveals
+                  slideTextEl.querySelectorAll('.word-inner').forEach((el, wi) => {
+                    gsap.fromTo(el,
+                      { y: '100%' },
+                      { y: '0%', duration: 0.55, ease: 'power3.out', delay: wi * 0.07 }
+                    );
+                  });
+                }
+              });
             }
           },
           onEnterBack: () => {
             currentSlideIdx = i;
-            slideTitle.innerHTML = title.replace(/\n/g, '<br>');
-            gsap.to(slideTextEl, { opacity: 1, duration: 0.3 });
+            gsap.to(slideTextEl, {
+              opacity: 0, y: 30, duration: 0.2, ease: 'power2.in',
+              onComplete: () => {
+                setSlideText(title);
+                gsap.fromTo(slideTextEl,
+                  { opacity: 0, y: -50 },
+                  { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }
+                );
+                slideTextEl.querySelectorAll('.word-inner').forEach((el, wi) => {
+                  gsap.fromTo(el,
+                    { y: '-100%' },
+                    { y: '0%', duration: 0.5, ease: 'power3.out', delay: wi * 0.07 }
+                  );
+                });
+              }
+            });
           },
         });
 
