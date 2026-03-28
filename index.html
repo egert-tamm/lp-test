@@ -18,37 +18,8 @@
   </style>
 </head>
 <body>
-  <video id="bgVideo" autoplay loop playsinline>
+  <video autoplay muted loop playsinline>
     <source src="https://cdn.star.io/videos/part-1_10_compressed_26-03-28.mp4" type="video/mp4">
   </video>
-  <button id="muteBtn" style="
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 10;
-    background: rgba(0,0,0,0.5);
-    color: #fff;
-    border: none;
-    border-radius: 999px;
-    padding: 10px 16px;
-    font-size: 1.2rem;
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    opacity: 0;
-    transition: opacity 0.4s ease;
-  ">🔇</button>
-  <script>
-    (function() {
-      var video = document.getElementById('bgVideo');
-      var btn = document.getElementById('muteBtn');
-      video.muted = true;
-      setTimeout(function() { btn.style.opacity = '1'; }, 1000);
-      btn.addEventListener('click', function() {
-        video.muted = !video.muted;
-        btn.textContent = video.muted ? '🔇' : '🔊';
-      });
-    })();
-  </script>
 </body>
 </html>
