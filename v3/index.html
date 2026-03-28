@@ -226,6 +226,17 @@
       vid.load();
       vid.play().catch(() => {});
 
+      // Re-apply UV remap once video dimensions are known (in case GLB loaded before video metadata)
+      if (!vid.videoWidth) {
+        vid.addEventListener('loadedmetadata', () => {
+          model.traverse((child) => {
+            if (!child.isMesh) return;
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            if (mats.some(m => m && m.map === videoTex)) remapUVs(child);
+          });
+        }, { once: true });
+      }
+
       gsap.registerPlugin(ScrollTrigger);
       const tl = gsap.timeline({
         scrollTrigger: { trigger: 'body', start: 'top top', end: 'bottom bottom', scrub: 1.5 }
