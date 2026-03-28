@@ -234,7 +234,7 @@
     // ─── Wrapper group for scroll animation ───
     const phoneGroup = new THREE.Group();
     phoneGroup.position.x = 1.2;
-    phoneGroup.rotation.y = -0.5;
+    phoneGroup.rotation.y = 0.5;   // slight angle, now from front
     phoneGroup.rotation.x = 0.15;
     scene.add(phoneGroup);
 
@@ -245,19 +245,32 @@
       (gltf) => {
         const model = gltf.scene;
 
-        // The Sketchfab model is scaled via its hierarchy — fits roughly 1.6 units tall
         // Scale up to fill the viewport nicely
         model.scale.set(1.5, 1.5, 1.5);
 
-        // Replace screen material with video texture
+        // Model loads back-facing — flip to show screen
+        model.rotation.y = Math.PI;
+
+        // Replace materials
         model.traverse((child) => {
           if (child.isMesh) {
             const mat = child.material;
-            if (mat && mat.name === 'screen.001') {
+            if (!mat) return;
+
+            // Screen → video texture
+            if (mat.name === 'screen.001') {
               child.material = new THREE.MeshBasicMaterial({
                 map: videoTexture,
                 side: THREE.FrontSide
               });
+            }
+
+            // Recolor orange body materials → dark titanium
+            const orangeNames = ['basecolor.001', 'metalframe.002', 'backpanel.001', 'Material.005', 'Material.006', 'Material.007'];
+            if (orangeNames.includes(mat.name)) {
+              mat.color.set(0x1c1c1e);
+              mat.metalness = 0.85;
+              mat.roughness = 0.15;
             }
           }
         });
