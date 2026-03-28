@@ -3,253 +3,173 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>star.io — The Gaming &amp; Payments Platform</title>
+  <title>star.io v3 — screen.001 permutations</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
-      height: 400vh;
-      background: #080808;
-      color: #fff;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
-    #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
-    #loading {
-      position: fixed; inset: 0;
-      background: #080808;
-      display: flex; align-items: center; justify-content: center;
-      z-index: 20;
-      transition: opacity 0.6s ease;
-    }
-    #loading .spinner {
-      width: 36px; height: 36px;
-      border: 2px solid rgba(255,255,255,0.1);
-      border-top-color: rgba(255,255,255,0.6);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #content { position: relative; z-index: 1; pointer-events: none; }
-    #content a { pointer-events: auto; }
-    .hero {
-      min-height: 100vh;
-      display: flex; align-items: flex-end;
-      padding: 0 5rem 8rem;
-    }
-    .hero .text-block {
-      background: rgba(0,0,0,0.5);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-radius: 16px;
-      padding: 2.5rem 3rem;
-      max-width: 520px;
-    }
-    h1 {
-      font-size: clamp(2rem, 4vw, 3.5rem);
-      font-weight: 700; letter-spacing: -0.02em; line-height: 1.08;
-    }
-    .hero p { margin-top: 0.85rem; font-size: 1rem; color: rgba(255,255,255,0.55); }
-    .cta-button {
-      display: inline-block; margin-top: 1.75rem;
-      padding: 0.85rem 2.25rem;
-      background: #fff; color: #080808;
-      text-decoration: none; border-radius: 999px;
-      font-size: 0.95rem; font-weight: 600;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .cta-button:hover { transform: scale(1.04); box-shadow: 0 0 30px rgba(255,255,255,0.1); }
-    #phone-video {
-      position: fixed; width: 2px; height: 2px;
-      opacity: 0.01; top: 0; left: 0; pointer-events: none;
-    }
-    @media (max-width: 768px) {
-      .hero { padding: 0 1.5rem 4rem; align-items: flex-end; }
-      .hero .text-block { padding: 1.75rem 1.75rem; }
-    }
+    body { background: #111; color: #fff; font-family: monospace; padding: 0.75rem; }
+    #build { background:#ff0;color:#000;font-size:1rem;font-weight:900;padding:0.4rem 0.8rem;margin-bottom:0.5rem;border-radius:6px; }
+    h2 { margin-bottom: 0.4rem; font-size: 0.8rem; color: #888; }
+    #status { margin-bottom: 0.75rem; color: #0f0; font-size: 0.7rem; }
+    #grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    .cell { text-align: center; }
+    .cell canvas { width: 100% !important; height: auto !important; display: block; background: #1a1a1a; border-radius: 6px; }
+    .label { margin-top: 0.25rem; font-size: 0.55rem; color: #0f0; line-height: 1.3; }
+    .label .num { color: #ff0; font-size: 0.8rem; font-weight: bold; display: block; }
+    .vid-el { position: fixed; width: 2px; height: 2px; opacity: 0.01; top: 0; pointer-events: none; }
   </style>
 </head>
 <body>
-  <div id="loading"><div class="spinner"></div></div>
-
-  <video id="phone-video"
-    src="https://cdn.star.io/videos/screen-recording.mp4"
-    autoplay muted loop playsinline crossorigin="anonymous">
-  </video>
-
-  <canvas id="canvas"></canvas>
-
-  <div id="content">
-    <section class="hero">
-      <div class="text-block">
-        <h1>The Gaming &amp; Payments Platform</h1>
-        <p>Powering the next generation of iGaming infrastructure.</p>
-        <a href="mailto:hello@star.io" class="cta-button">Book a Demo →</a>
-      </div>
-    </section>
-  </div>
+  <div id="build">BUILD v55 · UV REMAP 90° ROTATION FIX · 2026-03-28</div>
+  <h2>screen.001 only. #11+#12 from v52 now with corrected UV axis (Y→U, Z→V portrait).</h2>
+  <div id="status">Loading…</div>
+  <div id="grid"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script>
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x080808);
+  const GLB_URL = 'https://cdn.star.io/models/iphone17.glb';
+  const VID_URL = 'https://cdn.star.io/videos/screen-recording.mp4';
+  const TARGET_MAT = 'screen.001';
 
-    const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.01, 100);
-    camera.position.set(0, 0, 4.5);
-
-    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
-    renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-    renderer.physicallyCorrectLights = true;
-
-    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-    const key = new THREE.DirectionalLight(0xffffff, 2.2);
-    key.position.set(3, 5, 5); scene.add(key);
-    const fill = new THREE.DirectionalLight(0xb0c8ff, 0.8);
-    fill.position.set(-4, 0, -2); scene.add(fill);
-
-    const vid = document.getElementById('phone-video');
-
-    // Video texture — confirmed working config:
-    // generateMipmaps=false: video dims are non-POT (1920x1080), mipmap gen fails silently → black
-    // flipY=false: GLTFLoader pre-flips UVs; re-flipping causes coordinate mismatch
-    // requestVideoFrameCallback: drives needsUpdate explicitly per decoded frame (mobile-safe)
-    const videoTex = new THREE.VideoTexture(vid);
-    videoTex.minFilter = THREE.LinearFilter;
-    videoTex.magFilter = THREE.LinearFilter;
-    videoTex.generateMipmaps = false;
-    videoTex.flipY = false;
-    videoTex.encoding = THREE.sRGBEncoding;
-
-    // UV remap helper — planar projection from bounding box onto Y/Z plane
-    // (screen.001 UV island is packed for baked textures; remap for full-face video coverage)
-    function remapUVs(mesh) {
+  // UV remap helpers — project bounding box onto given axes
+  function makeRemapFn(uAxis, vAxis, flipU, flipV) {
+    return function(mesh) {
       const pos = mesh.geometry.attributes.position;
       const box = new THREE.Box3().setFromBufferAttribute(pos);
       const size = new THREE.Vector3(); box.getSize(size);
       const min = box.min;
       const uvArr = new Float32Array(pos.count * 2);
+      const getU = uAxis === 'x' ? i => pos.getX(i) : uAxis === 'y' ? i => pos.getY(i) : i => pos.getZ(i);
+      const getV = vAxis === 'x' ? i => pos.getX(i) : vAxis === 'y' ? i => pos.getY(i) : i => pos.getZ(i);
+      const sU = uAxis === 'x' ? size.x : uAxis === 'y' ? size.y : size.z;
+      const sV = vAxis === 'x' ? size.x : vAxis === 'y' ? size.y : size.z;
+      const mU = uAxis === 'x' ? min.x : uAxis === 'y' ? min.y : min.z;
+      const mV = vAxis === 'x' ? min.x : vAxis === 'y' ? min.y : min.z;
       for (let i = 0; i < pos.count; i++) {
-        // Swap Y→U, Z→V so video is portrait-oriented (screen is taller than wide)
-        uvArr[i * 2]     = (pos.getY(i) - min.y) / (size.y || 1); // portrait: width = Y
-        uvArr[i * 2 + 1] = (pos.getZ(i) - min.z) / (size.z || 1); // portrait: height = Z
+        let u = (getU(i) - mU) / (sU || 1);
+        let v = (getV(i) - mV) / (sV || 1);
+        if (flipU) u = 1 - u;
+        if (flipV) v = 1 - v;
+        uvArr[i * 2]     = u;
+        uvArr[i * 2 + 1] = v;
       }
       mesh.geometry = mesh.geometry.clone();
       mesh.geometry.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
-    }
+    };
+  }
 
-    if ('requestVideoFrameCallback' in vid) {
-      const onFrame = () => { videoTex.needsUpdate = true; vid.requestVideoFrameCallback(onFrame); };
-      vid.requestVideoFrameCallback(onFrame);
-    } else {
-      setInterval(() => { if (vid.readyState >= 2) videoTex.needsUpdate = true; }, 33);
-    }
+  const PERMS = [
+    // v52 originals (sideways video confirmed)
+    { label: 'v52 #11\nZ→U Y→V\nflipY=false', flipY: false, remap: makeRemapFn('z','y',false,false) },
+    { label: 'v52 #12\nZ→U Y→V\nflipY=true',  flipY: true,  remap: makeRemapFn('z','y',false,false) },
+    // 90° rotation fix: swap axes → Y→U, Z→V (portrait)
+    { label: '⭐ Y→U Z→V\nflipY=false',        flipY: false, remap: makeRemapFn('y','z',false,false) },
+    { label: '⭐ Y→U Z→V\nflipY=true',         flipY: true,  remap: makeRemapFn('y','z',false,false) },
+    // Flip variants
+    { label: '⭐ Y→U Z→V\nflipU\nflipY=false', flipY: false, remap: makeRemapFn('y','z',true,false)  },
+    { label: '⭐ Y→U Z→V\nflipV\nflipY=false', flipY: false, remap: makeRemapFn('y','z',false,true)  },
+    { label: '⭐ Y→U Z→V\nflipU+V\nflipY=false',flipY:false, remap: makeRemapFn('y','z',true,true)   },
+    { label: '⭐ Y→U Z→V\nflipU+V\nflipY=true', flipY:true,  remap: makeRemapFn('y','z',true,true)   },
+    // No remap baseline (original packed UVs)
+    { label: 'No remap\nflipY=false\nsRGB',     flipY: false, remap: null },
+  ];
 
-    const phoneGroup = new THREE.Group();
-    phoneGroup.position.set(1.2, 0, 0);
-    phoneGroup.rotation.set(0.1, Math.PI / 2 - 0.3, 0);
-    scene.add(phoneGroup);
+  // Shared renderer
+  const sharedCanvas = document.createElement('canvas');
+  sharedCanvas.width = 280; sharedCanvas.height = 480;
+  const sharedRenderer = new THREE.WebGLRenderer({ canvas: sharedCanvas, antialias: true, preserveDrawingBuffer: true });
+  sharedRenderer.setSize(280, 480);
+  sharedRenderer.outputEncoding = THREE.sRGBEncoding;
+  sharedRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+  sharedRenderer.toneMappingExposure = 1.2;
 
-    const loader = new THREE.GLTFLoader();
-    loader.load('https://cdn.star.io/models/iphone17.glb', (gltf) => {
-      const model = gltf.scene;
-      model.scale.setScalar(1.6);
-      model.rotation.y = Math.PI / 2; // model loads sideways (right-facing), +PI/2 = front-facing
-
-      model.traverse((child) => {
-        if (!child.isMesh) return;
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((mat, idx) => {
-          if (!mat) return;
-          const name = mat.name || '';
-
-          // ✅ CONFIRMED: screen.001 = main display panel
-          if (name === 'screen.001') {
-            remapUVs(child); // remap packed UV island → full face coverage
-            const vidMat = new THREE.MeshBasicMaterial({
-              map: videoTex,
-              side: THREE.DoubleSide,
-              toneMapped: false,
-            });
-            if (Array.isArray(child.material)) child.material[idx] = vidMat;
-            else child.material = vidMat;
-            return;
-          }
-
-          // Hide camera lenses (confirmed)
-          if (name === 'glass.002' || name === 'lensinglass') {
-            child.visible = false;
-            return;
-          }
-
-          // Body panels → titanium dark
-          const bodyNames = ['basecolor.001', 'backpanel.001', 'Material.005', 'Material.006', 'Material.007', 'gray.001'];
-          if (bodyNames.includes(name)) {
-            mat.color?.set(0x1c1c1e);
-            if (mat.metalness !== undefined) { mat.metalness = 0.7; mat.roughness = 0.25; }
-          }
-
-          // Metal frame → polished titanium
-          if (name === 'metalframe.002' || name === 'metaL.001') {
-            mat.color?.set(0x3a3a3c);
-            if (mat.metalness !== undefined) { mat.metalness = 0.95; mat.roughness = 0.1; }
-          }
-
-          // Screen chamfer → black
-          if (name === 'black.002') {
-            mat.color?.set(0x000000);
-          }
-        });
-      });
-
-      phoneGroup.add(model);
-
-      // Hide loading screen
-      const loadEl = document.getElementById('loading');
-      if (loadEl) { loadEl.style.opacity = '0'; setTimeout(() => loadEl.remove(), 600); }
-
-      vid.load();
-      vid.play().catch(() => {});
-
-      // GSAP scroll animation
-      gsap.registerPlugin(ScrollTrigger);
-      const tl = gsap.timeline({
-        scrollTrigger: { trigger: 'body', start: 'top top', end: 'bottom bottom', scrub: 1.5 }
-      });
-
-      // Phase 1 (0→33%): slide to center, face-on
-      tl.to(phoneGroup.position, { x: 0, duration: 1 }, 0)
-        .to(phoneGroup.rotation, { y: Math.PI / 2, x: 0, duration: 1 }, 0);
-
-      // Phase 2 (33→66%): full 360 spin
-      tl.to(phoneGroup.rotation, { y: Math.PI / 2 + Math.PI * 2, duration: 1 }, 1);
-
-      // Phase 3 (66→100%): tilt and slide left
-      tl.to(phoneGroup.rotation, { y: Math.PI / 2 + 0.3, x: -0.08, duration: 1 }, 2)
-        .to(phoneGroup.position, { x: -1.2, duration: 1 }, 2);
-
-    }, null, (err) => {
-      console.error(err);
-      const loadEl = document.getElementById('loading');
-      if (loadEl) loadEl.style.opacity = '0';
+  const cells = [];
+  (function renderLoop() {
+    requestAnimationFrame(renderLoop);
+    cells.forEach(({ scene3, cam, ctx2d }) => {
+      sharedRenderer.render(scene3, cam);
+      ctx2d.drawImage(sharedCanvas, 0, 0);
     });
+  })();
 
-    ['click', 'touchstart'].forEach(e =>
-      document.addEventListener(e, () => vid.play().catch(() => {}), { once: true })
-    );
+  fetch(GLB_URL)
+    .then(r => r.arrayBuffer())
+    .then(buffer => {
+      document.getElementById('status').textContent = 'GLB fetched, spawning cells…';
+      let done = 0;
 
-    (function render() { requestAnimationFrame(render); renderer.render(scene, camera); })();
+      PERMS.forEach((perm, i) => {
+        const vidEl = document.createElement('video');
+        vidEl.className = 'vid-el';
+        vidEl.src = VID_URL;
+        vidEl.autoplay = true; vidEl.muted = true; vidEl.loop = true;
+        vidEl.playsInline = true; vidEl.crossOrigin = 'anonymous';
+        vidEl.style.left = (i * 3) + 'px';
+        document.body.appendChild(vidEl);
+        vidEl.play().catch(() => {});
+        ['click','touchstart'].forEach(e => document.addEventListener(e, () => vidEl.play().catch(() => {}), {once:true}));
 
-    window.addEventListener('resize', () => {
-      camera.aspect = innerWidth / innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(innerWidth, innerHeight);
+        const tex = new THREE.VideoTexture(vidEl);
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.generateMipmaps = false;
+        tex.flipY = perm.flipY;
+        tex.encoding = THREE.sRGBEncoding;
+
+        if ('requestVideoFrameCallback' in vidEl) {
+          const onFrame = () => { tex.needsUpdate = true; vidEl.requestVideoFrameCallback(onFrame); };
+          vidEl.requestVideoFrameCallback(onFrame);
+        } else {
+          setInterval(() => { if (vidEl.readyState >= 2) tex.needsUpdate = true; }, 33);
+        }
+
+        const loader = new THREE.GLTFLoader();
+        loader.parse(buffer.slice(0), '', (gltf) => {
+          const model = gltf.scene;
+          model.rotation.set(0, Math.PI / 2, 0);
+          model.scale.setScalar(1.5);
+
+          model.traverse(child => {
+            if (!child.isMesh) return;
+            const isArr = Array.isArray(child.material);
+            const mats = isArr ? child.material : [child.material];
+            const newMats = mats.map(mat => {
+              if (!mat || mat.name !== TARGET_MAT) return mat;
+              if (perm.remap) perm.remap(child);
+              return new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, toneMapped: false });
+            });
+            child.material = isArr ? newMats : newMats[0];
+          });
+
+          const scene3 = new THREE.Scene();
+          scene3.background = new THREE.Color(0x1a1a1a);
+          scene3.add(new THREE.AmbientLight(0xffffff, 1.5));
+          const key = new THREE.DirectionalLight(0xffffff, 2.2);
+          key.position.set(3, 5, 5); scene3.add(key);
+          scene3.add(model);
+
+          const cam = new THREE.PerspectiveCamera(38, 280/480, 0.01, 100);
+          cam.position.set(0, 0, 4.5);
+
+          const cellCanvas = document.createElement('canvas');
+          cellCanvas.width = 280; cellCanvas.height = 480;
+          const ctx2d = cellCanvas.getContext('2d');
+          cells.push({ scene3, cam, ctx2d });
+
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.appendChild(cellCanvas);
+          const label = document.createElement('div');
+          label.className = 'label';
+          label.innerHTML = `<span class="num">#${i+1}</span>${perm.label.replace(/\n/g,'<br>')}`;
+          cell.appendChild(label);
+          document.getElementById('grid').appendChild(cell);
+
+          done++;
+          if (done === PERMS.length)
+            document.getElementById('status').textContent = `✅ ${done} cells — TAP SCREEN to start video`;
+        }, err => console.error(err));
+      });
     });
   </script>
 </body>
