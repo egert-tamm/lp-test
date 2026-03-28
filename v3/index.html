@@ -74,27 +74,7 @@
       font-optical-sizing: auto;
     }
 
-    /* Progress bar */
-    #progress-bar {
-      position: fixed;
-      right: 2rem;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .progress-dot {
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.2);
-      transition: background 0.3s, transform 0.3s;
-    }
-    .progress-dot.active {
-      background: #fff;
-      transform: scale(1.4);
-    }
+    #progress-bar { display: none; }
 
     #phone-video {
       position: fixed; width: 1px; height: 1px;
@@ -176,10 +156,7 @@
 
       const txt = document.createElement('div');
       txt.className = 'slide-text';
-      txt.innerHTML = `
-        <div class="slide-number">${String(i+1).padStart(2,'0')} / ${SLIDES.length}</div>
-        <div class="slide-title">${slide.title.replace(/\n/g,'<br>')}</div>
-      `;
+      txt.innerHTML = `<div class="slide-title">${slide.title.replace(/\n/g,'<br>')}</div>`;
       sec.appendChild(txt);
       sectionsEl.appendChild(sec);
       textEls.push(txt);
