@@ -113,23 +113,42 @@
       'Powered by\nYolo Investment',
     ];
 
-    // Per-slide phone resting position (when phone is "revealed" in 2nd half of slide)
+    // Per-slide phone resting position + entry direction (from: 'right'|'left'|'bottom'|'top')
     const PHONE_KEYS = [
-      { x:  0.3, y:  0.0, rotY: -0.15, camZ: 4.2, fov: 34 },
-      { x: -0.3, y:  0.0, rotY:  0.15, camZ: 4.2, fov: 34 },
-      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.6, fov: 30 },
-      { x:  0.4, y: -0.1, rotY: -0.2,  camZ: 4.5, fov: 36 },
-      { x:  0.0, y:  0.1, rotY:  0.0,  camZ: 3.8, fov: 32 },
-      { x: -0.3, y:  0.0, rotY:  0.2,  camZ: 4.2, fov: 35 },
-      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.2, fov: 28 },
-      { x:  0.3, y:  0.1, rotY: -0.15, camZ: 4.8, fov: 38 },
-      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 4.0, fov: 34 },
-      { x: -0.2, y:  0.0, rotY:  0.1,  camZ: 3.8, fov: 32 },
-      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 4.5, fov: 36 },
+      { x:  0.3, y:  0.0, rotY: -0.15, camZ: 4.2, fov: 34, from: 'right'  },
+      { x: -0.3, y:  0.0, rotY:  0.15, camZ: 4.2, fov: 34, from: 'left'   },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.6, fov: 30, from: 'bottom' },
+      { x:  0.4, y: -0.1, rotY: -0.2,  camZ: 4.5, fov: 36, from: 'right'  },
+      { x:  0.0, y:  0.1, rotY:  0.0,  camZ: 3.8, fov: 32, from: 'top'    },
+      { x: -0.3, y:  0.0, rotY:  0.2,  camZ: 4.2, fov: 35, from: 'left'   },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.2, fov: 28, from: 'bottom' },
+      { x:  0.3, y:  0.1, rotY: -0.15, camZ: 4.8, fov: 38, from: 'right'  },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 4.0, fov: 34, from: 'left'   },
+      { x: -0.2, y:  0.0, rotY:  0.1,  camZ: 3.8, fov: 32, from: 'top'    },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 4.5, fov: 36, from: 'bottom' },
     ];
 
-    // Phone "hidden" position — peeking at right edge
-    const PHONE_HIDDEN = { x: 2.8, y: 0.0, rotY: -0.5, camZ: 5.0, fov: 38 };
+    // Off-screen start positions per direction
+    function hiddenPos(from) {
+      switch(from) {
+        case 'left':   return { x: -3.2, y:  0.0 };
+        case 'bottom': return { x:  0.0, y: -4.0 };
+        case 'top':    return { x:  0.0, y:  4.0 };
+        default:       return { x:  3.2, y:  0.0 }; // right
+      }
+    }
+
+    // Exit direction: opposite of entry
+    function exitPos(from) {
+      switch(from) {
+        case 'left':   return { x:  3.2, y:  0.0 };
+        case 'bottom': return { x:  0.0, y:  4.0 };
+        case 'top':    return { x:  0.0, y: -4.0 };
+        default:       return { x: -3.2, y:  0.0 }; // right enters → exits left
+      }
+    }
+
+    const PHONE_HIDDEN = { x: 3.2, y: 0.0, rotY: -0.5, camZ: 5.0, fov: 38 };
 
     // Build slide spacers
     const sectionsEl = document.getElementById('sections');
@@ -294,17 +313,19 @@
         });
 
         // Phase 2: phone slides in during second half, video scrubs
+        const startPos = hiddenPos(key.from);
+        const exitP    = exitPos(key.from);
         ScrollTrigger.create({
           trigger: `#slide-${i}`,
-          start: '50% top',     // midpoint of the 200vh slide
+          start: '50% top',
           end: 'bottom top',
           scrub: 0.6,
           onUpdate: (self) => {
             const t = eio(self.progress);
 
-            // Phone moves from hidden (right edge) to resting position
-            phoneGroup.position.x = lerp(PHONE_HIDDEN.x, key.x, t);
-            phoneGroup.position.y = lerp(PHONE_HIDDEN.y, key.y, t);
+            // Phone enters from its direction
+            phoneGroup.position.x = lerp(startPos.x, key.x, t);
+            phoneGroup.position.y = lerp(startPos.y, key.y, t);
             phoneGroup.rotation.y = lerp(PHONE_HIDDEN.rotY, key.rotY, t);
             camera.position.z = lerp(PHONE_HIDDEN.camZ, key.camZ, t);
             camera.fov = lerp(PHONE_HIDDEN.fov, key.fov, t);
@@ -323,12 +344,11 @@
             slideTextEl.style.opacity = String(1 - t * 0.5);
           },
           onLeave: () => {
-            // Phone exits: slide out left as next slide's text phase begins
-            gsap.to(phoneGroup.position, { x: -2.8, duration: 0.4, ease: 'power2.in' });
+            gsap.to(phoneGroup.position, { x: exitP.x, y: exitP.y, duration: 0.4, ease: 'power2.in' });
           },
           onEnterBack: () => {
-            // Coming back up — re-show
-            gsap.to(phoneGroup.position, { x: key.x, duration: 0.4, ease: 'power2.out' });
+            phoneGroup.position.set(startPos.x, startPos.y, 0);
+            gsap.to(phoneGroup.position, { x: key.x, y: key.y, duration: 0.4, ease: 'power2.out' });
           },
         });
       });
