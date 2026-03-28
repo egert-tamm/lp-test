@@ -203,16 +203,17 @@
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x080808, 1);
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.4;
+    renderer.toneMappingExposure = 1.1;
     renderer.physicallyCorrectLights = true;
 
     // ─── Lighting ───
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xfff5ee, 2.5);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
     keyLight.position.set(2, 4, 5);
     scene.add(keyLight);
 
