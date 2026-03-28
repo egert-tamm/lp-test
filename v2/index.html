@@ -6,9 +6,7 @@
   <title>star.io — The Gaming &amp; Payments Platform</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     html { scroll-behavior: smooth; }
-
     body {
       background: #080808;
       color: #fff;
@@ -17,23 +15,21 @@
       overflow-x: hidden;
     }
 
-    /* ── Spline phone: fixed right half ── */
+    /* Spline canvas: fixed right side */
     #spline-wrap {
       position: fixed;
-      top: 0;
-      right: 0;
+      top: 0; right: 0;
       width: 55%;
       height: 100vh;
       z-index: 0;
     }
-
-    spline-viewer {
-      width: 100%;
-      height: 100%;
+    #spline-canvas {
+      width: 100% !important;
+      height: 100% !important;
       display: block;
     }
 
-    /* ── Scrollable content: left half ── */
+    /* Scrollable content: left side */
     #scroll-content {
       position: relative;
       z-index: 1;
@@ -42,9 +38,7 @@
       padding: 0 4rem 0 5rem;
       pointer-events: none;
     }
-
-    #scroll-content a,
-    #scroll-content button { pointer-events: auto; }
+    #scroll-content a { pointer-events: auto; }
 
     .section {
       min-height: 100vh;
@@ -53,7 +47,6 @@
       justify-content: center;
       padding: 4rem 0;
     }
-
     .eyebrow {
       font-size: 0.75rem;
       font-weight: 600;
@@ -62,21 +55,18 @@
       color: rgba(255,255,255,0.35);
       margin-bottom: 1.25rem;
     }
-
     h1 {
       font-size: clamp(2.5rem, 4vw, 4rem);
       font-weight: 700;
       line-height: 1.05;
       letter-spacing: -0.03em;
     }
-
     h2 {
       font-size: clamp(1.75rem, 3vw, 2.75rem);
       font-weight: 600;
       line-height: 1.1;
       letter-spacing: -0.02em;
     }
-
     .section p {
       margin-top: 1.25rem;
       font-size: 1.05rem;
@@ -84,14 +74,12 @@
       color: rgba(255,255,255,0.55);
       max-width: 380px;
     }
-
     .pill-list {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
       margin-top: 1.5rem;
     }
-
     .pill {
       padding: 0.4rem 1rem;
       border: 1px solid rgba(255,255,255,0.15);
@@ -99,7 +87,6 @@
       font-size: 0.85rem;
       color: rgba(255,255,255,0.6);
     }
-
     .cta-button {
       display: inline-block;
       margin-top: 2rem;
@@ -110,54 +97,63 @@
       border-radius: 999px;
       font-size: 1rem;
       font-weight: 600;
-      letter-spacing: 0.01em;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-
     .cta-button:hover {
       transform: scale(1.04);
       box-shadow: 0 0 40px rgba(255,255,255,0.12);
     }
 
-    /* ── Mobile: stack vertically ── */
+    /* Mobile */
     @media (max-width: 768px) {
-      #spline-wrap {
-        position: relative;
-        width: 100%;
-        height: 60vh;
-      }
-
-      #scroll-content {
-        width: 100%;
-        padding: 0 2rem;
-        min-height: auto;
-      }
-
-      .section {
-        min-height: auto;
-        padding: 3rem 0;
-      }
+      #spline-wrap { position: relative; width: 100%; height: 60vh; }
+      #scroll-content { width: 100%; padding: 0 2rem; min-height: auto; }
+      .section { min-height: auto; padding: 3rem 0; }
     }
+
+    /* Loading overlay */
+    #loading {
+      position: fixed; inset: 0;
+      background: #080808;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10;
+      transition: opacity 0.5s ease;
+    }
+    #loading .spinner {
+      width: 36px; height: 36px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: rgba(255,255,255,0.6);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
-  <!-- Fixed Spline phone -->
+  <div id="loading"><div class="spinner"></div></div>
+
+  <!-- Hidden video for screen texture -->
+  <video id="screen-vid"
+    src="https://cdn.star.io/videos/screen-recording.mp4"
+    muted loop playsinline autoplay
+    crossorigin="anonymous"
+    style="position:fixed;width:1px;height:1px;opacity:0;top:0;left:0;pointer-events:none">
+  </video>
+
+  <!-- Spline renders here -->
   <div id="spline-wrap">
-    <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.73/build/spline-viewer.js"></script>
-    <spline-viewer url="https://prod.spline.design/BZqVYwlAY1MvyUKE/scene.splinecode"></spline-viewer>
+    <canvas id="spline-canvas"></canvas>
   </div>
 
-  <!-- Scrollable text content -->
+  <!-- Scrollable text -->
   <div id="scroll-content">
-
     <section class="section">
       <p class="eyebrow">Introducing star.io</p>
       <h1>The Gaming &amp; Payments Platform</h1>
-      <p>Full-stack iGaming infrastructure for operators who move fast. Payments, compliance, and player management — unified.</p>
+      <p>Full-stack iGaming infrastructure for operators who move fast. Payments, compliance, player management — unified.</p>
       <a href="mailto:hello@star.io" class="cta-button">Book a Demo →</a>
     </section>
-
     <section class="section">
       <p class="eyebrow">Payments</p>
       <h2>Every payment method. One integration.</h2>
@@ -167,10 +163,8 @@
         <span class="pill">Cards</span>
         <span class="pill">Apple Pay</span>
         <span class="pill">Crypto</span>
-        <span class="pill">Open Banking</span>
       </div>
     </section>
-
     <section class="section">
       <p class="eyebrow">Compliance</p>
       <h2>Regulated markets, handled.</h2>
@@ -180,18 +174,80 @@
         <span class="pill">UAE</span>
         <span class="pill">GLI-16</span>
         <span class="pill">GLI-19</span>
-        <span class="pill">GCGRA</span>
       </div>
     </section>
-
     <section class="section">
       <p class="eyebrow">Built for operators</p>
       <h2>Ship faster. Scale further.</h2>
       <p>Rust microservices, Cloudflare edge, TigerBeetle ledger. Enterprise-grade reliability without enterprise timelines.</p>
       <a href="mailto:hello@star.io" class="cta-button">Get in touch →</a>
     </section>
-
   </div>
+
+  <script type="module">
+    import { Application } from 'https://unpkg.com/@splinetool/runtime@1.12.73/build/runtime.js';
+    import * as THREE from 'https://unpkg.com/three@0.163.0/build/three.module.js';
+
+    const canvas = document.getElementById('spline-canvas');
+    const vid = document.getElementById('screen-vid');
+    const loading = document.getElementById('loading');
+
+    const app = new Application(canvas);
+
+    app.load('https://prod.spline.design/BZqVYwlAY1MvyUKE/scene.splinecode')
+      .then(() => {
+        // Hide loader
+        loading.style.opacity = '0';
+        setTimeout(() => loading.remove(), 500);
+
+        // Start video
+        vid.play().catch(() => {});
+
+        // Try to access the internal Three.js scene
+        const scene =
+          app._renderer?._scene ||
+          app._renderer?.scene ||
+          app._scene ||
+          app.scene;
+
+        if (!scene) return; // graceful degradation — phone still renders
+
+        const videoTex = new THREE.VideoTexture(vid);
+        videoTex.minFilter = THREE.LinearFilter;
+        videoTex.magFilter = THREE.LinearFilter;
+        videoTex.colorSpace = THREE.SRGBColorSpace;
+
+        scene.traverse(child => {
+          if (!child.isMesh) return;
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach((mat, i) => {
+            if (!mat) return;
+            const name = (mat.name || '').toLowerCase();
+            if (name.includes('screen')) {
+              const vidMat = new THREE.MeshBasicMaterial({
+                map: videoTex,
+                side: THREE.FrontSide,
+                toneMapped: false,
+              });
+              if (Array.isArray(child.material)) {
+                child.material[i] = vidMat;
+              } else {
+                child.material = vidMat;
+              }
+            }
+          });
+        });
+      })
+      .catch(() => {
+        loading.style.opacity = '0';
+        setTimeout(() => loading.remove(), 500);
+      });
+
+    // Fallback: start video on first interaction (iOS)
+    ['click', 'touchstart'].forEach(e =>
+      document.addEventListener(e, () => vid.play().catch(() => {}), { once: true })
+    );
+  </script>
 
 </body>
 </html>
