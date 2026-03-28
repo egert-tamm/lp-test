@@ -263,7 +263,8 @@
       const box = new THREE.Box3().setFromBufferAttribute(pos);
       const size = new THREE.Vector3(); box.getSize(size);
       const meshW = size.y, meshH = size.z;
-      const vidAR = (vid.videoWidth && vid.videoHeight) ? vid.videoWidth / vid.videoHeight : 9 / 16;
+      // Actual video: 576x1280 portrait (AR=0.45). Runtime detection preferred, hardcoded fallback.
+      const vidAR = (vid.videoWidth && vid.videoHeight) ? vid.videoWidth / vid.videoHeight : 576 / 1280;
       const meshAR = meshW / (meshH || 1);
       let scaleU = 1, scaleV = 1, offU = 0, offV = 0;
       if (meshAR > vidAR) {
