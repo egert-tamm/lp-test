@@ -230,11 +230,17 @@
               return;
             }
 
-            // ── lensinglass = front display panel → VIDEO TEXTURE ──
+            // ── lensinglass = front camera / dynamic island → hide ──
             if (name === 'lensinglass') {
+              child.visible = false;
+              return;
+            }
+
+            // ── black.002 = main display face → VIDEO TEXTURE ──
+            if (name === 'black.002') {
               const vidMat = new THREE.MeshBasicMaterial({
                 map: videoTex,
-                side: THREE.DoubleSide,
+                side: THREE.FrontSide,
                 toneMapped: false,
               });
               if (Array.isArray(child.material)) {
