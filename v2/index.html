@@ -193,14 +193,14 @@
     renderer.toneMappingExposure = 1.2;
 
     // ─── Lighting ───
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffeedd, 0.9);
+    const dirLight = new THREE.DirectionalLight(0xffeedd, 2.0);
     dirLight.position.set(3, 5, 4);
     scene.add(dirLight);
 
-    const fillLight = new THREE.DirectionalLight(0xaaccff, 0.3);
+    const fillLight = new THREE.DirectionalLight(0xaaccff, 1.2);
     fillLight.position.set(-3, 2, -2);
     scene.add(fillLight);
 
@@ -211,9 +211,9 @@
     const bodyGeo = new THREE.BoxGeometry(1.2, 2.4, 0.12);
     // Round edges slightly with bevel (approximate with standard box for r128 compat)
     const bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x1a1a1a,
-      metalness: 0.8,
-      roughness: 0.2
+      color: 0x3a3a3a,
+      metalness: 0.6,
+      roughness: 0.3
     });
     const body = new THREE.Mesh(bodyGeo, bodyMat);
     phone.add(body);
