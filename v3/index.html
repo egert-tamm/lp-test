@@ -127,6 +127,23 @@
     videoTex.flipY = false;
     videoTex.encoding = THREE.sRGBEncoding;
 
+    // UV remap helper — planar projection from bounding box onto Y/Z plane
+    // (screen.001 UV island is packed for baked textures; remap for full-face video coverage)
+    function remapUVs(mesh) {
+      const pos = mesh.geometry.attributes.position;
+      const box = new THREE.Box3().setFromBufferAttribute(pos);
+      const size = new THREE.Vector3(); box.getSize(size);
+      const min = box.min;
+      const uvArr = new Float32Array(pos.count * 2);
+      for (let i = 0; i < pos.count; i++) {
+        // Swap Y→U, Z→V so video is portrait-oriented (screen is taller than wide)
+        uvArr[i * 2]     = (pos.getY(i) - min.y) / (size.y || 1); // portrait: width = Y
+        uvArr[i * 2 + 1] = (pos.getZ(i) - min.z) / (size.z || 1); // portrait: height = Z
+      }
+      mesh.geometry = mesh.geometry.clone();
+      mesh.geometry.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
+    }
+
     if ('requestVideoFrameCallback' in vid) {
       const onFrame = () => { videoTex.needsUpdate = true; vid.requestVideoFrameCallback(onFrame); };
       vid.requestVideoFrameCallback(onFrame);
@@ -154,6 +171,7 @@
 
           // ✅ CONFIRMED: screen.001 = main display panel
           if (name === 'screen.001') {
+            remapUVs(child); // remap packed UV island → full face coverage
             const vidMat = new THREE.MeshBasicMaterial({
               map: videoTex,
               side: THREE.DoubleSide,
