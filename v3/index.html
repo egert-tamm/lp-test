@@ -20,7 +20,7 @@
   </style>
 </head>
 <body>
-  <div id="build">BUILD v48 · 50% OPACITY screen.001 · 2026-03-28</div>
+  <div id="build">BUILD v49 · requestVideoFrameCallback · 2026-03-28</div>
   <h2>All cells target screen.001 only. Different texture/material configs.</h2>
   <div id="status">Loading…</div>
   <div id="grid"></div>
@@ -116,10 +116,18 @@
           tex = new THREE.VideoTexture(vidEl);
           tex.minFilter = THREE.LinearFilter;
           tex.magFilter = THREE.LinearFilter;
-          tex.generateMipmaps = false; // CRITICAL: video dims rarely POT, mipmapping fails silently → black
+          tex.generateMipmaps = false;
           tex.flipY = perm.flipY;
           tex.encoding = perm.encoding;
-          if (perm.repeatFlip) { tex.repeat.set(1, -1); tex.offset.set(0, 1); } // alt UV-space V-flip
+          if (perm.repeatFlip) { tex.repeat.set(1, -1); tex.offset.set(0, 1); }
+          // Explicitly drive texture upload via requestVideoFrameCallback (works on mobile Safari/Chrome)
+          // Falls back to setInterval needsUpdate for browsers without rVFC support
+          if ('requestVideoFrameCallback' in vidEl) {
+            const onFrame = () => { tex.needsUpdate = true; vidEl.requestVideoFrameCallback(onFrame); };
+            vidEl.requestVideoFrameCallback(onFrame);
+          } else {
+            setInterval(() => { if (vidEl.readyState >= 2) tex.needsUpdate = true; }, 33);
+          }
         }
 
         const loader = new THREE.GLTFLoader();
