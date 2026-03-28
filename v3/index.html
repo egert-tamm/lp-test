@@ -20,7 +20,7 @@
   </style>
 </head>
 <body>
-  <div id="build">BUILD v46 · generateMipmaps=false FIX · 2026-03-28</div>
+  <div id="build">BUILD v47 · generateMipmaps=false + UV anchor permutations · 2026-03-28</div>
   <h2>All cells target screen.001 only. Different texture/material configs.</h2>
   <div id="status">Loading…</div>
   <div id="grid"></div>
@@ -34,15 +34,22 @@
 
   // Permutations to test
   const PERMS = [
-    { label: 'Basic\nflipY=false\nsRGB',       flipY: false, encoding: THREE.sRGBEncoding,    matType: 'basic'    },
-    { label: 'Basic\nflipY=true\nsRGB',        flipY: true,  encoding: THREE.sRGBEncoding,    matType: 'basic'    },
-    { label: 'Basic\nflipY=false\nLinear',     flipY: false, encoding: THREE.LinearEncoding,  matType: 'basic'    },
-    { label: 'Basic\nflipY=true\nLinear',      flipY: true,  encoding: THREE.LinearEncoding,  matType: 'basic'    },
-    { label: 'Std emissive\nflipY=false',      flipY: false, encoding: THREE.sRGBEncoding,    matType: 'emissive' },
-    { label: 'Std emissive\nflipY=true',       flipY: true,  encoding: THREE.sRGBEncoding,    matType: 'emissive' },
-    { label: 'Basic\nflipY=false\nneedsUpdate',flipY: false, encoding: THREE.sRGBEncoding,    matType: 'basic',   forceUpdate: true },
-    { label: 'Canvas tex\nfromVideo',          flipY: false, encoding: THREE.sRGBEncoding,    matType: 'canvas'   },
-    { label: 'Basic\nDoubleSide OFF\nflipY=false', flipY: false, encoding: THREE.sRGBEncoding, matType: 'basic', singleSide: true },
+    { label: 'Basic\nflipY=false\nsRGB',              flipY: false, encoding: THREE.sRGBEncoding,   matType: 'basic'                         },
+    { label: 'Basic\nflipY=true\nsRGB',               flipY: true,  encoding: THREE.sRGBEncoding,   matType: 'basic'                         },
+    { label: 'Basic\nflipY=false\nLinear',            flipY: false, encoding: THREE.LinearEncoding, matType: 'basic'                         },
+    { label: 'Basic\nflipY=true\nLinear',             flipY: true,  encoding: THREE.LinearEncoding, matType: 'basic'                         },
+    { label: 'Std emissive\nflipY=false',             flipY: false, encoding: THREE.sRGBEncoding,   matType: 'emissive'                      },
+    { label: 'Std emissive\nflipY=true',              flipY: true,  encoding: THREE.sRGBEncoding,   matType: 'emissive'                      },
+    { label: 'Canvas tex\nflipY=false',               flipY: false, encoding: THREE.sRGBEncoding,   matType: 'canvas'                        },
+    // UV offset/repeat approach — flips V in texture space (alt to geometry-baked flip)
+    { label: 'repeat.y=-1\noffset.y=1\nflipY=true',  flipY: true,  encoding: THREE.sRGBEncoding,   matType: 'basic',  repeatFlip: true      },
+    { label: 'repeat.y=-1\noffset.y=1\nflipY=false', flipY: false, encoding: THREE.sRGBEncoding,   matType: 'basic',  repeatFlip: true      },
+    // FrontSide only (after +PI/2 rotation, maybe normals face other way)
+    { label: 'Basic\nFrontSide\nflipY=false',         flipY: false, encoding: THREE.sRGBEncoding,   matType: 'basic',  singleSide: true      },
+    // Emissive + repeat flip combo
+    { label: 'Emissive\nrepeat.y=-1\noffset.y=1',     flipY: true,  encoding: THREE.sRGBEncoding,   matType: 'emissive', repeatFlip: true    },
+    // Canvas tex flipY=true
+    { label: 'Canvas tex\nflipY=true',                flipY: true,  encoding: THREE.sRGBEncoding,   matType: 'canvas'                        },
   ];
 
   // Shared renderer
@@ -112,6 +119,7 @@
           tex.generateMipmaps = false; // CRITICAL: video dims rarely POT, mipmapping fails silently → black
           tex.flipY = perm.flipY;
           tex.encoding = perm.encoding;
+          if (perm.repeatFlip) { tex.repeat.set(1, -1); tex.offset.set(0, 1); } // alt UV-space V-flip
         }
 
         const loader = new THREE.GLTFLoader();
@@ -133,6 +141,7 @@
                   side: THREE.DoubleSide,
                   toneMapped: false,
                 });
+                if (perm.repeatFlip) { tex.repeat.set(1, -1); tex.offset.set(0, 1); }
                 return m;
               }
               return new THREE.MeshBasicMaterial({
