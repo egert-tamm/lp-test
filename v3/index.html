@@ -149,12 +149,12 @@
       // screen-recording.mp4 is portrait (9:16 approx)
       const vidAR = 9 / 16;
       const meshAR = meshW / (meshH || 1);
-      // Scale UVs to preserve video aspect ratio (letterbox/pillarbox)
+      // Cover: scale UVs so video fills mesh face (crops edges, no letterbox)
       let scaleU = 1, scaleV = 1, offU = 0, offV = 0;
       if (meshAR > vidAR) {
-        scaleU = vidAR / meshAR; offU = (1 - scaleU) / 2;
-      } else {
         scaleV = meshAR / vidAR; offV = (1 - scaleV) / 2;
+      } else {
+        scaleU = vidAR / meshAR; offU = (1 - scaleU) / 2;
       }
       const uvArr = new Float32Array(pos.count * 2);
       for (let i = 0; i < pos.count; i++) {
