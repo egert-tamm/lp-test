@@ -191,7 +191,9 @@
       return null;
     }
 
-    const PHONE_HIDDEN = { rotY: -0.3, camZ: 6.0, fov: 40 };
+    const isMobileViewport = innerWidth < 768;
+    const CAM_SCALE = isMobileViewport ? 1.5 : 1.0; // push camera back on mobile
+    const PHONE_HIDDEN = { rotY: -0.3, camZ: 6.0 * CAM_SCALE, fov: 40 };
 
     // Build slide spacers
     const sectionsEl = document.getElementById('sections');
@@ -288,7 +290,8 @@
     const loader = new THREE.GLTFLoader();
     loader.load('https://cdn.star.io/models/iphone17.glb', (gltf) => {
       const model = gltf.scene;
-      model.scale.setScalar(1.6);
+      const isMobile = innerWidth < 768;
+      model.scale.setScalar(isMobile ? 1.0 : 1.6);
       model.rotation.y = Math.PI / 2;
       model.traverse((child) => {
         if (!child.isMesh) return;
@@ -407,6 +410,8 @@
         // Phase 2: phone slides in during second half, video scrubs
         const startPos = hiddenPos(key.from);
         const exitP    = exitPos(key.from);
+        const restCamZ = key.camZ * CAM_SCALE;
+        const restFov  = isMobileViewport ? Math.min(key.fov + 6, 50) : key.fov;
         ScrollTrigger.create({
           trigger: `#slide-${i}`,
           start: '50% top',
@@ -428,9 +433,9 @@
             phoneGroup.rotation.z = styleTiltZ(key.style, t);
 
             // Camera Z — zoom rushes from far
-            const zoomZ = styleZoomCamZ(key.style, t, PHONE_HIDDEN.camZ, key.camZ);
-            camera.position.z = zoomZ !== null ? zoomZ : lerp(PHONE_HIDDEN.camZ, key.camZ, t);
-            camera.fov = lerp(PHONE_HIDDEN.fov, key.fov, t);
+            const zoomZ = styleZoomCamZ(key.style, t, PHONE_HIDDEN.camZ, restCamZ);
+            camera.position.z = zoomZ !== null ? zoomZ : lerp(PHONE_HIDDEN.camZ, restCamZ, t);
+            camera.fov = lerp(PHONE_HIDDEN.fov, restFov, t);
             camera.updateProjectionMatrix();
 
             // Scrub video into this slide's segment
