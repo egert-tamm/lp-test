@@ -184,7 +184,7 @@
     // ── Phone group ──
     const phoneGroup = new THREE.Group();
     phoneGroup.position.set(1.0, 0, 0);
-    phoneGroup.rotation.set(0.1, -0.4, 0);
+    phoneGroup.rotation.set(0.1, 0.4, 0); // positive Y = slight right angle facing front
     scene.add(phoneGroup);
 
     // ── Load GLB ──
@@ -212,39 +212,42 @@
 
         const debugLines = [];
 
+        // Flip model to face front (cameras were facing camera = model loaded backwards)
+        model.rotation.y = Math.PI;
+
         model.traverse((child) => {
           if (!child.isMesh) return;
 
           const mats = Array.isArray(child.material) ? child.material : [child.material];
-          mats.forEach((mat) => {
+          mats.forEach((mat, idx) => {
             if (!mat) return;
             const name = (mat.name || '').toLowerCase();
             debugLines.push(`${name} | metalness:${mat.metalness?.toFixed(2)} roughness:${mat.roughness?.toFixed(2)}`);
 
-            // ── Screen: video texture, render first ──
-            if (name === 'screen.001') {
-              const screenMat = new THREE.MeshBasicMaterial({
+            // ── glass.002 = flat front display face → VIDEO TEXTURE ──
+            if (name === 'glass.002') {
+              const vidMat = new THREE.MeshBasicMaterial({
                 map: videoTex,
                 side: THREE.FrontSide,
                 toneMapped: false,
               });
               if (Array.isArray(child.material)) {
-                const idx = child.material.indexOf(mat);
-                child.material[idx] = screenMat;
+                child.material[idx] = vidMat;
               } else {
-                child.material = screenMat;
+                child.material = vidMat;
               }
-              child.renderOrder = 0;
               return;
             }
 
-            // ── Glass: hide — it sits on top of screen and occludes it ──
-            if (name === 'glass.002') {
-              child.visible = false;
+            // ── screen.001 = thin edge/chamfer → black bezel, no video ──
+            if (name === 'screen.001') {
+              mat.color = new THREE.Color(0x000000);
+              mat.metalness = 0;
+              mat.roughness = 1;
               return;
             }
 
-            // ── Recolor orange/default body → titanium dark ──
+            // ── Recolor orange body → titanium dark ──
             const recolorNames = [
               'basecolor.001', 'backpanel.001',
               'material.005', 'material.006', 'material.007'
