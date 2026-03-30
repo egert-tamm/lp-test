@@ -93,15 +93,12 @@
       position: sticky; top: 0;
       height: 100vh;
       overflow: hidden;
-      z-index: 3;   /* above canvas so words are definitely visible */
+      z-index: 3;
       pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 0.1em;
     }
     .word-line {
-      display: block;
+      position: absolute;
+      left: 0;
       white-space: nowrap;
       font-family: 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: clamp(80px, 14vw, 180px);
@@ -111,8 +108,9 @@
       line-height: 1;
       will-change: transform;
     }
-    #word-line-1 { color: rgba(255,255,255,0.9); }
-    #word-line-2 { color: #c8f55a; }
+    /* vertically stacked around center */
+    #word-line-1 { color: rgba(255,255,255,0.9); top: calc(50% - 1.1em); }
+    #word-line-2 { color: #c8f55a;               top: calc(50% + 0.1em); }
 
     #hero-copy {
       position: sticky; top: 0;
