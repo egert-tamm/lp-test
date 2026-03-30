@@ -105,6 +105,8 @@
       z-index: 1;   /* below canvas (z:2) — phone occludes words */
       display: none;
       overflow: visible;
+      /* clip-path crops the rendering box — text cut cleanly at inset edges, never ragged iOS clip */
+      clip-path: inset(0 0 0 0);
     }
     .word-line {
       position: absolute;
@@ -228,17 +230,7 @@
         font-size: clamp(2.8rem, 11vw, 5rem);
       }
     }
-    /* Edge curtains — only shown during word scroll; paint over text that iOS clips at viewport boundary */
-    .edge-curtain {
-      display: none; /* shown via JS only during word scroll */
-      position: fixed;
-      top: 0; bottom: 0;
-      width: 20%;
-      z-index: 1; /* same layer as word overlay — DOM order puts curtains on top of words but under canvas */
-      pointer-events: none;
-    }
-    #edge-left  { left: 0;  background: linear-gradient(to right, #080808 60%, rgba(8,8,8,0) 100%); }
-    #edge-right { right: 0; background: linear-gradient(to left,  #080808 60%, rgba(8,8,8,0) 100%); }
+
 
     /* SVG background */
     #bg-anim {
@@ -1100,8 +1092,6 @@
     <div class="word-line" id="word-line-1">BUILT FOR SPEED</div>
     <div class="word-line" id="word-line-2">DESIGNED FOR EDGE</div>
   </div>
-  <div class="edge-curtain" id="edge-left"></div>
-  <div class="edge-curtain" id="edge-right"></div>
 
   <!-- slide-text overlay hidden — no per-slide copy for now -->
   <div class="slide-text" id="slide-text" style="display:none">
@@ -1483,8 +1473,6 @@
       const wl1 = document.getElementById('word-line-1');
       const wl2 = document.getElementById('word-line-2');
       const logoEl = document.getElementById('yolo-logo');
-      const edgeLeft  = document.getElementById('edge-left');
-      const edgeRight = document.getElementById('edge-right');
 
       // Word overlay: driven by raw scroll position — no GSAP, no sticky, no diagonal
       const wordSection  = document.getElementById('word-section');
@@ -1508,13 +1496,9 @@
 
         if (currentScroll < startScroll || currentScroll > endScroll) {
           wordOverlay.style.display = 'none';
-          edgeLeft.style.display = 'none';
-          edgeRight.style.display = 'none';
           return;
         }
         wordOverlay.style.display = 'block';
-        edgeLeft.style.display = 'block';
-        edgeRight.style.display = 'block';
 
         const p = Math.max(0, Math.min(1, (currentScroll - startScroll) / (endScroll - startScroll)));
 
