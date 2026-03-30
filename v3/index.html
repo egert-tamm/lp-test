@@ -1561,6 +1561,14 @@
       const t2 = now / 1000;
       glowPlane.material.opacity = 0.04 + Math.sin(t2 * 1.2) * 0.02;
 
+      // Always keep camera centered — no lateral drift ever
+      camera.position.x = 0;
+      camera.position.y = 0;
+      // On portrait, force phone to horizontal center every frame
+      if (window.innerWidth < window.innerHeight) {
+        phoneGroup.position.x = 0;
+      }
+
       renderer.render(scene, camera);
     })(0);
 
