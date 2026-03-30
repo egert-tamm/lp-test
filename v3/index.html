@@ -329,18 +329,7 @@
     const glint = new THREE.PointLight(0xffffff, 2.5, 8);
     glint.position.set(2, 2, 3); scene.add(glint);
 
-    // Particles
-    (function() {
-      const count = 220, pos = new Float32Array(count * 3), spd = new Float32Array(count);
-      for (let i = 0; i < count; i++) {
-        pos[i*3]=(Math.random()-.5)*12; pos[i*3+1]=(Math.random()-.5)*12; pos[i*3+2]=(Math.random()-.5)*8;
-        spd[i] = 0.0003 + Math.random() * 0.0005;
-      }
-      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      const mat = new THREE.PointsMaterial({ color: 0x336688, size: 0.035, sizeAttenuation: true, transparent: true, opacity: 0.55 });
-      const pts = new THREE.Points(geo, mat);
-      scene.add(pts); pts.userData.speeds = spd; pts.userData.positions = pos; scene.userData.particles = pts;
-    })();
+
 
     // Glow plane
     const glowPlane = new THREE.Mesh(
@@ -622,12 +611,7 @@
       glint.position.set(Math.sin(glintAngle)*3.5, Math.cos(glintAngle*0.7)*2, 3);
       const t2 = now / 1000;
       glowPlane.material.opacity = 0.04 + Math.sin(t2 * 1.2) * 0.02;
-      const pts = scene.userData.particles;
-      if (pts) {
-        const p = pts.userData.positions, s = pts.userData.speeds;
-        for (let i = 0; i < s.length; i++) { p[i*3+1] += s[i]; if(p[i*3+1]>6)p[i*3+1]=-6; }
-        pts.geometry.attributes.position.needsUpdate = true;
-      }
+
       renderer.render(scene, camera);
     })(0);
 
