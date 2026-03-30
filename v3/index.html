@@ -1351,20 +1351,31 @@
       const heroSect   = document.getElementById('hero-section');
 
       // The GLTF model is rotated π/2 so its geometric center isn't at origin.
-      // Offset scales with aspect ratio: portrait (mobile) needs less offset than landscape.
+      const isPortrait = () => innerWidth < innerHeight;
+
+      // Portrait: phone fully centered; landscape: slight right offset
       function phoneXOffset() {
-        return innerWidth < innerHeight ? 0.14 : 0.22;  // portrait vs landscape
+        return isPortrait() ? 0.0 : 0.22;
       }
 
-      // Start: phone low — bottom ~40% cropped, only top portion visible
-      // Start: phone in place but tilted forward 32° on X axis (top away from viewer)
-      phoneGroup.position.set(phoneXOffset(), -1.4, 0);
-      phoneGroup.rotation.set(-32 * Math.PI / 180, 0, 0);
-      camera.position.z = 3.8;
-      camera.fov = 34; camera.updateProjectionMatrix();
+      // Portrait start: phone higher (-0.6), closer cam, 40° tilt (matches Figma)
+      // Landscape start: phone low (-1.4), 32° tilt
+      const startY   = isPortrait() ? -0.6  : -1.4;
+      const startCamZ = isPortrait() ? 3.2   : 3.8;
+      const startFov  = isPortrait() ? 30    : 34;
+      const startTilt = isPortrait() ? 40    : 32;
 
-      // End: phone upright
-      const heroRest = { x: phoneXOffset(), y: 0.0, rotY: 0.0, rotZ: 0, camZ: 5.5, fov: 36 };
+      phoneGroup.position.set(phoneXOffset(), startY, 0);
+      phoneGroup.rotation.set(-startTilt * Math.PI / 180, 0, 0);
+      camera.position.z = startCamZ;
+      camera.fov = startFov; camera.updateProjectionMatrix();
+
+      // End: phone upright — portrait slightly closer for bigger feel
+      const heroRest = {
+        x: phoneXOffset(), y: 0.0, rotY: 0.0, rotZ: 0,
+        camZ: isPortrait() ? 4.5 : 5.5,
+        fov:  isPortrait() ? 32  : 36
+      };
 
       ScrollTrigger.create({
         trigger: '#hero-section',
@@ -1380,8 +1391,8 @@
           if (p <= 0.5) {
             // Phase 1: zoom out — camera pulls back, phone rises into full view
             const t = eOut3(p / 0.5);
-            phoneGroup.position.y = lerp(-1.4, heroRest.y,   t);
-            phoneGroup.rotation.x = lerp(-32 * Math.PI / 180, 0, t);
+            phoneGroup.position.y = lerp(startY, heroRest.y, t);
+            phoneGroup.rotation.x = lerp(-startTilt * Math.PI / 180, 0, t);
             camera.position.z     = lerp(3.8,  heroRest.camZ, t);
             camera.fov            = lerp(34,   heroRest.fov,  t);
             // Start fading copy from p=0.3 so it's gone well before p=0.5
