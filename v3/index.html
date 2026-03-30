@@ -104,7 +104,7 @@
       pointer-events: none;
       z-index: 1;   /* below canvas (z:2) — phone occludes words */
       display: none;
-      overflow: hidden;
+      overflow: visible;
     }
     .word-line {
       position: absolute;
@@ -1368,8 +1368,8 @@
 
           const w1w = wl1.offsetWidth || W * 2;
           const w2w = wl2.offsetWidth || W * 2;
-          const x1 = -w1w + p * (W + w1w);
-          const x2 = W    - p * (W + w2w);
+          const x1 = -w1w + p * (W + w1w + 60);
+          const x2 = W    - p * (W + w2w + 60);
 
           wl1.style.transform = `translate(${x1}px, ${y1}px)`;
           wl2.style.transform = `translate(${x2}px, ${y2}px)`;
@@ -1380,8 +1380,8 @@
 
           const w1w = wl1.offsetWidth || W * 2;
           const w2w = wl2.offsetWidth || W * 2;
-          const x1 = -w1w + p * (W + w1w);
-          const x2 = W    - p * (W + w2w);
+          const x1 = -w1w + p * (W + w1w + 60);
+          const x2 = W    - p * (W + w2w + 60);
 
           wl1.style.transform = `translate(${x1}px, ${y1}px)`;
           wl2.style.transform = `translate(${x2}px, ${y2}px)`;
