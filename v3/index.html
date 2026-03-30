@@ -228,16 +228,17 @@
         font-size: clamp(2.8rem, 11vw, 5rem);
       }
     }
-    /* Edge curtains — paint over word text at viewport edges so iOS clip is invisible */
+    /* Edge curtains — only shown during word scroll; paint over text that iOS clips at viewport boundary */
     .edge-curtain {
+      display: none; /* shown via JS only during word scroll */
       position: fixed;
       top: 0; bottom: 0;
-      width: 12%;
+      width: 22%;
       z-index: 3; /* above word overlay (1) and canvas (2) */
       pointer-events: none;
     }
-    #edge-left  { left: 0;  background: linear-gradient(to right, #080808 30%, transparent 100%); }
-    #edge-right { right: 0; background: linear-gradient(to left,  #080808 30%, transparent 100%); }
+    #edge-left  { left: 0;  background: linear-gradient(to right, #080808 55%, transparent 100%); }
+    #edge-right { right: 0; background: linear-gradient(to left,  #080808 55%, transparent 100%); }
 
     /* SVG background */
     #bg-anim {
@@ -1482,6 +1483,8 @@
       const wl1 = document.getElementById('word-line-1');
       const wl2 = document.getElementById('word-line-2');
       const logoEl = document.getElementById('yolo-logo');
+      const edgeLeft  = document.getElementById('edge-left');
+      const edgeRight = document.getElementById('edge-right');
 
       // Word overlay: driven by raw scroll position — no GSAP, no sticky, no diagonal
       const wordSection  = document.getElementById('word-section');
@@ -1505,9 +1508,13 @@
 
         if (currentScroll < startScroll || currentScroll > endScroll) {
           wordOverlay.style.display = 'none';
+          edgeLeft.style.display = 'none';
+          edgeRight.style.display = 'none';
           return;
         }
         wordOverlay.style.display = 'block';
+        edgeLeft.style.display = 'block';
+        edgeRight.style.display = 'block';
 
         const p = Math.max(0, Math.min(1, (currentScroll - startScroll) / (endScroll - startScroll)));
 
