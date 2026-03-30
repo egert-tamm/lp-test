@@ -588,8 +588,15 @@
     }
 
     const phoneGroup = new THREE.Group();
-    phoneGroup.position.set(PHONE_HIDDEN.x, PHONE_HIDDEN.y, 0);
-    phoneGroup.rotation.set(0, PHONE_HIDDEN.rotY, 0);
+    // Init to hero start position — corrected after setupScroll()
+    const _isPortrait = () => window.innerWidth < window.innerHeight;
+    const _phoneXOffset = () => _isPortrait() ? 0.0 : 0.22;
+    const _startTilt = _isPortrait() ? 40 : 32;
+    phoneGroup.position.set(_phoneXOffset(), _isPortrait() ? -0.7 : -1.4, 0);
+    phoneGroup.rotation.set(-_startTilt * Math.PI / 180, 0, 0);
+    camera.position.z = _isPortrait() ? 3.2 : 3.8;
+    camera.fov = _isPortrait() ? 30 : 34;
+    camera.updateProjectionMatrix();
     scene.add(phoneGroup);
 
     function lerp(a, b, t) { return a + (b - a) * t; }
@@ -873,42 +880,41 @@
     }
 
       /* ══════════════════════════════════════════════
-         FEATURE SECTION — phone moves right (desktop) / stays centered (portrait)
-         Text + button already in DOM, just move the phone
+         FEATURE SECTION — smooth interpolation from heroRest → tilted position
+         scrub: true so progress drives the lerp (smooth in both directions)
       ══════════════════════════════════════════════ */
       ScrollTrigger.create({
         trigger: '#feature-section',
-        start: 'top top',
-        end: 'bottom top',
-        scrub: 0.6,
+        start: 'top bottom',   // start lerping as section enters from bottom
+        end: 'top top',        // fully transitioned when section top hits viewport top
+        scrub: true,
         onUpdate(self) {
+          const t = self.progress; // 0 = heroRest, 1 = feature target
+          const eased = t < 0.5 ? 2*t*t : -1+(4-2*t)*t; // easeInOut
           const portrait = window.innerWidth < window.innerHeight;
+          const deg = Math.PI / 180;
+
           if (portrait) {
-            // Mobile: phone centered, no tilt
-            phoneGroup.position.x = 0;
-            phoneGroup.rotation.y = 0;
-            phoneGroup.rotation.z = 0;
-            camera.position.z = heroRest.camZ;
-            camera.fov = heroRest.fov;
+            // Mobile: stay centered and upright
+            phoneGroup.position.x = lerp(phoneXOffset(), 0, eased);
+            phoneGroup.rotation.x = lerp(0, 0, eased);
+            phoneGroup.rotation.y = lerp(heroRest.rotY, 0, eased);
+            phoneGroup.rotation.z = lerp(0, 0, eased);
+            camera.position.z     = lerp(heroRest.camZ, heroRest.camZ, eased);
+            camera.fov            = lerp(heroRest.fov, heroRest.fov, eased);
           } else {
-            // Desktop: phone right side — Egert's values: rotX=4°, rotY=32°, rotZ=16°
-            const deg = Math.PI / 180;
-            phoneGroup.position.x = 0.5;
-            phoneGroup.rotation.x = 4  * deg;
-            phoneGroup.rotation.y = 32 * deg;
-            phoneGroup.rotation.z = 16 * deg;
-            camera.position.z = 4.8;
-            camera.fov = 36;
+            // Desktop: lerp to Egert's tilt values
+            phoneGroup.position.x = lerp(phoneXOffset(), 0.5, eased);
+            phoneGroup.rotation.x = lerp(0, 4  * deg, eased);
+            phoneGroup.rotation.y = lerp(heroRest.rotY, 32 * deg, eased);
+            phoneGroup.rotation.z = lerp(0, 16 * deg, eased);
+            camera.position.z     = lerp(heroRest.camZ, 4.8, eased);
+            camera.fov            = lerp(heroRest.fov, 36, eased);
           }
+          phoneGroup.position.y = heroRest.y;
           camera.position.x = 0;
           camera.position.y = 0;
           camera.updateProjectionMatrix();
-        },
-        onLeaveBack() {
-          // Restore centered on scroll back
-          phoneGroup.position.x = phoneXOffset();
-          phoneGroup.rotation.y = heroRest.rotY;
-          phoneGroup.rotation.z = 0;
         }
       });
 
