@@ -521,29 +521,24 @@
       const wl1 = document.getElementById('word-line-1');
       const wl2 = document.getElementById('word-line-2');
 
-      const vw = () => window.innerWidth;
-
-      // Must wait a tick so text is rendered and offsetWidth is available
       setTimeout(() => {
         const w1 = wl1.offsetWidth;
         const w2 = wl2.offsetWidth;
+        const W  = window.innerWidth;
 
-        // Start fully off-screen: line1 left edge is past left edge, line2 right edge past right
-        const startX1 = -(vw() + w1);   // completely off left
-        const startX2 =  vw();           // completely off right
-
-        // End: text centered horizontally
-        const endX1 = (vw() - w1) / 2;
-        const endX2 = (vw() - w2) / 2;
-
+        // Full horizontal sweep — text travels the entire width plus its own width
+        // Line 1 (white): left → right  (starts off-left, ends off-right)
+        // Line 2 (green): right → left  (starts off-right, ends off-left)
         gsap.fromTo(wl1,
-          { x: startX1 },
-          { x: endX1, ease: 'none',
+          { x: -w1 },           // starts just off left edge
+          { x: W,               // ends just off right edge
+            ease: 'none',
             scrollTrigger: { trigger: '#word-section', start: 'top top', end: 'bottom top', scrub: true } }
         );
         gsap.fromTo(wl2,
-          { x: startX2 },
-          { x: endX2, ease: 'none',
+          { x: W },             // starts just off right edge
+          { x: -w2,             // ends just off left edge
+            ease: 'none',
             scrollTrigger: { trigger: '#word-section', start: 'top top', end: 'bottom top', scrub: true } }
         );
       }, 100);
