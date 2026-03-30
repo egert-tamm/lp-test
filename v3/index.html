@@ -91,10 +91,10 @@
       position: sticky; top: 0;
       height: 100vh;
       display: flex; flex-direction: column;
-      justify-content: center;
+      justify-content: flex-start;   /* push text to top third */
       align-items: center;
       text-align: center;
-      padding: 0 6vw;
+      padding: 15vh 6vw 0;           /* ~15% from top */
       pointer-events: none;
       z-index: 3;
     }
@@ -405,15 +405,15 @@
       const heroCopy   = document.getElementById('hero-copy');
       const heroSect   = document.getElementById('hero-section');
 
-      // Screenshot 1: phone centered X, bottom-cropped (center ~72% viewport = y ~ -0.44 in NDC)
-      // Slight tilt -3° to -5° on Z (~-0.07 rad). Camera closer = larger phone.
-      phoneGroup.position.set(0.0, -0.9, 0);
-      phoneGroup.rotation.set(0, 0.0, -0.07);
-      camera.position.z = 3.2;
-      camera.fov = 32; camera.updateProjectionMatrix();
+      // Start: zoomed in close, phone centered but bottom half cropped off (camera very close)
+      // No rotation at all — just a straight zoom out on scroll
+      phoneGroup.position.set(0.0, -0.5, 0);
+      phoneGroup.rotation.set(0, 0, 0);
+      camera.position.z = 2.2;   // very close → phone fills/overflows viewport
+      camera.fov = 28; camera.updateProjectionMatrix();
 
-      // Screenshot 2: phone centered, nearly full height visible, upright — no more movement after this
-      const heroRest = { x: 0.0, y: 0.0, rotY: 0.0, rotZ: 0, camZ: 3.8, fov: 34 };
+      // End: zoomed out, full phone visible and centered
+      const heroRest = { x: 0.0, y: 0.0, rotY: 0.0, rotZ: 0, camZ: 3.9, fov: 34 };
 
       ScrollTrigger.create({
         trigger: '#hero-section',
@@ -427,22 +427,16 @@
           const eInOut  = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
 
           if (p <= 0.5) {
-            // Phase 1: phone tilts upright
+            // Phase 1: zoom out — camera pulls back, phone rises into full view
             const t = eOut3(p / 0.5);
-            phoneGroup.position.x = lerp(0.55,  heroRest.x, t);
-            phoneGroup.position.y = lerp(-2.6,  heroRest.y, t);
-            phoneGroup.rotation.z = lerp(-0.68, 0, t);
-            phoneGroup.rotation.y = lerp(-0.18, heroRest.rotY, t);
-            camera.position.z     = lerp(5.6,   heroRest.camZ, t);
-            camera.fov            = lerp(40,     heroRest.fov, t);
+            phoneGroup.position.y = lerp(-0.5, heroRest.y, t);
+            camera.position.z     = lerp(2.2,  heroRest.camZ, t);
+            camera.fov            = lerp(28,   heroRest.fov, t);
             heroCopy.style.opacity  = '1';
             heroCopy.style.transform = 'translateY(0)';
           } else {
-            // Phase 2: copy fades, phone stays at rest
-            phoneGroup.position.x = heroRest.x;
+            // Phase 2: copy fades out, phone stays locked
             phoneGroup.position.y = heroRest.y;
-            phoneGroup.rotation.z = 0;
-            phoneGroup.rotation.y = heroRest.rotY;
             camera.position.z     = heroRest.camZ;
             camera.fov            = heroRest.fov;
             const t2 = eInOut((p - 0.5) / 0.5);
