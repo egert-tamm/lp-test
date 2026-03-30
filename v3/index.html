@@ -1424,8 +1424,8 @@
             phoneGroup.rotation.x = lerp(-startTilt * Math.PI / 180, 0, t);
             camera.position.z     = lerp(startCamZ, heroRest.camZ, t);
             camera.fov            = lerp(startFov,  heroRest.fov,  t);
-            // Fade copy: starts at p=0.3, gone by p=0.5
-            const fadeT = clamp01((p - 0.3) / 0.2);
+            // Fade copy: starts at p=0.1, gone by p=0.28
+            const fadeT = clamp01((p - 0.1) / 0.18);
             heroCopy.style.display   = 'flex';
             heroCopy.style.opacity   = String(1 - fadeT);
             heroCopy.style.transform = `translateY(${-fadeT * 36}px)`;
