@@ -105,6 +105,9 @@
       z-index: 1;   /* below canvas (z:2) — phone occludes words */
       display: none;
       overflow: visible;
+      /* Soft fade at edges — hides hard iOS viewport clip */
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
     }
     .word-line {
       position: absolute;
@@ -218,7 +221,7 @@
       #hero-copy { padding-top: 8vh; }
     }
     @media (orientation: portrait) {
-      .word-line { font-size: clamp(48px, 14vw, 100px); }
+      .word-line { font-size: clamp(56px, 18vw, 120px); }
       #hero-copy {
         justify-content: flex-start;
         padding-top: 18vh;
