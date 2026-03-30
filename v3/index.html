@@ -16,7 +16,7 @@
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
     }
-    #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+    #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
 
     #loading {
       position: fixed; inset: 0; background: #080808;
@@ -93,7 +93,7 @@
       position: sticky; top: 0;
       height: 100vh;
       overflow: hidden;
-      z-index: 1;  /* above canvas so words are visible */
+      z-index: 1;  /* below canvas (z:2) — phone occludes words, transparent canvas shows them elsewhere */
       pointer-events: none;
     }
     .word-line {
@@ -126,7 +126,7 @@
       text-align: center;
       padding: 12vh 6vw 0;
       pointer-events: none;
-      z-index: 10;   /* above canvas (z:0) */
+      z-index: 10;   /* above canvas (z:2) */
     }
     /* Same font style as .slide-title — no italic, same weight/tracking */
     #hero-copy h1 {
