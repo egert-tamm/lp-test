@@ -99,12 +99,12 @@
     /* Word overlay: fixed to viewport, driven purely by JS scroll progress */
     #word-overlay {
       position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      top: 0; left: -100vw;
+      width: 300vw; height: 100%;
       pointer-events: none;
       z-index: 1;   /* below canvas (z:2) — phone occludes words */
       display: none;
-      overflow: visible;
+      overflow: hidden;
     }
     .word-line {
       position: absolute;
@@ -1420,8 +1420,8 @@
             phoneGroup.rotation.x = lerp(-startTilt * Math.PI / 180, 0, t);
             camera.position.z     = lerp(startCamZ, heroRest.camZ, t);
             camera.fov            = lerp(startFov,  heroRest.fov,  t);
-            // Start fading copy from p=0.3 so it's gone well before p=0.5
-            const fadeT = clamp01((p - 0.3) / 0.2);
+            // Fade copy quickly — starts at p=0.1, gone by p=0.25
+            const fadeT = clamp01((p - 0.1) / 0.15);
             heroCopy.style.display   = 'flex';
             heroCopy.style.opacity   = String(1 - fadeT);
             heroCopy.style.transform = `translateY(${-fadeT * 36}px)`;
@@ -1515,8 +1515,9 @@
           const w1w = wl1.offsetWidth || W * 2;
           const w2w = wl2.offsetWidth || W * 2;
           const buf = W * 0.6;
-          const x1 = -w1w + p * (W + w1w + buf);
-          const x2 = W    - p * (W + w2w + buf);
+          // +W offset because overlay starts at left:-100vw (=left:-W)
+          const x1 = W + (-w1w + p * (W + w1w + buf));
+          const x2 = W + (W    - p * (W + w2w + buf));
 
           wl1.style.transform = `translate(${x1}px, ${y1}px)`;
           wl2.style.transform = `translate(${x2}px, ${y2}px)`;
@@ -1528,8 +1529,8 @@
           const w1w = wl1.offsetWidth || W * 2;
           const w2w = wl2.offsetWidth || W * 2;
           const buf = 60;
-          const x1 = -w1w + p * (W + w1w + buf);
-          const x2 = W    - p * (W + w2w + buf);
+          const x1 = W + (-w1w + p * (W + w1w + buf));
+          const x2 = W + (W    - p * (W + w2w + buf));
 
           wl1.style.transform = `translate(${x1}px, ${y1}px)`;
           wl2.style.transform = `translate(${x2}px, ${y2}px)`;
