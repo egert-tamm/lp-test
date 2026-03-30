@@ -13,10 +13,6 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       background-color: #080808;
-      background-image: url('bg.svg');
-      background-size: cover;
-      background-position: center top;
-      background-attachment: fixed;
       color: #fff;
       font-family: "obviously-variable", sans-serif;
       overflow-x: hidden;
@@ -163,6 +159,35 @@
       .slide-title { max-width: 85vw; }
       .slide-text { padding: 0 5vw 8vh; }
     }
+    /* Animated SVG background */
+    #bg-anim {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+    #bg-anim img {
+      width: 130%; height: 130%;
+      object-fit: cover;
+      animation: bgDrift 18s ease-in-out infinite alternate,
+                 bgPulse 6s ease-in-out infinite alternate,
+                 bgHue   22s linear infinite;
+      transform-origin: center center;
+    }
+    @keyframes bgDrift {
+      0%   { transform: translate(-5%, -5%) scale(1.05); }
+      33%  { transform: translate(3%, -8%) scale(1.12) rotate(1.5deg); }
+      66%  { transform: translate(-8%, 4%) scale(1.08) rotate(-1deg); }
+      100% { transform: translate(4%, 6%) scale(1.14) rotate(2deg); }
+    }
+    @keyframes bgPulse {
+      0%   { opacity: 0.85; }
+      50%  { opacity: 1.0; }
+      100% { opacity: 0.75; }
+    }
+    @keyframes bgHue {
+      0%   { filter: hue-rotate(0deg) saturate(1.2); }
+      50%  { filter: hue-rotate(40deg) saturate(1.6); }
+      100% { filter: hue-rotate(-20deg) saturate(1.0); }
+    }
   </style>
 </head>
 <body>
@@ -177,6 +202,7 @@
     preload="auto" muted playsinline crossorigin="anonymous">
   </video>
 
+  <div id="bg-anim"><img src="bg.svg" alt=""></div>
   <canvas id="canvas"></canvas>
 
   <!-- ── HERO section ── -->
@@ -313,12 +339,7 @@
     renderer.toneMappingExposure = 1.4;
     renderer.physicallyCorrectLights = true;
     renderer.setClearColor(0x000000, 0); // fully transparent canvas so DOM word layer shows through
-    // Background: SVG pattern over dark base
-    document.body.style.backgroundColor = '#080808';
-    document.body.style.backgroundImage = "url('bg.svg')";
-    document.body.style.backgroundSize = 'cover';
-    document.body.style.backgroundPosition = 'center top';
-    document.body.style.backgroundAttachment = 'fixed';
+    // Background handled by #bg-anim element
 
     scene.add(new THREE.AmbientLight(0x112233, 1.0));
     const key = new THREE.DirectionalLight(0xffffff, 3.0);
