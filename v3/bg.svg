@@ -1,4 +1,165 @@
-<svg width="1745" height="709" viewBox="0 0 1745 709" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg style="overflow:visible" width="1745" height="709" viewBox="0 0 1745 709" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+<defs>
+  <style>
+    @keyframes floatA {
+      0%,100% { transform: translateY(0px) rotate(0deg); opacity: 0.9; }
+      25%      { transform: translateY(-18px) rotate(3deg); opacity: 1; }
+      50%      { transform: translateY(-8px) rotate(-2deg); opacity: 0.7; }
+      75%      { transform: translateY(-22px) rotate(1.5deg); opacity: 1; }
+    }
+    @keyframes floatB {
+      0%,100% { transform: translateY(0px) rotate(0deg); opacity: 0.8; }
+      30%      { transform: translateY(14px) rotate(-4deg); opacity: 1; }
+      60%      { transform: translateY(6px) rotate(2deg); opacity: 0.6; }
+      80%      { transform: translateY(20px) rotate(-1deg); opacity: 0.9; }
+    }
+    @keyframes floatC {
+      0%,100% { transform: translate(0,0) rotate(0deg); opacity: 0.7; }
+      20%      { transform: translate(10px,-14px) rotate(5deg); opacity: 1; }
+      55%      { transform: translate(-8px,10px) rotate(-3deg); opacity: 0.85; }
+      80%      { transform: translate(5px,-20px) rotate(2deg); opacity: 0.6; }
+    }
+    @keyframes glowPulse {
+      0%,100% { filter: drop-shadow(0 0 0px rgba(158,255,120,0)); }
+      50%      { filter: drop-shadow(0 0 12px rgba(158,255,120,0.8)); }
+    }
+    @keyframes spinDrop {
+      0%   { transform: rotate(0deg) scale(1); opacity: 0.8; }
+      33%  { transform: rotate(90deg) scale(1.15); opacity: 1; }
+      66%  { transform: rotate(-45deg) scale(0.9); opacity: 0.65; }
+      100% { transform: rotate(0deg) scale(1); opacity: 0.8; }
+    }
+    path:nth-child(1) { animation: floatA 7s ease-in-out 0.00s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(2) { animation: floatB 9s ease-in-out 0.37s infinite, glowPulse 13.5s ease-in-out 0.37s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(3) { animation: floatC 11s ease-in-out 0.74s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(4) { animation: spinDrop 13s ease-in-out 1.11s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(5) { animation: floatA 6s ease-in-out 1.48s infinite, glowPulse 9.0s ease-in-out 1.48s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(6) { animation: floatB 8s ease-in-out 1.85s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(7) { animation: floatC 10s ease-in-out 2.22s infinite, glowPulse 15.0s ease-in-out 2.22s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(8) { animation: spinDrop 12s ease-in-out 2.59s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(9) { animation: floatA 7s ease-in-out 2.96s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(10) { animation: floatB 9s ease-in-out 3.33s infinite, glowPulse 13.5s ease-in-out 3.33s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(11) { animation: floatC 11s ease-in-out 3.70s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(12) { animation: spinDrop 13s ease-in-out 4.07s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(13) { animation: floatA 6s ease-in-out 4.44s infinite, glowPulse 9.0s ease-in-out 4.44s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(14) { animation: floatB 8s ease-in-out 4.81s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(15) { animation: floatC 10s ease-in-out 5.18s infinite, glowPulse 15.0s ease-in-out 5.18s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(16) { animation: spinDrop 12s ease-in-out 5.55s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(17) { animation: floatA 7s ease-in-out 5.92s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(18) { animation: floatB 9s ease-in-out 6.29s infinite, glowPulse 13.5s ease-in-out 6.29s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(19) { animation: floatC 11s ease-in-out 6.66s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(20) { animation: spinDrop 13s ease-in-out 7.03s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(21) { animation: floatA 6s ease-in-out 1.40s infinite, glowPulse 9.0s ease-in-out 1.40s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(22) { animation: floatB 8s ease-in-out 7.77s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(23) { animation: floatC 10s ease-in-out 8.14s infinite, glowPulse 15.0s ease-in-out 8.14s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(24) { animation: spinDrop 12s ease-in-out 8.51s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(25) { animation: floatA 7s ease-in-out 1.88s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(26) { animation: floatB 9s ease-in-out 0.25s infinite, glowPulse 13.5s ease-in-out 0.25s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(27) { animation: floatC 11s ease-in-out 9.62s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(28) { animation: spinDrop 13s ease-in-out 9.99s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(29) { animation: floatA 6s ease-in-out 4.36s infinite, glowPulse 9.0s ease-in-out 4.36s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(30) { animation: floatB 8s ease-in-out 2.73s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(31) { animation: floatC 10s ease-in-out 1.10s infinite, glowPulse 15.0s ease-in-out 1.10s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(32) { animation: spinDrop 12s ease-in-out 11.47s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(33) { animation: floatA 7s ease-in-out 4.84s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(34) { animation: floatB 9s ease-in-out 3.21s infinite, glowPulse 13.5s ease-in-out 3.21s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(35) { animation: floatC 11s ease-in-out 1.58s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(36) { animation: spinDrop 13s ease-in-out 12.95s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(37) { animation: floatA 6s ease-in-out 1.32s infinite, glowPulse 9.0s ease-in-out 1.32s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(38) { animation: floatB 8s ease-in-out 5.69s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(39) { animation: floatC 10s ease-in-out 4.06s infinite, glowPulse 15.0s ease-in-out 4.06s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(40) { animation: spinDrop 12s ease-in-out 2.43s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(41) { animation: floatA 7s ease-in-out 0.80s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(42) { animation: floatB 9s ease-in-out 6.17s infinite, glowPulse 13.5s ease-in-out 6.17s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(43) { animation: floatC 11s ease-in-out 4.54s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(44) { animation: spinDrop 13s ease-in-out 2.91s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(45) { animation: floatA 6s ease-in-out 4.28s infinite, glowPulse 9.0s ease-in-out 4.28s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(46) { animation: floatB 8s ease-in-out 0.65s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(47) { animation: floatC 10s ease-in-out 7.02s infinite, glowPulse 15.0s ease-in-out 7.02s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(48) { animation: spinDrop 12s ease-in-out 5.39s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(49) { animation: floatA 7s ease-in-out 3.76s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(50) { animation: floatB 9s ease-in-out 0.13s infinite, glowPulse 13.5s ease-in-out 0.13s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(51) { animation: floatC 11s ease-in-out 7.50s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(52) { animation: spinDrop 13s ease-in-out 5.87s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(53) { animation: floatA 6s ease-in-out 1.24s infinite, glowPulse 9.0s ease-in-out 1.24s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(54) { animation: floatB 8s ease-in-out 3.61s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(55) { animation: floatC 10s ease-in-out 9.98s infinite, glowPulse 15.0s ease-in-out 9.98s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(56) { animation: spinDrop 12s ease-in-out 8.35s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(57) { animation: floatA 7s ease-in-out 6.72s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(58) { animation: floatB 9s ease-in-out 3.09s infinite, glowPulse 13.5s ease-in-out 3.09s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(59) { animation: floatC 11s ease-in-out 10.46s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(60) { animation: spinDrop 13s ease-in-out 8.83s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(61) { animation: floatA 6s ease-in-out 4.20s infinite, glowPulse 9.0s ease-in-out 4.20s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(62) { animation: floatB 8s ease-in-out 6.57s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(63) { animation: floatC 10s ease-in-out 2.94s infinite, glowPulse 15.0s ease-in-out 2.94s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(64) { animation: spinDrop 12s ease-in-out 11.31s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(65) { animation: floatA 7s ease-in-out 2.68s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(66) { animation: floatB 9s ease-in-out 6.05s infinite, glowPulse 13.5s ease-in-out 6.05s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(67) { animation: floatC 11s ease-in-out 2.42s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(68) { animation: spinDrop 13s ease-in-out 11.79s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(69) { animation: floatA 6s ease-in-out 1.16s infinite, glowPulse 9.0s ease-in-out 1.16s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(70) { animation: floatB 8s ease-in-out 1.53s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(71) { animation: floatC 10s ease-in-out 5.90s infinite, glowPulse 15.0s ease-in-out 5.90s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(72) { animation: spinDrop 12s ease-in-out 2.27s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(73) { animation: floatA 7s ease-in-out 5.64s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(74) { animation: floatB 9s ease-in-out 0.01s infinite, glowPulse 13.5s ease-in-out 0.01s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(75) { animation: floatC 11s ease-in-out 5.38s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(76) { animation: spinDrop 13s ease-in-out 1.75s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(77) { animation: floatA 6s ease-in-out 4.12s infinite, glowPulse 9.0s ease-in-out 4.12s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(78) { animation: floatB 8s ease-in-out 4.49s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(79) { animation: floatC 10s ease-in-out 8.86s infinite, glowPulse 15.0s ease-in-out 8.86s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(80) { animation: spinDrop 12s ease-in-out 5.23s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(81) { animation: floatA 7s ease-in-out 1.60s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(82) { animation: floatB 9s ease-in-out 2.97s infinite, glowPulse 13.5s ease-in-out 2.97s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(83) { animation: floatC 11s ease-in-out 8.34s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(84) { animation: spinDrop 13s ease-in-out 4.71s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(85) { animation: floatA 6s ease-in-out 1.08s infinite, glowPulse 9.0s ease-in-out 1.08s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(86) { animation: floatB 8s ease-in-out 7.45s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(87) { animation: floatC 10s ease-in-out 1.82s infinite, glowPulse 15.0s ease-in-out 1.82s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(88) { animation: spinDrop 12s ease-in-out 8.19s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(89) { animation: floatA 7s ease-in-out 4.56s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(90) { animation: floatB 9s ease-in-out 5.93s infinite, glowPulse 13.5s ease-in-out 5.93s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(91) { animation: floatC 11s ease-in-out 0.30s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(92) { animation: spinDrop 13s ease-in-out 7.67s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(93) { animation: floatA 6s ease-in-out 4.04s infinite, glowPulse 9.0s ease-in-out 4.04s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(94) { animation: floatB 8s ease-in-out 2.41s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(95) { animation: floatC 10s ease-in-out 4.78s infinite, glowPulse 15.0s ease-in-out 4.78s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(96) { animation: spinDrop 12s ease-in-out 11.15s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(97) { animation: floatA 7s ease-in-out 0.52s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(98) { animation: floatB 9s ease-in-out 8.89s infinite, glowPulse 13.5s ease-in-out 8.89s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(99) { animation: floatC 11s ease-in-out 3.26s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(100) { animation: spinDrop 13s ease-in-out 10.63s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(101) { animation: floatA 6s ease-in-out 1.00s infinite, glowPulse 9.0s ease-in-out 1.00s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(102) { animation: floatB 8s ease-in-out 5.37s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(103) { animation: floatC 10s ease-in-out 7.74s infinite, glowPulse 15.0s ease-in-out 7.74s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(104) { animation: spinDrop 12s ease-in-out 2.11s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(105) { animation: floatA 7s ease-in-out 3.48s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(106) { animation: floatB 9s ease-in-out 2.85s infinite, glowPulse 13.5s ease-in-out 2.85s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(107) { animation: floatC 11s ease-in-out 6.22s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(108) { animation: spinDrop 13s ease-in-out 0.59s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(109) { animation: floatA 6s ease-in-out 3.96s infinite, glowPulse 9.0s ease-in-out 3.96s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(110) { animation: floatB 8s ease-in-out 0.33s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(111) { animation: floatC 10s ease-in-out 0.70s infinite, glowPulse 15.0s ease-in-out 0.70s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(112) { animation: spinDrop 12s ease-in-out 5.07s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(113) { animation: floatA 7s ease-in-out 6.44s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(114) { animation: floatB 9s ease-in-out 5.81s infinite, glowPulse 13.5s ease-in-out 5.81s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(115) { animation: floatC 11s ease-in-out 9.18s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(116) { animation: spinDrop 13s ease-in-out 3.55s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(117) { animation: floatA 6s ease-in-out 0.92s infinite, glowPulse 9.0s ease-in-out 0.92s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(118) { animation: floatB 8s ease-in-out 3.29s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(119) { animation: floatC 10s ease-in-out 3.66s infinite, glowPulse 15.0s ease-in-out 3.66s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(120) { animation: spinDrop 12s ease-in-out 8.03s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(121) { animation: floatA 7s ease-in-out 2.40s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(122) { animation: floatB 9s ease-in-out 8.77s infinite, glowPulse 13.5s ease-in-out 8.77s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(123) { animation: floatC 11s ease-in-out 1.14s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(124) { animation: spinDrop 13s ease-in-out 6.51s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(125) { animation: floatA 6s ease-in-out 3.88s infinite, glowPulse 9.0s ease-in-out 3.88s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(126) { animation: floatB 8s ease-in-out 6.25s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(127) { animation: floatC 10s ease-in-out 6.62s infinite, glowPulse 15.0s ease-in-out 6.62s infinite; transform-box: fill-box; transform-origin: center; }
+    path:nth-child(128) { animation: spinDrop 12s ease-in-out 10.99s infinite; transform-box: fill-box; transform-origin: center; }
+  </style>
+</defs>
 <path d="M1704.74 292.292L1704.74 277.219L1689.66 277.219L1689.66 292.292L1704.74 292.292ZM1691.32 278.879L1703.08 278.879L1703.08 290.631L1691.32 290.631L1691.32 278.879Z" fill="url(#paint0_linear_0_36)"/>
 <path d="M1716.5 292.292L1731.58 292.292L1731.58 263.806L1718.16 263.806L1718.16 250.394L1703.08 250.394L1703.08 265.467L1716.5 265.467L1716.5 292.292ZM1729.92 290.631L1718.16 290.631L1718.16 278.879L1729.92 278.879L1729.92 290.631ZM1729.92 265.467L1729.92 277.219L1718.16 277.219L1718.16 265.467L1729.92 265.467ZM1704.74 263.806L1704.74 252.055L1716.5 252.055L1716.5 263.806L1704.74 263.806Z" fill="url(#paint1_linear_0_36)"/>
 <path d="M1731.58 304.041L1716.5 304.041L1716.5 319.114L1731.58 319.114L1731.58 304.041ZM1729.92 317.453L1718.16 317.453L1718.16 305.701L1729.92 305.701L1729.92 317.453Z" fill="url(#paint2_linear_0_36)"/>
