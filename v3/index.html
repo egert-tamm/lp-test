@@ -147,6 +147,21 @@
       text-transform: uppercase;
     }
     #hero-copy h1 .accent { color: #fff; display: block; }
+    .coming-soon-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 999px;
+      font-family: "obviously-variable", sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.85);
+      letter-spacing: 0.02em;
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      margin-bottom: 18px;
+    }
     .hero-cta {
       display: inline-flex; align-items: center; gap: 10px;
       margin-top: 36px;
@@ -1032,6 +1047,7 @@
   <!-- ── HERO section ── -->
   <section id="hero-section">
     <div id="hero-copy">
+      <span class="coming-soon-badge">Coming soon on iOS and Android</span>
       <h1>Bet Smarter<span class="accent">Win Faster</span></h1>
 
     </div>
