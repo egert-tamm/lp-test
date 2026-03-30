@@ -405,15 +405,14 @@
       const heroCopy   = document.getElementById('hero-copy');
       const heroSect   = document.getElementById('hero-section');
 
-      // Start: zoomed in close, phone centered but bottom half cropped off (camera very close)
-      // No rotation at all — just a straight zoom out on scroll
-      phoneGroup.position.set(0.0, -0.5, 0);
+      // Start: zoomed in, phone cropped at bottom — no rotation
+      phoneGroup.position.set(0.0, -0.3, 0);
       phoneGroup.rotation.set(0, 0, 0);
-      camera.position.z = 2.2;   // very close → phone fills/overflows viewport
-      camera.fov = 28; camera.updateProjectionMatrix();
+      camera.position.z = 3.2;   // close but not overwhelming
+      camera.fov = 30; camera.updateProjectionMatrix();
 
-      // End: zoomed out, full phone visible and centered
-      const heroRest = { x: 0.0, y: 0.0, rotY: 0.0, rotZ: 0, camZ: 3.9, fov: 34 };
+      // End: pulled back, full phone comfortably visible
+      const heroRest = { x: 0.0, y: 0.0, rotY: 0.0, rotZ: 0, camZ: 5.5, fov: 38 };
 
       ScrollTrigger.create({
         trigger: '#hero-section',
@@ -429,9 +428,9 @@
           if (p <= 0.5) {
             // Phase 1: zoom out — camera pulls back, phone rises into full view
             const t = eOut3(p / 0.5);
-            phoneGroup.position.y = lerp(-0.5, heroRest.y, t);
-            camera.position.z     = lerp(2.2,  heroRest.camZ, t);
-            camera.fov            = lerp(28,   heroRest.fov, t);
+            phoneGroup.position.y = lerp(-0.3, heroRest.y, t);
+            camera.position.z     = lerp(3.2,  heroRest.camZ, t);
+            camera.fov            = lerp(30,   heroRest.fov, t);
             heroCopy.style.opacity  = '1';
             heroCopy.style.transform = 'translateY(0)';
           } else {
@@ -494,17 +493,12 @@
       });
     }
 
-    // Mouse parallax
-    let mouseX = 0, mouseY = 0, tMX = 0, tMY = 0;
-    window.addEventListener('mousemove', e => { tMX=(e.clientX/innerWidth-.5)*2; tMY=(e.clientY/innerHeight-.5)*2; });
+    // No mouse parallax — phone rotation stays exactly where scroll puts it
     let glintAngle = 0, lastTime = 0;
 
     (function render(now) {
       requestAnimationFrame(render);
       const dt = Math.min((now - lastTime) / 1000, 0.05); lastTime = now;
-      mouseX += (tMX - mouseX) * 0.05; mouseY += (tMY - mouseY) * 0.05;
-      phoneGroup.rotation.y += mouseX * 0.025;
-      phoneGroup.rotation.x -= mouseY * 0.015;
       glintAngle += dt * 0.4;
       glint.position.set(Math.sin(glintAngle)*3.5, Math.cos(glintAngle*0.7)*2, 3);
       const t2 = now / 1000;
