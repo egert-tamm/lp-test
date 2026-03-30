@@ -521,35 +521,35 @@
       const wl1 = document.getElementById('word-line-1');
       const wl2 = document.getElementById('word-line-2');
 
-      // Position off-screen in px
       const vw = () => window.innerWidth;
-      wl1.style.transform = `translateX(${-vw() * 1.1}px)`;
-      wl2.style.transform = `translateX(${vw() * 1.1}px)`;
 
-      ScrollTrigger.create({
-        trigger: '#word-section',
-        start: 'top top',
-        end: 'bottom top',
-        scrub: 0.8,
-        onUpdate(self) {
-          const p    = self.progress;
-          const ease = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
-          const t    = ease(p);
-          const w    = vw();
-
-          // Line 1: left → center-ish
-          wl1.style.transform = `translateX(${lerp(-w * 1.1, -w * 0.1, t)}px)`;
-          // Line 2: right → center-ish
-          wl2.style.transform = `translateX(${lerp(w * 1.1, w * 0.05, t)}px)`;
-
-          // Phone stays locked
-          phoneGroup.position.x = phoneXOffset();
-          phoneGroup.position.y = heroRest.y;
-          camera.position.z     = heroRest.camZ;
-          camera.fov            = heroRest.fov;
-          camera.updateProjectionMatrix();
+      // Animate words via GSAP timeline scrubbed to scroll
+      gsap.fromTo(wl1,
+        { x: -vw() * 1.1 },
+        {
+          x: -vw() * 0.05,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '#word-section',
+            start: 'top top',
+            end: 'bottom top',
+            scrub: true,
+          }
         }
-      });
+      );
+      gsap.fromTo(wl2,
+        { x: vw() * 1.1 },
+        {
+          x: vw() * 0.05,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '#word-section',
+            start: 'top top',
+            end: 'bottom top',
+            scrub: true,
+          }
+        }
+      );
 
       // Per-slide scroll trigger
       // Phone stays locked at heroRest for all remaining scroll — no more movement.
