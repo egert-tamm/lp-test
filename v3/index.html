@@ -104,10 +104,16 @@
       pointer-events: none;
       z-index: 1;   /* below canvas (z:2) — phone occludes words */
       display: none;
-      overflow: visible;
+      /* overflow:hidden clips children at overlay bounds (100vw);
+         mask-image then fades those clipped edges gracefully.
+         Works on iOS because word-lines are position:absolute (not fixed),
+         so they're painted into THIS composited layer before the mask runs. */
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
     }
     .word-line {
-      position: fixed;
+      position: absolute;  /* NOT fixed — painted into parent's composited layer */
       top: 0; left: 0;
       white-space: nowrap;
       width: max-content;
@@ -115,15 +121,9 @@
       font-size: clamp(60px, 11vw, 140px);
       font-weight: 800;
       font-style: italic;
-      /* Own GPU layer — iOS compositor doesn't viewport-clip sub-layers */
-      will-change: transform;
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
-      
       text-transform: uppercase;
       letter-spacing: -0.02em;
       line-height: 1.12;
-      will-change: transform;
     }
     #word-line-1 { color: rgba(255,255,255,0.9); }
     #word-line-2 { color: #9EFF78; }
