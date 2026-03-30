@@ -176,7 +176,11 @@
     }
     @media (orientation: portrait) {
       .word-line { font-size: clamp(36px, 9vw, 72px); }
-      #hero-copy { padding-top: 6vh; }
+      #hero-copy {
+        justify-content: center;
+        padding-top: 0;
+        padding-bottom: 12vh; /* push text above center to leave gap above phone */
+      }
     }
     /* SVG background */
     #bg-anim {
@@ -1150,9 +1154,20 @@
     videoTex.minFilter = THREE.LinearFilter; videoTex.magFilter = THREE.LinearFilter;
     videoTex.generateMipmaps = false; videoTex.flipY = false; videoTex.encoding = THREE.sRGBEncoding;
     let videoReady = false;
-    vid.addEventListener('loadeddata',     () => { videoReady = true; }, { once: true });
-    vid.addEventListener('canplaythrough', () => { videoReady = true; }, { once: true });
-    vid.addEventListener('loadedmetadata', () => { videoReady = true; }, { once: true });
+    function markVideoReady() {
+      if (videoReady) return;
+      videoReady = true;
+      // Seek to frame 0 so phone screen shows immediately (not black)
+      try { vid.currentTime = 0.001; } catch(e) {}
+    }
+    vid.addEventListener('loadeddata',     markVideoReady, { once: true });
+    vid.addEventListener('canplaythrough', markVideoReady, { once: true });
+    vid.addEventListener('loadedmetadata', markVideoReady, { once: true });
+    // iOS: unlock video on first touch, then immediately seek to frame 0
+    function unlockVideo() {
+      vid.play().then(() => { vid.pause(); vid.currentTime = 0.001; videoReady = true; }).catch(() => {});
+    }
+    ['touchstart','click','scroll'].forEach(e => document.addEventListener(e, unlockVideo, { once: true, passive: true }));
 
     function remapUVs(mesh) {
       const pos = mesh.geometry.attributes.position;
@@ -1446,7 +1461,7 @@
       renderer.setSize(innerWidth, innerHeight);
       ScrollTrigger.refresh();
     });
-    ['click','touchstart'].forEach(e => document.addEventListener(e, () => vid.play().then(()=>vid.pause()).catch(()=>{}), {once:true}));
+    // Video unlock handled above (unlockVideo)
   </script>
 </body>
 </html>
