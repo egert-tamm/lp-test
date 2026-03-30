@@ -212,6 +212,8 @@
       display: flex;
       flex-direction: column;
       z-index: 3;
+      /* Final section — no content below */
+      scroll-snap-align: start;
     }
     /* Decorative diamond/cross particles */
     #cs-particles {
@@ -238,17 +240,16 @@
       opacity: 0.9;
     }
     #cs-logo svg { width: 100%; height: auto; display: block; }
-    /* Marquee — vertically centered, diagonal */
+    /* Marquee — vertically centered, no tilt */
     #cs-marquee-wrap {
       position: absolute;
       top: 50%;
       left: 0;
       right: 0;
-      transform: translateY(-50%) rotate(-6deg);
+      transform: translateY(-50%);
       z-index: 1;
-      overflow: visible;
-      width: 130%;
-      margin-left: -15%;
+      overflow: hidden;
+      width: 100%;
     }
     #cs-marquee-track {
       display: flex;
@@ -331,6 +332,7 @@
     #cs-footer-links a:hover { color: rgba(255,255,255,0.8); }
     @media (orientation: portrait) {
       #cs-logo { left: 50%; transform: translateX(-50%); width: 80px; top: 20px; }
+      #cs-marquee-wrap { transform: translateY(-50%); }
       .cs-marquee-item { font-size: clamp(64px, 22vw, 120px); }
       #cs-tg-btn { bottom: 80px; }
       #cs-footer { flex-direction: column; align-items: center; gap: 6px; padding: 14px 16px; }
