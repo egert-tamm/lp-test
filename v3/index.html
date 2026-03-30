@@ -117,41 +117,35 @@
       gap: 0;
       pointer-events: none;
     }
-    #feature-label {
-      font-size: clamp(0.7rem, 1.4vw, 1rem);
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      color: #9EFF78;
-      text-transform: uppercase;
-      margin-bottom: 10px;
-    }
     #feature-lines {
       font-family: "obviously-variable", sans-serif;
-      font-weight: 800;
-      font-style: italic;
-      font-size: clamp(2.2rem, 5.5vw, 5.5rem);
-      line-height: 1.0;
+      font-weight: 580;
+      font-style: normal;
+      font-size: clamp(2rem, 5.4vw, 104px);
+      line-height: 1.12;
       letter-spacing: -0.02em;
-      text-transform: uppercase;
       color: #fff;
     }
     #feature-lines .fl { display: block; }
+    #feature-lines .fl-green { color: #9EFF78; }
     #watch-video-btn {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      margin-top: 36px;
-      padding: 14px 28px;
+      margin-top: 40px;
+      padding: 0 24px;
+      height: 64px;
       background: #9EFF78;
-      border-radius: 100px;
+      border-radius: 9999px;
       color: #080808;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 700;
       text-decoration: none;
       pointer-events: all;
       cursor: pointer;
       border: none;
       font-family: "obviously-variable", sans-serif;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.12), 0 1px 1px rgba(0,0,0,0.12);
       transition: opacity 0.2s;
     }
     #watch-video-btn:hover { opacity: 0.85; }
@@ -166,7 +160,7 @@
         padding: 0 5vw;
         gap: 0;
       }
-      #feature-lines { font-size: clamp(1.8rem, 9vw, 3.5rem); }
+      #feature-lines { font-size: clamp(1.6rem, 8vw, 3rem); }
     }
 
     /* Word overlay: fixed to viewport, driven purely by JS scroll progress */
@@ -1167,13 +1161,13 @@
   <section id="feature-section">
     <div id="feature-inner">
       <div id="feature-copy">
-        <div id="feature-label">Live Action</div>
         <div id="feature-lines">
-          <span class="fl">Find Your Edge</span>
-          <span class="fl">Play What's Trending</span>
-          <span class="fl">Tap. You're In.</span>
-          <span class="fl">Bet Your Way</span>
-          <span class="fl">Built-In Games</span>
+          <span class="fl fl-green">Live action</span>
+          <span class="fl">Find your edge</span>
+          <span class="fl">Play what's trending</span>
+          <span class="fl">Tap. You're in.</span>
+          <span class="fl">Bet your way</span>
+          <span class="fl">Built-in games</span>
         </div>
         <button id="watch-video-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>
