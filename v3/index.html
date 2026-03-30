@@ -13,6 +13,10 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       background-color: #080808;
+      background-image: url('bg.svg');
+      background-size: cover;
+      background-position: center center;
+      background-attachment: fixed;
       color: #fff;
       font-family: "obviously-variable", sans-serif;
       overflow-x: hidden;
@@ -132,7 +136,7 @@
     }
     #hero-copy h1 {
       font-family: "obviously-variable", sans-serif;
-      font-size: clamp(3.2rem, 10vw, 7rem);
+      font-size: clamp(2.2rem, 8vw, 6rem);
       font-weight: 800;
       font-style: italic;
       
@@ -161,7 +165,7 @@
       .word-line { font-size: clamp(32px, 8vw, 60px); }
     }
     @media (orientation: portrait) {
-      .word-line { font-size: clamp(28px, 7vw, 56px); }
+      .word-line { font-size: clamp(36px, 9vw, 72px); }
     }
     /* SVG background */
     #bg-anim {
@@ -176,7 +180,8 @@
     #bg-anim svg {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      display: block;
+      preserveAspectRatio: xMidYMid slice;
     }
       33%  { transform: translate(3%, -8%) scale(1.12) rotate(1.5deg); }
       66%  { transform: translate(-8%, 4%) scale(1.08) rotate(-1deg); }
@@ -202,7 +207,7 @@
     preload="auto" muted playsinline crossorigin="anonymous">
   </video>
 
-  <div id="bg-anim"><svg width="1745" height="709" viewBox="0 0 1745 709" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <div id="bg-anim"><svg width="1745" height="709" viewBox="0 0 1745 709" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block;">
 
 <path d="M1704.74 292.292L1704.74 277.219L1689.66 277.219L1689.66 292.292L1704.74 292.292ZM1691.32 278.879L1703.08 278.879L1703.08 290.631L1691.32 290.631L1691.32 278.879Z" fill="url(#paint0_linear_0_36)"/>
 <path d="M1716.5 292.292L1731.58 292.292L1731.58 263.806L1718.16 263.806L1718.16 250.394L1703.08 250.394L1703.08 265.467L1716.5 265.467L1716.5 292.292ZM1729.92 290.631L1718.16 290.631L1718.16 278.879L1729.92 278.879L1729.92 290.631ZM1729.92 265.467L1729.92 277.219L1718.16 277.219L1718.16 265.467L1729.92 265.467ZM1704.74 263.806L1704.74 252.055L1716.5 252.055L1716.5 263.806L1704.74 263.806Z" fill="url(#paint1_linear_0_36)"/>
@@ -1112,7 +1117,7 @@
     renderer.toneMappingExposure = 1.4;
     renderer.physicallyCorrectLights = true;
     renderer.setClearColor(0x000000, 0); // fully transparent canvas so DOM word layer shows through
-    // Background handled by #bg-anim element
+    // Background handled by CSS on body
 
     scene.add(new THREE.AmbientLight(0x112233, 1.0));
     const key = new THREE.DirectionalLight(0xffffff, 3.0);
@@ -1356,10 +1361,10 @@
 
         if (isPortrait) {
           // Portrait (mobile): line 1 above phone, line 2 below — scroll horizontally
-          const phoneTop    = h * 0.22;   // rough top of phone area
-          const phoneBottom = h * 0.78;   // rough bottom of phone area
-          const y1 = phoneTop - lineH * 1.1;
-          const y2 = phoneBottom;
+          const phoneTop    = h * 0.18;   // rough top of phone area
+          const phoneBottom = h * 0.82;   // rough bottom of phone area
+          const y1 = phoneTop - lineH * 1.5;   // bigger gap above
+          const y2 = phoneBottom + lineH * 0.3; // bigger gap below
 
           const w1w = wl1.offsetWidth || W * 2;
           const w2w = wl2.offsetWidth || W * 2;
