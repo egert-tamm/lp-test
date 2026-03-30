@@ -93,12 +93,15 @@
       position: sticky; top: 0;
       height: 100vh;
       overflow: hidden;
-      z-index: 1;  /* below canvas (z:2) — phone occludes words, transparent canvas shows them elsewhere */
+      z-index: 1;
       pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.1em;
     }
     .word-line {
-      position: absolute;
-      top: 50%; transform: translateY(-50%);
+      display: block;
       white-space: nowrap;
       font-family: 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: clamp(80px, 14vw, 180px);
@@ -108,14 +111,8 @@
       line-height: 1;
       will-change: transform;
     }
-    #word-line-1 {
-      color: rgba(255,255,255,0.9);
-      top: 42%;   /* slightly above center */
-    }
-    #word-line-2 {
-      color: #c8f55a;
-      top: 58%;   /* slightly below center */
-    }
+    #word-line-1 { color: rgba(255,255,255,0.9); }
+    #word-line-2 { color: #c8f55a; }
 
     #hero-copy {
       position: sticky; top: 0;
@@ -525,8 +522,8 @@
       const wl2 = document.getElementById('word-line-2');
 
       // Position them off-screen initially
-      wl1.style.transform = `translateY(-50%) translateX(-110vw)`;
-      wl2.style.transform = `translateY(-50%) translateX(110vw)`;
+      wl1.style.transform = `translateX(-110vw)`;
+      wl2.style.transform = `translateX(110vw)`;
 
       ScrollTrigger.create({
         trigger: '#word-section',
@@ -543,8 +540,8 @@
           // Line 2: comes from right (110vw) → rests at -10vw (visible right, behind phone)
           const x2 = 110 - t * 80;    // 110vw → 30vw
 
-          wl1.style.transform = `translateY(-50%) translateX(${x1}vw)`;
-          wl2.style.transform = `translateY(-50%) translateX(${x2}vw)`;
+          wl1.style.transform = `translateX(${x1}vw)`;
+          wl2.style.transform = `translateX(${x2}vw)`;
 
           // Phone stays locked at heroRest during word section too
           phoneGroup.position.x = phoneXOffset();
