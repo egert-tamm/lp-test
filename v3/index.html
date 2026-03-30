@@ -1184,31 +1184,37 @@
     videoTex.minFilter = THREE.LinearFilter; videoTex.magFilter = THREE.LinearFilter;
     videoTex.generateMipmaps = false; videoTex.flipY = false; videoTex.encoding = THREE.sRGBEncoding;
     let videoReady = false;
-    function markVideoReady() {
-      if (videoReady) return;
-      videoReady = true;
-      try { vid.currentTime = 0.001; } catch(e) {}
+    // iOS Safari: muted video CAN autoplay — play immediately then pause at frame 0
+    // This decodes the first frame so the texture isn't black on load
+    function bootVideo() {
+      vid.play().then(() => {
+        vid.currentTime = 0.001;
+        // Let it run briefly so texture gets a real decoded frame, then pause
+        setTimeout(() => {
+          vid.pause();
+          vid.currentTime = 0.001;
+          videoReady = true;
+        }, 80);
+      }).catch(() => {
+        // Gesture required — mark ready anyway and unlock on first touch
+        videoReady = true;
+      });
     }
-    vid.addEventListener('loadeddata',     markVideoReady, { once: true });
-    vid.addEventListener('canplaythrough', markVideoReady, { once: true });
-    vid.addEventListener('loadedmetadata', markVideoReady, { once: true });
 
-    // iOS Safari: video won't decode until user gesture — unlock immediately on ANY interaction
-    // Also try to unlock proactively on page focus
+    vid.addEventListener('loadedmetadata', bootVideo, { once: true });
+    vid.addEventListener('loadeddata', () => { videoReady = true; }, { once: true });
+    vid.addEventListener('canplaythrough', () => { videoReady = true; }, { once: true });
+
+    // Fallback: unlock on first touch if autoplay was blocked
     function unlockVideo() {
       if (videoReady) return;
       vid.play().then(() => {
-        vid.pause();
-        vid.currentTime = 0.001;
-        videoReady = true;
-      }).catch(() => {});
+        setTimeout(() => { vid.pause(); vid.currentTime = 0.001; videoReady = true; }, 80);
+      }).catch(() => { videoReady = true; });
     }
-    // Try on any early interaction
-    ['touchstart','touchend','pointerdown','click','scroll','visibilitychange'].forEach(e =>
+    ['touchstart','pointerdown','click'].forEach(e =>
       document.addEventListener(e, unlockVideo, { once: true, passive: true })
     );
-    // Also try immediately (works on some iOS versions after autoplay policy relaxed)
-    setTimeout(() => { try { vid.currentTime = 0.001; videoReady = true; } catch(e) {} }, 100);
 
     function remapUVs(mesh) {
       const pos = mesh.geometry.attributes.position;
