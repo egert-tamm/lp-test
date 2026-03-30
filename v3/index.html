@@ -113,33 +113,35 @@
       gap: 0;
       pointer-events: none;
     }
-    /* Feature lines — paint-order: stroke fill prevents bleed */
-    #feature-lines {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
-    #feature-lines .fl {
+    /* Feature SVG text — true hollow outline via SVG fill/stroke */
+    #feature-svg {
+      width: 100%;
+      height: auto;
+      overflow: visible;
       display: block;
+    }
+    #feature-svg text {
       font-family: "obviously-variable", sans-serif;
       font-weight: 800;
       font-style: normal;
-      font-size: clamp(1.8rem, 5.4vw, 104px);
-      line-height: 1.1;
-      letter-spacing: -0.02em;
       text-transform: uppercase;
-      /* Inactive: very faint so active line dominates */
-      color: rgba(255,255,255,0.12);
-      transition: color 0.35s ease, opacity 0.35s ease;
+      letter-spacing: -0.025em;
+      /* Inactive: hollow outline */
+      fill: none;
+      stroke: rgba(255,255,255,0.35);
+      stroke-width: 1;
+      transition: fill 0.35s ease, stroke 0.35s ease, stroke-opacity 0.35s ease;
     }
-    #feature-lines .fl.fl-green {
-      color: rgba(158,255,120,0.12);
+    #feature-svg text.fl-green {
+      stroke: rgba(158,255,120,0.35);
     }
-    #feature-lines .fl.active {
-      color: #fff;
+    /* Active: solid fill, no stroke */
+    #feature-svg text.active {
+      fill: #fff;
+      stroke: none;
     }
-    #feature-lines .fl.fl-green.active {
-      color: #9EFF78;
+    #feature-svg text.fl-green.active {
+      fill: #9EFF78;
     }
     #watch-video-btn {
       display: inline-flex;
@@ -173,7 +175,7 @@
         padding: 0 5vw;
         gap: 0;
       }
-      #feature-lines .fl { font-size: clamp(1.2rem, 5.5vw, 2.4rem); line-height: 1.15; }
+      #feature-svg { max-width: 90vw; }
     }
 
     /* Word overlay: fixed to viewport, driven purely by JS scroll progress */
@@ -376,14 +378,16 @@
   <section id="feature-section">
     <div id="feature-inner">
       <div id="feature-copy">
-        <div id="feature-lines">
-          <span class="fl fl-green active" id="fl-0">Live action</span>
-          <span class="fl" id="fl-1">Find your edge</span>
-          <span class="fl" id="fl-2">Play what's trending</span>
-          <span class="fl" id="fl-3">Tap. You're in.</span>
-          <span class="fl" id="fl-4">Bet your way</span>
-          <span class="fl" id="fl-5">Built-in games</span>
-        </div>
+        <svg id="feature-svg" xmlns="http://www.w3.org/2000/svg"
+             viewBox="0 0 1000 720" preserveAspectRatio="xMinYMid meet">
+          <!-- font-size 110 with line-height ~120 -->
+          <text id="fl-0" class="fl-green active" x="0" y="110"  font-size="110">LIVE ACTION</text>
+          <text id="fl-1"                          x="0" y="232"  font-size="110">FIND YOUR EDGE</text>
+          <text id="fl-2"                          x="0" y="354"  font-size="110">PLAY WHAT&#x2019;S TRENDING</text>
+          <text id="fl-3"                          x="0" y="476"  font-size="110">TAP. YOU&#x2019;RE IN.</text>
+          <text id="fl-4"                          x="0" y="598"  font-size="110">BET YOUR WAY</text>
+          <text id="fl-5"                          x="0" y="720"  font-size="110">BUILT-IN GAMES</text>
+        </svg>
         <!-- button shown only when last line is active -->
         <div id="feature-btn-wrap" style="opacity:0;transition:opacity 0.3s;pointer-events:none">
           <button id="watch-video-btn">
