@@ -407,14 +407,20 @@
       const heroCopy   = document.getElementById('hero-copy');
       const heroSect   = document.getElementById('hero-section');
 
+      // The GLTF model is rotated π/2 so its geometric center isn't at origin.
+      // Offset scales with aspect ratio: portrait (mobile) needs less offset than landscape.
+      function phoneXOffset() {
+        return innerWidth < innerHeight ? 0.06 : 0.22;  // portrait vs landscape
+      }
+
       // Start: phone low — bottom ~40% cropped, only top portion visible
-      phoneGroup.position.set(0.22, -1.4, 0);
+      phoneGroup.position.set(phoneXOffset(), -1.4, 0);
       phoneGroup.rotation.set(0, 0, 0);
       camera.position.z = 3.8;
       camera.fov = 34; camera.updateProjectionMatrix();
 
-      // End: phone still low-ish so text above is readable — bottom edge just in frame
-      const heroRest = { x: 0.22, y: 0.0, rotY: 0.0, rotZ: 0, camZ: 5.5, fov: 36 };
+      // End: centered
+      const heroRest = { x: phoneXOffset(), y: 0.0, rotY: 0.0, rotZ: 0, camZ: 5.5, fov: 36 };
 
       ScrollTrigger.create({
         trigger: '#hero-section',
@@ -481,7 +487,7 @@
         scrub: true,
         onUpdate(self) {
           // Lock phone at rest position
-          phoneGroup.position.x = 0.22;
+          phoneGroup.position.x = phoneXOffset();
           phoneGroup.position.y = heroRest.y;
           phoneGroup.rotation.z = 0;
           phoneGroup.rotation.y = heroRest.rotY;
@@ -521,6 +527,7 @@
     window.addEventListener('resize', () => {
       camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
+      ScrollTrigger.refresh();
     });
     ['click','touchstart'].forEach(e => document.addEventListener(e, () => vid.play().then(()=>vid.pause()).catch(()=>{}), {once:true}));
   </script>
