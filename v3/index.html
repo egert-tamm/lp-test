@@ -405,15 +405,14 @@
       const heroCopy   = document.getElementById('hero-copy');
       const heroSect   = document.getElementById('hero-section');
 
-      // Start: phone pushed down — top 75% visible, bottom 25% cropped below viewport
-      // camZ close so it fills width nicely
-      phoneGroup.position.set(0.0, -0.85, 0);
+      // Start: phone low — bottom ~40% cropped, only top portion visible
+      phoneGroup.position.set(0.0, -1.4, 0);
       phoneGroup.rotation.set(0, 0, 0);
       camera.position.z = 3.8;
       camera.fov = 34; camera.updateProjectionMatrix();
 
-      // End: pulled back + centred so full phone is visible
-      const heroRest = { x: 0.0, y: 0.0, rotY: 0.0, rotZ: 0, camZ: 5.5, fov: 38 };
+      // End: phone still low-ish so text above is readable — bottom edge just in frame
+      const heroRest = { x: 0.0, y: -0.7, rotY: 0.0, rotZ: 0, camZ: 5.5, fov: 38 };
 
       ScrollTrigger.create({
         trigger: '#hero-section',
@@ -429,9 +428,9 @@
           if (p <= 0.5) {
             // Phase 1: zoom out — camera pulls back, phone rises into full view
             const t = eOut3(p / 0.5);
-            phoneGroup.position.y = lerp(-0.85, heroRest.y, t);
-            camera.position.z     = lerp(3.8,   heroRest.camZ, t);
-            camera.fov            = lerp(34,    heroRest.fov, t);
+            phoneGroup.position.y = lerp(-1.4, heroRest.y, t);
+            camera.position.z     = lerp(3.8,  heroRest.camZ, t);
+            camera.fov            = lerp(34,   heroRest.fov, t);
             heroCopy.style.opacity  = '1';
             heroCopy.style.transform = 'translateY(0)';
           } else {
