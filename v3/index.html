@@ -1672,10 +1672,12 @@
             camera.position.z = heroRest.camZ;
             camera.fov = heroRest.fov;
           } else {
-            // Desktop: phone right side, slight tilt
-            phoneGroup.position.x = 0.55;
-            phoneGroup.rotation.y = -0.18;
-            phoneGroup.rotation.z = -0.06;
+            // Desktop: phone right side — Egert's values: rotX=4°, rotY=32°, rotZ=16°
+            const deg = Math.PI / 180;
+            phoneGroup.position.x = 0.5;
+            phoneGroup.rotation.x = 4  * deg;
+            phoneGroup.rotation.y = 32 * deg;
+            phoneGroup.rotation.z = 16 * deg;
             camera.position.z = 4.8;
             camera.fov = 36;
           }
