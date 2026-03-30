@@ -16,7 +16,8 @@
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
     }
-    #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+    #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
+    /* canvas z:2, transparent — phone occludes word layer (z:1) naturally */
 
     #loading {
       position: fixed; inset: 0; background: #080808;
@@ -83,9 +84,72 @@
       left: -200px; top: -200px; pointer-events: none;
     }
 
+    /* ── HERO section (prepended before slides) ── */
+    #hero-section { height: 300vh; }
+
+    #hero-copy {
+      position: sticky; top: 0;
+      height: 100vh;
+      display: flex; flex-direction: column;
+      justify-content: flex-end;
+      padding: 0 6vw 12vh;
+      pointer-events: none;
+      z-index: 3;
+    }
+    #hero-copy h1 {
+      font-size: clamp(64px, 13vw, 160px);
+      font-weight: 800;
+      text-transform: uppercase;
+      line-height: 0.87;
+      letter-spacing: -0.04em;
+    }
+    #hero-copy h1 .accent { color: #c8f55a; display: block; }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 10px;
+      margin-top: 36px; margin-bottom: 2px;
+      padding: 14px 26px;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(14px);
+      border-radius: 100px;
+      color: #fff; font-size: 14px; font-weight: 600;
+      text-decoration: none; pointer-events: all;
+      width: fit-content;
+      transition: background 0.2s;
+    }
+    .hero-cta:hover { background: rgba(255,255,255,0.18); }
+
+    /* ── WORD SCROLL section ── */
+    #word-section { height: 300vh; position: relative; }
+
+    #word-layer {
+      position: sticky; top: 0;
+      height: 100vh;
+      display: flex; align-items: center;
+      overflow: hidden;
+      z-index: 1; /* below canvas (z:2), so phone model occludes text */
+      pointer-events: none;
+    }
+    #word-track {
+      display: flex; align-items: baseline;
+      gap: 0.4em; white-space: nowrap;
+      will-change: transform;
+    }
+    .ww {
+      font-size: clamp(100px, 18vw, 220px);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+    .ww.white { color: rgba(255,255,255,0.9); }
+    .ww.green { color: #c8f55a; }
+    .ww.dot   { color: rgba(255,255,255,0.2); font-size: 0.4em; padding: 0 0.4em; }
+
     @media (max-width: 768px) {
       .slide-title { max-width: 85vw; }
       .slide-text { padding: 0 5vw 8vh; }
+      .ww { font-size: clamp(70px, 22vw, 140px); }
     }
   </style>
 </head>
@@ -103,7 +167,39 @@
 
   <canvas id="canvas"></canvas>
 
-  <!-- Single fixed text overlay — content swaps as you scroll -->
+  <!-- ── HERO section ── -->
+  <section id="hero-section">
+    <div id="hero-copy">
+      <h1>Bet Smarter<span class="accent">Win Faster</span></h1>
+      <a href="#" class="hero-cta">
+        <svg width="14" height="17" viewBox="0 0 14 17" fill="currentColor">
+          <path d="M13.47 12.77c-.25.58-.55 1.11-.9 1.6-.47.67-.86 1.13-1.15 1.39-.46.42-.95.64-1.48.65-.38 0-.83-.11-1.36-.33-.53-.22-1.02-.33-1.46-.33-.46 0-.96.11-1.5.33-.54.22-.98.33-1.31.35-.52.01-1.01-.21-1.5-.66-.32-.29-.72-.77-1.21-1.45-.52-.72-.93-1.56-1.25-2.51C.09 10.86 0 9.86 0 8.9c0-1.07.23-1.99.7-2.76.37-.62.85-1.1 1.47-1.47.61-.37 1.27-.56 1.97-.56.39 0 .9.12 1.53.37.63.24 1.03.36 1.2.36.14 0 .62-.15 1.43-.43.76-.27 1.41-.38 1.95-.33 1.44.12 2.51.68 3.22 1.7-1.28.78-1.91 1.86-1.91 3.24.01 1.08.4 1.98 1.17 2.69.35.33.74.59 1.17.77-.09.27-.19.53-.31.79zM10.04.34c0 .84-.31 1.63-.93 2.37-.74.87-1.64 1.37-2.61 1.29a2.6 2.6 0 0 1-.02-.32c0-.82.36-1.69.99-2.4.32-.36.72-.67 1.21-.91.49-.24.95-.38 1.38-.4.01.12.01.25.01.37z"/>
+        </svg>
+        Download for iOS
+      </a>
+    </div>
+  </section>
+
+  <!-- ── WORD SCROLL section ── -->
+  <section id="word-section">
+    <div id="word-layer">
+      <div id="word-track">
+        <span class="ww white">BUILT</span>
+        <span class="ww white">FOR</span>
+        <span class="ww green">SPEED</span>
+        <span class="ww dot">·</span>
+        <span class="ww white">DESIGNED</span>
+        <span class="ww white">FOR</span>
+        <span class="ww green">EDGE</span>
+        <span class="ww dot" style="padding:0 1em"></span>
+        <span class="ww white">BUILT</span>
+        <span class="ww white">FOR</span>
+        <span class="ww green">SPEED</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Single fixed text overlay — content swaps as you scroll (existing slides) -->
   <div class="slide-text" id="slide-text">
     <div class="slide-title" id="slide-title"></div>
   </div>
@@ -214,7 +310,9 @@
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.4;
     renderer.physicallyCorrectLights = true;
-    document.getElementById('canvas').style.background =
+    renderer.setClearColor(0x000000, 0); // fully transparent canvas so DOM word layer shows through
+    // Background gradient goes on body; canvas is transparent
+    document.body.style.background =
       'radial-gradient(ellipse at 60% 40%, #0d1f2d 0%, #080808 60%, #050505 100%)';
 
     scene.add(new THREE.AmbientLight(0x112233, 1.0));
@@ -341,6 +439,142 @@
 
     function setupScroll() {
       gsap.registerPlugin(ScrollTrigger);
+
+      /* ══════════════════════════════════════════════
+         HERO SECTION — tilt → upright (300vh)
+         Phone starts: tilted ~−38° on Z, bottom-right off-canvas
+         0→50% scroll: rises + straightens, copy stays
+         50→100%: copy fades up, phone locks to resting pos
+      ══════════════════════════════════════════════ */
+      const heroCopy   = document.getElementById('hero-copy');
+      const heroSect   = document.getElementById('hero-section');
+
+      // Initial phone pose (set directly, before any scroll)
+      phoneGroup.position.set(0.55, -2.6, 0);
+      phoneGroup.rotation.set(0, -0.18, -0.68); // -38deg Z tilt
+      camera.position.z = 5.6;
+      camera.fov = 40; camera.updateProjectionMatrix();
+
+      // Hero rest position (phone upright, offset right like your screenshot)
+      const heroRest = { x: 0.3, y: -0.05, rotY: -0.13, rotZ: 0, camZ: 4.2, fov: 34 };
+
+      ScrollTrigger.create({
+        trigger: '#hero-section',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 0.9,
+        onUpdate(self) {
+          const p = self.progress;
+          const clamp01 = v => Math.min(1, Math.max(0, v));
+          const eOut3   = t => 1 - Math.pow(1-t, 3);
+          const eInOut  = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+
+          if (p <= 0.5) {
+            // Phase 1: phone tilts upright
+            const t = eOut3(p / 0.5);
+            phoneGroup.position.x = lerp(0.55,  heroRest.x, t);
+            phoneGroup.position.y = lerp(-2.6,  heroRest.y, t);
+            phoneGroup.rotation.z = lerp(-0.68, 0, t);
+            phoneGroup.rotation.y = lerp(-0.18, heroRest.rotY, t);
+            camera.position.z     = lerp(5.6,   heroRest.camZ, t);
+            camera.fov            = lerp(40,     heroRest.fov, t);
+            heroCopy.style.opacity  = '1';
+            heroCopy.style.transform = 'translateY(0)';
+          } else {
+            // Phase 2: copy fades, phone stays at rest
+            phoneGroup.position.x = heroRest.x;
+            phoneGroup.position.y = heroRest.y;
+            phoneGroup.rotation.z = 0;
+            phoneGroup.rotation.y = heroRest.rotY;
+            camera.position.z     = heroRest.camZ;
+            camera.fov            = heroRest.fov;
+            const t2 = eInOut((p - 0.5) / 0.5);
+            heroCopy.style.opacity  = String(1 - t2);
+            heroCopy.style.transform = `translateY(${-t2 * 36}px)`;
+          }
+
+          // Scrub video through first 55% of its duration during hero
+          if (videoReady && vid.duration) {
+            const target = p * vid.duration * 0.55;
+            if (Math.abs(vid.currentTime - target) > 0.04) vid.currentTime = target;
+            videoTex.needsUpdate = true;
+          }
+          camera.updateProjectionMatrix();
+        }
+      });
+
+      /* ══════════════════════════════════════════════
+         WORD SCROLL SECTION — horizontal marquee (300vh)
+         Phone moves from hero rest → centered upright in first 15%
+         Words sweep right→left across entire section
+      ══════════════════════════════════════════════ */
+      const wordTrack  = document.getElementById('word-track');
+      const wordLayer  = document.getElementById('word-layer');
+      const wordSect   = document.getElementById('word-section');
+      const s2Rest     = { x: 0, y: 0, rotY: 0, rotZ: 0, camZ: 3.8, fov: 32 };
+
+      // Calc word track width after first paint
+      let trackW = 0;
+      requestAnimationFrame(() => { trackW = wordTrack.scrollWidth; });
+
+      ScrollTrigger.create({
+        trigger: '#word-section',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 0.85,
+        onUpdate(self) {
+          const p = self.progress;
+          const eOut3 = t => 1 - Math.pow(1-t, 3);
+          const eInOut = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+
+          // Phone: re-center in first 15%
+          const pt = Math.min(1, p / 0.15);
+          const et = eOut3(pt);
+          phoneGroup.position.x = lerp(heroRest.x, s2Rest.x, et);
+          phoneGroup.position.y = lerp(heroRest.y, s2Rest.y, et);
+          phoneGroup.rotation.y = lerp(heroRest.rotY, 0, et);
+          phoneGroup.rotation.z = lerp(0, 0, et);
+          camera.position.z     = lerp(heroRest.camZ, s2Rest.camZ, et);
+          camera.fov            = lerp(heroRest.fov, s2Rest.fov, et);
+          camera.updateProjectionMatrix();
+
+          // Words: start off right (30vw), exit off left
+          if (trackW === 0) trackW = wordTrack.scrollWidth;
+          const startX = window.innerWidth * 0.3;
+          const endX   = -(trackW - window.innerWidth * 0.2);
+          wordTrack.style.transform = `translateX(${lerp(startX, endX, eInOut(p))}px)`;
+
+          // Scrub video: remaining 45% of video during word section
+          if (videoReady && vid.duration) {
+            const segStart = vid.duration * 0.55;
+            const target   = segStart + p * (vid.duration * 0.45);
+            if (Math.abs(vid.currentTime - target) > 0.04) vid.currentTime = target;
+            videoTex.needsUpdate = true;
+          }
+        }
+      });
+
+      /* ══════════════════════════════════════════════
+         Hide hero copy & word layer when not in their sections
+         (so they don't overlap existing slides)
+      ══════════════════════════════════════════════ */
+      ScrollTrigger.create({
+        trigger: '#sections',
+        start: 'top top',
+        onEnter:     () => { heroCopy.style.display = 'none'; wordLayer.style.opacity = '0'; },
+        onEnterBack: () => { heroCopy.style.display = 'flex'; }
+      });
+
+      // ── show/hide word layer only during word section ──
+      ScrollTrigger.create({
+        trigger: '#word-section',
+        start: 'top bottom',
+        end: 'bottom top',
+        onEnter:     () => { wordLayer.style.opacity = '1'; },
+        onLeave:     () => { wordLayer.style.opacity = '0'; },
+        onEnterBack: () => { wordLayer.style.opacity = '1'; },
+        onLeaveBack: () => { wordLayer.style.opacity = '0'; }
+      });
 
       // Show first slide text on load
       setSlideText(SLIDES[0]);
