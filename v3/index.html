@@ -104,11 +104,10 @@
       pointer-events: none;
       z-index: 1;   /* below canvas (z:2) — phone occludes words */
       display: none;
-      /* overflow:hidden clips children at overlay bounds (=viewport) so iOS compositor has nothing to clip */
-      overflow: hidden;
-      /* mask-image fades the clips so they look intentional, not glitchy */
-      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 7%, black 93%, transparent 100%);
-      mask-image: linear-gradient(to right, transparent 0%, black 7%, black 93%, transparent 100%);
+      overflow: visible;
+      /* Wide fade zones — text dissolves at edges rather than hard-clipping */
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
     }
     .word-line {
       position: absolute;
