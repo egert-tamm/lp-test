@@ -347,7 +347,9 @@
     videoTex.minFilter = THREE.LinearFilter; videoTex.magFilter = THREE.LinearFilter;
     videoTex.generateMipmaps = false; videoTex.flipY = false; videoTex.encoding = THREE.sRGBEncoding;
     let videoReady = false;
+    vid.addEventListener('loadeddata',     () => { videoReady = true; }, { once: true });
     vid.addEventListener('canplaythrough', () => { videoReady = true; }, { once: true });
+    vid.addEventListener('loadedmetadata', () => { videoReady = true; }, { once: true });
 
     function remapUVs(mesh) {
       const pos = mesh.geometry.attributes.position;
