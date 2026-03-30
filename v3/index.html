@@ -146,7 +146,7 @@
       line-height: 1.12;
       text-transform: uppercase;
     }
-    #hero-copy h1 .accent { color: #9EFF78; display: block; }
+    #hero-copy h1 .accent { color: #fff; display: block; }
     .hero-cta {
       display: inline-flex; align-items: center; gap: 10px;
       margin-top: 36px;
@@ -161,13 +161,21 @@
     }
     .hero-cta:hover { background: rgba(60,60,60,0.8); }
 
+    /* Yolo logo */
+    #yolo-logo {
+      position: fixed; top: 20px; left: 20px;
+      z-index: 20; pointer-events: none;
+      width: 100px; opacity: 0.9;
+    }
     @media (max-width: 768px) {
       .slide-title { max-width: 85vw; }
       .slide-text { padding: 0 5vw 8vh; }
       .word-line { font-size: clamp(32px, 8vw, 60px); }
+      #hero-copy { padding-top: 8vh; }
     }
     @media (orientation: portrait) {
       .word-line { font-size: clamp(36px, 9vw, 72px); }
+      #hero-copy { padding-top: 6vh; }
     }
     /* SVG background */
     #bg-anim {
@@ -209,6 +217,7 @@
     preload="auto" muted playsinline crossorigin="anonymous">
   </video>
 
+  <img id="yolo-logo" src="yolo-logo.jpg" alt="Yolo Investments">
   <div id="bg-anim"><svg width="1745" height="709" viewBox="0 0 1745 709" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block;">
 
 <path d="M1704.74 292.292L1704.74 277.219L1689.66 277.219L1689.66 292.292L1704.74 292.292ZM1691.32 278.879L1703.08 278.879L1703.08 290.631L1691.32 290.631L1691.32 278.879Z" fill="url(#paint0_linear_0_36)"/>
@@ -989,12 +998,7 @@
   <section id="hero-section">
     <div id="hero-copy">
       <h1>Bet Smarter<span class="accent">Win Faster</span></h1>
-      <a href="#" class="hero-cta">
-        <svg width="14" height="17" viewBox="0 0 14 17" fill="currentColor">
-          <path d="M13.47 12.77c-.25.58-.55 1.11-.9 1.6-.47.67-.86 1.13-1.15 1.39-.46.42-.95.64-1.48.65-.38 0-.83-.11-1.36-.33-.53-.22-1.02-.33-1.46-.33-.46 0-.96.11-1.5.33-.54.22-.98.33-1.31.35-.52.01-1.01-.21-1.5-.66-.32-.29-.72-.77-1.21-1.45-.52-.72-.93-1.56-1.25-2.51C.09 10.86 0 9.86 0 8.9c0-1.07.23-1.99.7-2.76.37-.62.85-1.1 1.47-1.47.61-.37 1.27-.56 1.97-.56.39 0 .9.12 1.53.37.63.24 1.03.36 1.2.36.14 0 .62-.15 1.43-.43.76-.27 1.41-.38 1.95-.33 1.44.12 2.51.68 3.22 1.7-1.28.78-1.91 1.86-1.91 3.24.01 1.08.4 1.98 1.17 2.69.35.33.74.59 1.17.77-.09.27-.19.53-.31.79zM10.04.34c0 .84-.31 1.63-.93 2.37-.74.87-1.64 1.37-2.61 1.29a2.6 2.6 0 0 1-.02-.32c0-.82.36-1.69.99-2.4.32-.36.72-.67 1.21-.91.49-.24.95-.38 1.38-.4.01.12.01.25.01.37z"/>
-        </svg>
-        Download for iOS
-      </a>
+
     </div>
   </section>
 
