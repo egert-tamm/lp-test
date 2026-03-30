@@ -158,14 +158,25 @@
     @media (max-width: 768px) {
       .slide-title { max-width: 85vw; }
       .slide-text { padding: 0 5vw 8vh; }
+      .word-line { font-size: clamp(32px, 8vw, 60px); }
     }
-    /* Animated SVG background */
+    @media (orientation: portrait) {
+      .word-line { font-size: clamp(28px, 7vw, 56px); }
+    }
+    /* SVG background */
     #bg-anim {
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      z-index: 0; pointer-events: none;
       overflow: hidden;
     }
     #bg-anim svg {
-      width: 100%; height: 100%;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
       33%  { transform: translate(3%, -8%) scale(1.12) rotate(1.5deg); }
       66%  { transform: translate(-8%, 4%) scale(1.08) rotate(-1deg); }
@@ -1341,20 +1352,35 @@
         const W = window.innerWidth;
         const h = window.innerHeight;
         const lineH = wl1.offsetHeight || 100;
+        const isPortrait = W < h;
 
-        // Vertical center positions
-        const y1 = h / 2 - lineH * 1.1;
-        const y2 = h / 2 + lineH * 0.1;
+        if (isPortrait) {
+          // Portrait (mobile): line 1 above phone, line 2 below — scroll horizontally
+          const phoneTop    = h * 0.22;   // rough top of phone area
+          const phoneBottom = h * 0.78;   // rough bottom of phone area
+          const y1 = phoneTop - lineH * 1.1;
+          const y2 = phoneBottom;
 
-        // Line1 (white "BUILT FOR SPEED"):   left → right
-        // Line2 (green "DESIGNED FOR EDGE"): right → left
-        const w1w = wl1.offsetWidth || W * 2;
-        const w2w = wl2.offsetWidth || W * 2;
-        const x1 = -w1w + p * (W + w1w);    // off-left → off-right
-        const x2 = W    - p * (W + w2w);    // off-right → off-left
+          const w1w = wl1.offsetWidth || W * 2;
+          const w2w = wl2.offsetWidth || W * 2;
+          const x1 = -w1w + p * (W + w1w);
+          const x2 = W    - p * (W + w2w);
 
-        wl1.style.transform = `translate(${x1}px, ${y1}px)`;
-        wl2.style.transform = `translate(${x2}px, ${y2}px)`;
+          wl1.style.transform = `translate(${x1}px, ${y1}px)`;
+          wl2.style.transform = `translate(${x2}px, ${y2}px)`;
+        } else {
+          // Landscape: both lines centered vertically, scroll horizontally
+          const y1 = h / 2 - lineH * 1.1;
+          const y2 = h / 2 + lineH * 0.1;
+
+          const w1w = wl1.offsetWidth || W * 2;
+          const w2w = wl2.offsetWidth || W * 2;
+          const x1 = -w1w + p * (W + w1w);
+          const x2 = W    - p * (W + w2w);
+
+          wl1.style.transform = `translate(${x1}px, ${y1}px)`;
+          wl2.style.transform = `translate(${x2}px, ${y2}px)`;
+        }
       }
 
       window.addEventListener('scroll', updateWords, { passive: true });
