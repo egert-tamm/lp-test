@@ -571,6 +571,9 @@
     </div>
   </section>
 
+  <!-- Phone slides (100vh each, populated by JS) -->
+  <div id="sections"></div>
+
   <!-- ── SECTION 4: Coming Soon Marquee ── -->
   <section id="cs-section">
     <!-- Decorative particles -->
@@ -609,7 +612,42 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script>
-    // No slides — 4 sections only: hero, word, feature, coming-soon
+    // ── Slides (100vh each, scroll-snap) ──
+    const SLIDES = [
+      'Introducing\nYapp App',
+      'Find Your\nFast Edge',
+      'Play What\'s\nTrending',
+      'Bet Your Way',
+      'AI When\nYou Want It',
+      'Built-In\nNative Games',
+      'Fast Deposits,\nFull Control',
+      'Built Different',
+      'Powered by AI',
+      'Designed to Win',
+      'Powered by\nYolo Investment',
+    ];
+
+    const PHONE_KEYS = [
+      { x:  0.3, y:  0.0, rotY: -0.15, camZ: 4.2, fov: 34, from: 'right',  style: 'zoom'  },
+      { x: -0.3, y:  0.0, rotY:  0.15, camZ: 4.2, fov: 34, from: 'left',   style: 'spin'  },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.6, fov: 30, from: 'bottom', style: 'float' },
+      { x:  0.4, y: -0.1, rotY: -0.2,  camZ: 4.5, fov: 36, from: 'right',  style: 'tilt'  },
+      { x:  0.0, y:  0.1, rotY:  0.0,  camZ: 3.8, fov: 32, from: 'top',    style: 'snap'  },
+      { x: -0.3, y:  0.0, rotY:  0.2,  camZ: 4.2, fov: 35, from: 'left',   style: 'zoom'  },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.2, fov: 28, from: 'bottom', style: 'tilt'  },
+      { x:  0.3, y:  0.1, rotY: -0.15, camZ: 4.8, fov: 38, from: 'right',  style: 'spin'  },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 4.0, fov: 34, from: 'left',   style: 'float' },
+      { x: -0.2, y:  0.0, rotY:  0.1,  camZ: 3.8, fov: 32, from: 'top',    style: 'snap'  },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 4.5, fov: 36, from: 'bottom', style: 'zoom'  },
+    ];
+
+    // Build slide snap sections (100vh each) before cs-section
+    const sectionsEl = document.getElementById('sections');
+    SLIDES.forEach((_, i) => {
+      const div = document.createElement('div');
+      div.className = 'slide'; div.id = `slide-${i}`;
+      sectionsEl.appendChild(div);
+    });
 
     // Three.js
     const scene = new THREE.Scene();
@@ -898,23 +936,47 @@
             wordOverlay.style.display = 'none';
             gsap.to(heroCopy, { opacity: 0, duration: 0.3 });
             stopFeatureCycle();
-            // Hide phone in coming soon section
             tweenPhone({ x: 0, y: -6, rx: 0, ry: 0, rz: 0, camZ: 8, fov: 36 }, 0.6);
+          } else if (id && id.startsWith('slide-')) {
+            // Phone slides: animate per PHONE_KEYS
+            wordOverlay.style.display = 'none';
+            gsap.to(heroCopy, { opacity: 0, duration: 0.3 });
+            stopFeatureCycle();
+            const slideIdx = parseInt(id.replace('slide-', ''), 10);
+            const key = PHONE_KEYS[slideIdx] || PHONE_KEYS[0];
+            const isMob = isPortrait();
+            tweenPhone({
+              x: isMob ? 0 : key.x,
+              y: key.y ?? 0,
+              rx: 0,
+              ry: key.rotY ?? 0,
+              rz: 0,
+              camZ: isMob ? restCamZ : key.camZ,
+              fov: isMob ? restFov : key.fov
+            }, 0.7);
+            // Scrub video by slide position
+            if (videoReady && vid.duration) {
+              const t = (slideIdx + 1) / (SLIDES.length + 3); // rough position in full journey
+              vid.currentTime = t * vid.duration;
+              videoTex.needsUpdate = true;
+            }
           }
 
-          // Scrub video through the 4 sections
-          const sectionOrder = ['hero-section', 'word-section', 'feature-section', 'cs-section'];
-          const idx = sectionOrder.indexOf(id);
-          if (idx >= 0 && videoReady && vid.duration) {
-            const t = idx / (sectionOrder.length - 1);
-            vid.currentTime = t * vid.duration;
-            videoTex.needsUpdate = true;
+          // Video scrub for named sections
+          if (!id.startsWith('slide-')) {
+            const sectionOrder = ['hero-section', 'word-section', 'feature-section', 'cs-section'];
+            const sidx = sectionOrder.indexOf(id);
+            if (sidx >= 0 && videoReady && vid.duration) {
+              const t = sidx / (sectionOrder.length - 1);
+              vid.currentTime = t * vid.duration;
+              videoTex.needsUpdate = true;
+            }
           }
         });
       }, { threshold: 0.6 });
 
-      // Observe all 4 snap sections
-      document.querySelectorAll('#hero-section, #word-section, #feature-section, #cs-section').forEach(el => {
+      // Observe all snap sections including slides
+      document.querySelectorAll('#hero-section, #word-section, #feature-section, #cs-section, .slide').forEach(el => {
         el.setAttribute('data-snap-section', '1');
         observer.observe(el);
       });
