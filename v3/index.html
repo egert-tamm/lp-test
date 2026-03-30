@@ -454,7 +454,7 @@
       // Start: phone low — bottom ~40% cropped, only top portion visible
       // Start: phone in place but tilted forward 32° on X axis (top away from viewer)
       phoneGroup.position.set(phoneXOffset(), -1.4, 0);
-      phoneGroup.rotation.set(32 * Math.PI / 180, 0, 0);
+      phoneGroup.rotation.set(-32 * Math.PI / 180, 0, 0);
       camera.position.z = 3.8;
       camera.fov = 34; camera.updateProjectionMatrix();
 
@@ -476,7 +476,7 @@
             // Phase 1: zoom out — camera pulls back, phone rises into full view
             const t = eOut3(p / 0.5);
             phoneGroup.position.y = lerp(-1.4, heroRest.y,   t);
-            phoneGroup.rotation.x = lerp(32 * Math.PI / 180, 0, t);
+            phoneGroup.rotation.x = lerp(-32 * Math.PI / 180, 0, t);
             camera.position.z     = lerp(3.8,  heroRest.camZ, t);
             camera.fov            = lerp(34,   heroRest.fov,  t);
             heroCopy.style.opacity   = '1';
