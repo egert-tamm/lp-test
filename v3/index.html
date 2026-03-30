@@ -523,33 +523,30 @@
 
       const vw = () => window.innerWidth;
 
-      // Animate words via GSAP timeline scrubbed to scroll
-      gsap.fromTo(wl1,
-        { x: -vw() * 1.1 },
-        {
-          x: -vw() * 0.05,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#word-section',
-            start: 'top top',
-            end: 'bottom top',
-            scrub: true,
-          }
-        }
-      );
-      gsap.fromTo(wl2,
-        { x: vw() * 1.1 },
-        {
-          x: vw() * 0.05,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: '#word-section',
-            start: 'top top',
-            end: 'bottom top',
-            scrub: true,
-          }
-        }
-      );
+      // Must wait a tick so text is rendered and offsetWidth is available
+      setTimeout(() => {
+        const w1 = wl1.offsetWidth;
+        const w2 = wl2.offsetWidth;
+
+        // Start fully off-screen: line1 left edge is past left edge, line2 right edge past right
+        const startX1 = -(vw() + w1);   // completely off left
+        const startX2 =  vw();           // completely off right
+
+        // End: text centered horizontally
+        const endX1 = (vw() - w1) / 2;
+        const endX2 = (vw() - w2) / 2;
+
+        gsap.fromTo(wl1,
+          { x: startX1 },
+          { x: endX1, ease: 'none',
+            scrollTrigger: { trigger: '#word-section', start: 'top top', end: 'bottom top', scrub: true } }
+        );
+        gsap.fromTo(wl2,
+          { x: startX2 },
+          { x: endX2, ease: 'none',
+            scrollTrigger: { trigger: '#word-section', start: 'top top', end: 'bottom top', scrub: true } }
+        );
+      }, 100);
 
       // Per-slide scroll trigger
       // Phone stays locked at heroRest for all remaining scroll — no more movement.
