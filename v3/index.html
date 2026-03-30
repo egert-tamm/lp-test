@@ -1387,8 +1387,8 @@
       // End: phone upright — portrait slightly closer for bigger feel
       const heroRest = {
         x: phoneXOffset(), y: 0.0, rotY: 0.0, rotZ: 0,
-        camZ: isPortrait() ? 4.5 : 5.5,
-        fov:  isPortrait() ? 32  : 36
+        camZ: isPortrait() ? 5.5 : 5.5,
+        fov:  isPortrait() ? 36  : 36
       };
 
       ScrollTrigger.create({
@@ -1508,8 +1508,9 @@
 
           const w1w = wl1.offsetWidth || W * 2;
           const w2w = wl2.offsetWidth || W * 2;
-          const x1 = -w1w + p * (W + w1w + 60);
-          const x2 = W    - p * (W + w2w + 60);
+          const buf = W * 0.2;
+          const x1 = -w1w + p * (W + w1w + buf);
+          const x2 = W    - p * (W + w2w + buf);
 
           wl1.style.transform = `translate(${x1}px, ${y1}px)`;
           wl2.style.transform = `translate(${x2}px, ${y2}px)`;
@@ -1520,8 +1521,9 @@
 
           const w1w = wl1.offsetWidth || W * 2;
           const w2w = wl2.offsetWidth || W * 2;
-          const x1 = -w1w + p * (W + w1w + 60);
-          const x2 = W    - p * (W + w2w + 60);
+          const buf = 60;
+          const x1 = -w1w + p * (W + w1w + buf);
+          const x2 = W    - p * (W + w2w + buf);
 
           wl1.style.transform = `translate(${x1}px, ${y1}px)`;
           wl2.style.transform = `translate(${x2}px, ${y2}px)`;
