@@ -1179,7 +1179,7 @@
 
     const isMobileViewport = innerWidth < 768;
     const CAM_SCALE = isMobileViewport ? 1.2 : 1.0; // push camera back on mobile
-    const PHONE_HIDDEN = { rotY: -0.3, camZ: 6.0 * CAM_SCALE, fov: 40 };
+    const PHONE_HIDDEN = { x: 0, y: 0, rotY: -0.3, camZ: 6.0 * CAM_SCALE, fov: 40 };
 
     // Build slide spacers
     const sectionsEl = document.getElementById('sections');
@@ -1534,6 +1534,8 @@
           phoneGroup.position.y = heroRest.y;
           phoneGroup.rotation.z = 0;
           phoneGroup.rotation.y = heroRest.rotY;
+          camera.position.x     = 0;
+          camera.position.y     = 0;
           camera.position.z     = heroRest.camZ;
           camera.fov            = heroRest.fov;
           camera.updateProjectionMatrix();
