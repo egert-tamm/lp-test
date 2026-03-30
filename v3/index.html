@@ -91,33 +91,35 @@
       position: sticky; top: 0;
       height: 100vh;
       display: flex; flex-direction: column;
-      justify-content: flex-end;
-      padding: 0 6vw 12vh;
+      justify-content: center;     /* vertically centered ~top 40% area */
+      align-items: center;         /* horizontally centered */
+      text-align: center;
+      padding: 0 6vw;
       pointer-events: none;
       z-index: 3;
     }
     #hero-copy h1 {
       font-size: clamp(64px, 13vw, 160px);
       font-weight: 800;
+      font-style: italic;          /* italic, matching screenshot */
       text-transform: uppercase;
-      line-height: 0.87;
-      letter-spacing: -0.04em;
+      line-height: 0.9;
+      letter-spacing: -0.03em;
     }
     #hero-copy h1 .accent { color: #c8f55a; display: block; }
     .hero-cta {
       display: inline-flex; align-items: center; gap: 10px;
-      margin-top: 36px; margin-bottom: 2px;
-      padding: 14px 26px;
-      background: rgba(255,255,255,0.09);
-      border: 1px solid rgba(255,255,255,0.18);
+      margin-top: 36px;
+      padding: 13px 24px;
+      background: rgba(30,30,30,0.7);
+      border: 1px solid rgba(255,255,255,0.22);
       backdrop-filter: blur(14px);
       border-radius: 100px;
       color: #fff; font-size: 14px; font-weight: 600;
       text-decoration: none; pointer-events: all;
-      width: fit-content;
       transition: background 0.2s;
     }
-    .hero-cta:hover { background: rgba(255,255,255,0.18); }
+    .hero-cta:hover { background: rgba(60,60,60,0.8); }
 
     /* ── WORD SCROLL section ── */
     #word-section { height: 300vh; position: relative; }
@@ -138,6 +140,7 @@
     .ww {
       font-size: clamp(100px, 18vw, 220px);
       font-weight: 800;
+      font-style: italic;          /* italic to match screenshot */
       text-transform: uppercase;
       letter-spacing: -0.04em;
       line-height: 1;
@@ -449,14 +452,14 @@
       const heroCopy   = document.getElementById('hero-copy');
       const heroSect   = document.getElementById('hero-section');
 
-      // Initial phone pose (set directly, before any scroll)
-      phoneGroup.position.set(0.55, -2.6, 0);
-      phoneGroup.rotation.set(0, -0.18, -0.68); // -38deg Z tilt
+      // Initial phone pose — tilted ~-38deg Z, bottom-center off-canvas
+      phoneGroup.position.set(0.0, -2.8, 0);
+      phoneGroup.rotation.set(0, -0.1, -0.68); // -38deg Z tilt, facing mostly forward
       camera.position.z = 5.6;
       camera.fov = 40; camera.updateProjectionMatrix();
 
-      // Hero rest position (phone upright, offset right like your screenshot)
-      const heroRest = { x: 0.3, y: -0.05, rotY: -0.13, rotZ: 0, camZ: 4.2, fov: 34 };
+      // Hero rest position — centered, bottom half of screen (phone crops at bottom edge like screenshot)
+      const heroRest = { x: 0.0, y: -0.4, rotY: 0.0, rotZ: 0, camZ: 3.6, fov: 32 };
 
       ScrollTrigger.create({
         trigger: '#hero-section',
