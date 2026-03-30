@@ -105,9 +105,6 @@
       z-index: 1;   /* below canvas (z:2) — phone occludes words */
       display: none;
       overflow: visible;
-      /* Fade both edges so text gracefully dissolves instead of hard-clipping on iOS */
-      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
-      mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
     }
     .word-line {
       position: absolute;
@@ -221,7 +218,7 @@
       #hero-copy { padding-top: 8vh; }
     }
     @media (orientation: portrait) {
-      .word-line { font-size: clamp(72px, 22vw, 160px); }
+      .word-line { font-size: clamp(48px, 14vw, 100px); }
       #hero-copy {
         justify-content: flex-start;
         padding-top: 18vh;
@@ -1495,11 +1492,9 @@
 
         if (currentScroll < startScroll || currentScroll > endScroll) {
           wordOverlay.style.display = 'none';
-          if (window.innerWidth < window.innerHeight) logoEl.classList.remove('hidden');
           return;
         }
         wordOverlay.style.display = 'block';
-        if (window.innerWidth < window.innerHeight) logoEl.classList.add('hidden');
 
         const p = Math.max(0, Math.min(1, (currentScroll - startScroll) / (endScroll - startScroll)));
 
