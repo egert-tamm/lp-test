@@ -96,6 +96,79 @@
     /* ── WORD SECTION ── */
     #word-section { height: 300vh; position: relative; }
 
+    /* ── FEATURE SECTION (after word scroll) ── */
+    #feature-section {
+      height: 100vh;
+      position: relative;
+      z-index: 3; /* above canvas so text/button are clickable */
+    }
+    #feature-inner {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 0 6vw;
+      pointer-events: none;
+    }
+    #feature-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      pointer-events: none;
+    }
+    #feature-label {
+      font-size: clamp(0.7rem, 1.4vw, 1rem);
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: #9EFF78;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    #feature-lines {
+      font-family: "obviously-variable", sans-serif;
+      font-weight: 800;
+      font-style: italic;
+      font-size: clamp(2.2rem, 5.5vw, 5.5rem);
+      line-height: 1.0;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    #feature-lines .fl { display: block; }
+    #watch-video-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 36px;
+      padding: 14px 28px;
+      background: #9EFF78;
+      border-radius: 100px;
+      color: #080808;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      pointer-events: all;
+      cursor: pointer;
+      border: none;
+      font-family: "obviously-variable", sans-serif;
+      transition: opacity 0.2s;
+    }
+    #watch-video-btn:hover { opacity: 0.85; }
+    #watch-video-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    /* Portrait: stack text top, phone below */
+    @media (orientation: portrait) {
+      #feature-inner {
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 0 5vw;
+        gap: 0;
+      }
+      #feature-lines { font-size: clamp(1.8rem, 9vw, 3.5rem); }
+    }
+
     /* Word overlay: fixed to viewport, driven purely by JS scroll progress */
     #word-overlay {
       position: fixed;
@@ -1090,6 +1163,26 @@
     <div class="word-line" id="word-line-2">DESIGNED FOR EDGE</div>
   </div>
 
+  <!-- Feature section: LIVE ACTION scene -->
+  <section id="feature-section">
+    <div id="feature-inner">
+      <div id="feature-copy">
+        <div id="feature-label">Live Action</div>
+        <div id="feature-lines">
+          <span class="fl">Find Your Edge</span>
+          <span class="fl">Play What's Trending</span>
+          <span class="fl">Tap. You're In.</span>
+          <span class="fl">Bet Your Way</span>
+          <span class="fl">Built-In Games</span>
+        </div>
+        <button id="watch-video-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>
+          Watch video
+        </button>
+      </div>
+    </div>
+  </section>
+
   <!-- slide-text overlay hidden — no per-slide copy for now -->
   <div class="slide-text" id="slide-text" style="display:none">
     <div class="slide-title" id="slide-title"></div>
@@ -1565,6 +1658,44 @@
         }
       });
     }
+
+      /* ══════════════════════════════════════════════
+         FEATURE SECTION — phone moves right (desktop) / stays centered (portrait)
+         Text + button already in DOM, just move the phone
+      ══════════════════════════════════════════════ */
+      ScrollTrigger.create({
+        trigger: '#feature-section',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 0.6,
+        onUpdate(self) {
+          const portrait = window.innerWidth < window.innerHeight;
+          if (portrait) {
+            // Mobile: phone centered, no tilt
+            phoneGroup.position.x = 0;
+            phoneGroup.rotation.y = 0;
+            phoneGroup.rotation.z = 0;
+            camera.position.z = heroRest.camZ;
+            camera.fov = heroRest.fov;
+          } else {
+            // Desktop: phone right side, slight tilt
+            phoneGroup.position.x = 0.55;
+            phoneGroup.rotation.y = -0.18;
+            phoneGroup.rotation.z = -0.06;
+            camera.position.z = 4.8;
+            camera.fov = 36;
+          }
+          camera.position.x = 0;
+          camera.position.y = 0;
+          camera.updateProjectionMatrix();
+        },
+        onLeaveBack() {
+          // Restore centered on scroll back
+          phoneGroup.position.x = phoneXOffset();
+          phoneGroup.rotation.y = heroRest.rotY;
+          phoneGroup.rotation.z = 0;
+        }
+      });
 
     // No mouse parallax — phone rotation stays exactly where scroll puts it
     let glintAngle = 0, lastTime = 0;
