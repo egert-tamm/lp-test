@@ -1315,6 +1315,12 @@
           if (name==='black.002') mat.color?.set(0x000000);
         });
       });
+      // Center model within group so phoneGroup.position is truly the phone center
+      const bbox = new THREE.Box3().setFromObject(model);
+      const center = new THREE.Vector3();
+      bbox.getCenter(center);
+      model.position.sub(center);
+
       phoneGroup.add(model);
       phoneGroup.add(glowPlane);
 
