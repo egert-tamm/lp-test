@@ -87,6 +87,36 @@
     #hero-section { height: 300vh; position: relative; z-index: 1; }
     #sections { position: relative; z-index: 1; }
 
+    /* ── WORD SECTION ── */
+    #word-section { height: 300vh; position: relative; z-index: 1; }
+    #word-sticky {
+      position: sticky; top: 0;
+      height: 100vh;
+      overflow: hidden;
+      /* z-index below canvas (0) so phone occludes the words */
+      z-index: -1;
+    }
+    .word-line {
+      position: absolute;
+      top: 50%; transform: translateY(-50%);
+      white-space: nowrap;
+      font-family: 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: clamp(80px, 14vw, 180px);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      will-change: transform;
+    }
+    #word-line-1 {
+      color: rgba(255,255,255,0.9);
+      top: 42%;   /* slightly above center */
+    }
+    #word-line-2 {
+      color: #c8f55a;
+      top: 58%;   /* slightly below center */
+    }
+
     #hero-copy {
       position: sticky; top: 0;
       height: 100vh;
@@ -154,6 +184,14 @@
         </svg>
         Download for iOS
       </a>
+    </div>
+  </section>
+
+  <!-- ── WORD SCROLL section ── -->
+  <section id="word-section">
+    <div id="word-sticky">
+      <div class="word-line" id="word-line-1">BUILT FOR SPEED</div>
+      <div class="word-line" id="word-line-2">DESIGNED FOR EDGE</div>
     </div>
   </section>
 
@@ -476,6 +514,46 @@
       });
 
       // slide-text is hidden — no per-slide copy needed right now
+
+      /* ══════════════════════════════════════════════
+         WORD SCROLL SECTION
+         "BUILT FOR SPEED" slides in from left (white)
+         "DESIGNED FOR EDGE" slides in from right (green)
+         Both start off-canvas, meet behind the centered phone.
+      ══════════════════════════════════════════════ */
+      const wl1 = document.getElementById('word-line-1');
+      const wl2 = document.getElementById('word-line-2');
+
+      // Position them off-screen initially
+      wl1.style.transform = `translateY(-50%) translateX(-110vw)`;
+      wl2.style.transform = `translateY(-50%) translateX(110vw)`;
+
+      ScrollTrigger.create({
+        trigger: '#word-section',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 0.8,
+        onUpdate(self) {
+          const p = self.progress;
+          const eInOut = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+          const t = eInOut(p);
+
+          // Line 1: comes from left (-110vw) → rests at -30vw (visible left of phone)
+          const x1 = -110 + t * 80;   // -110vw → -30vw
+          // Line 2: comes from right (110vw) → rests at -10vw (visible right, behind phone)
+          const x2 = 110 - t * 80;    // 110vw → 30vw
+
+          wl1.style.transform = `translateY(-50%) translateX(${x1}vw)`;
+          wl2.style.transform = `translateY(-50%) translateX(${x2}vw)`;
+
+          // Phone stays locked at heroRest during word section too
+          phoneGroup.position.x = phoneXOffset();
+          phoneGroup.position.y = heroRest.y;
+          camera.position.z     = heroRest.camZ;
+          camera.fov            = heroRest.fov;
+          camera.updateProjectionMatrix();
+        }
+      });
 
       // Per-slide scroll trigger
       // Phone stays locked at heroRest for all remaining scroll — no more movement.
