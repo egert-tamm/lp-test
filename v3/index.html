@@ -233,12 +233,12 @@
       display: none; /* shown via JS only during word scroll */
       position: fixed;
       top: 0; bottom: 0;
-      width: 22%;
-      z-index: 3; /* above word overlay (1) and canvas (2) */
+      width: 20%;
+      z-index: 1; /* same layer as word overlay — DOM order puts curtains on top of words but under canvas */
       pointer-events: none;
     }
-    #edge-left  { left: 0;  background: linear-gradient(to right, #080808 55%, transparent 100%); }
-    #edge-right { right: 0; background: linear-gradient(to left,  #080808 55%, transparent 100%); }
+    #edge-left  { left: 0;  background: linear-gradient(to right, #080808 60%, rgba(8,8,8,0) 100%); }
+    #edge-right { right: 0; background: linear-gradient(to left,  #080808 60%, rgba(8,8,8,0) 100%); }
 
     /* SVG background */
     #bg-anim {
@@ -1096,12 +1096,12 @@
   <section id="word-section"></section>
 
   <!-- Fixed word overlay — shown only while #word-section is in viewport -->
-  <div class="edge-curtain" id="edge-left"></div>
-  <div class="edge-curtain" id="edge-right"></div>
   <div id="word-overlay">
     <div class="word-line" id="word-line-1">BUILT FOR SPEED</div>
     <div class="word-line" id="word-line-2">DESIGNED FOR EDGE</div>
   </div>
+  <div class="edge-curtain" id="edge-left"></div>
+  <div class="edge-curtain" id="edge-right"></div>
 
   <!-- slide-text overlay hidden — no per-slide copy for now -->
   <div class="slide-text" id="slide-text" style="display:none">
