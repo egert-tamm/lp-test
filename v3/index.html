@@ -12,7 +12,11 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
-      background: #080808;
+      background-color: #080808;
+      background-image: url('bg.svg');
+      background-size: cover;
+      background-position: center top;
+      background-attachment: fixed;
       color: #fff;
       font-family: "obviously-variable", sans-serif;
       overflow-x: hidden;
@@ -308,9 +312,12 @@
     renderer.toneMappingExposure = 1.4;
     renderer.physicallyCorrectLights = true;
     renderer.setClearColor(0x000000, 0); // fully transparent canvas so DOM word layer shows through
-    // Background gradient goes on body; canvas is transparent
-    document.body.style.background =
-      'radial-gradient(ellipse at 60% 40%, #0d1f2d 0%, #080808 60%, #050505 100%)';
+    // Background: SVG pattern over dark base
+    document.body.style.backgroundColor = '#080808';
+    document.body.style.backgroundImage = "url('bg.svg')";
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundPosition = 'center top';
+    document.body.style.backgroundAttachment = 'fixed';
 
     scene.add(new THREE.AmbientLight(0x112233, 1.0));
     const key = new THREE.DirectionalLight(0xffffff, 3.0);
