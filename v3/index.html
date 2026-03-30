@@ -114,6 +114,7 @@
       font-size: clamp(60px, 11vw, 140px);
       font-weight: 800;
       font-style: italic;
+      font-variation-settings: "wght" 800, "ital" 1;
       text-transform: uppercase;
       letter-spacing: -0.02em;
       line-height: 1.12;
@@ -133,15 +134,14 @@
       pointer-events: none;
       z-index: 10;   /* above canvas (z:2) */
     }
-    /* Same font style as .slide-title — no italic, same weight/tracking */
     #hero-copy h1 {
       font-family: "obviously-variable", sans-serif;
       font-size: clamp(3.2rem, 10vw, 7rem);
       font-weight: 800;
       font-style: italic;
+      font-variation-settings: "wght" 800, "ital" 1;
       letter-spacing: -0.02em;
       line-height: 1.12;
-      font-optical-sizing: auto;
       text-transform: uppercase;
     }
     #hero-copy h1 .accent { color: #9EFF78; display: block; }
