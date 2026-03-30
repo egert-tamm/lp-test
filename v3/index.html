@@ -163,9 +163,11 @@
 
     /* Yolo logo */
     #yolo-logo {
-      position: fixed; top: 20px; left: 20px;
+      position: fixed; top: 16px; left: 16px;
       z-index: 20; pointer-events: none;
-      width: 110px;
+      width: 80px;  /* smaller = sharper for embedded raster */
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
       opacity: 1;
     }
     @media (max-width: 768px) {
@@ -1157,17 +1159,28 @@
     function markVideoReady() {
       if (videoReady) return;
       videoReady = true;
-      // Seek to frame 0 so phone screen shows immediately (not black)
       try { vid.currentTime = 0.001; } catch(e) {}
     }
     vid.addEventListener('loadeddata',     markVideoReady, { once: true });
     vid.addEventListener('canplaythrough', markVideoReady, { once: true });
     vid.addEventListener('loadedmetadata', markVideoReady, { once: true });
-    // iOS: unlock video on first touch, then immediately seek to frame 0
+
+    // iOS Safari: video won't decode until user gesture — unlock immediately on ANY interaction
+    // Also try to unlock proactively on page focus
     function unlockVideo() {
-      vid.play().then(() => { vid.pause(); vid.currentTime = 0.001; videoReady = true; }).catch(() => {});
+      if (videoReady) return;
+      vid.play().then(() => {
+        vid.pause();
+        vid.currentTime = 0.001;
+        videoReady = true;
+      }).catch(() => {});
     }
-    ['touchstart','click','scroll'].forEach(e => document.addEventListener(e, unlockVideo, { once: true, passive: true }));
+    // Try on any early interaction
+    ['touchstart','touchend','pointerdown','click','scroll','visibilitychange'].forEach(e =>
+      document.addEventListener(e, unlockVideo, { once: true, passive: true })
+    );
+    // Also try immediately (works on some iOS versions after autoplay policy relaxed)
+    setTimeout(() => { try { vid.currentTime = 0.001; videoReady = true; } catch(e) {} }, 100);
 
     function remapUVs(mesh) {
       const pos = mesh.geometry.attributes.position;
