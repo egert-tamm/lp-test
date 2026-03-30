@@ -1510,11 +1510,11 @@
           const phoneTop    = h * 0.22;   // rough top of phone area
           const phoneBottom = h * 0.78;   // rough bottom of phone area
           const y1 = phoneTop - lineH * 0.9;   // tight above phone
-          const y2 = phoneBottom - lineH * 0.1; // tight below phone
+          const y2 = phoneBottom - lineH * 0.5; // moved up
 
           const w1w = wl1.offsetWidth || W * 2;
           const w2w = wl2.offsetWidth || W * 2;
-          const buf = W * 0.2;
+          const buf = W * 0.35;
           const x1 = -w1w + p * (W + w1w + buf);
           const x2 = W    - p * (W + w2w + buf);
 
