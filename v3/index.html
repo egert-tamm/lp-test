@@ -105,9 +105,6 @@
       z-index: 1;   /* below canvas (z:2) — phone occludes words */
       display: none;
       overflow: visible;
-      /* Wide fade zones — text dissolves at edges rather than hard-clipping */
-      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
-      mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
     }
     .word-line {
       position: absolute;
@@ -231,6 +228,17 @@
         font-size: clamp(2.8rem, 11vw, 5rem);
       }
     }
+    /* Edge curtains — paint over word text at viewport edges so iOS clip is invisible */
+    .edge-curtain {
+      position: fixed;
+      top: 0; bottom: 0;
+      width: 12%;
+      z-index: 3; /* above word overlay (1) and canvas (2) */
+      pointer-events: none;
+    }
+    #edge-left  { left: 0;  background: linear-gradient(to right, #080808 30%, transparent 100%); }
+    #edge-right { right: 0; background: linear-gradient(to left,  #080808 30%, transparent 100%); }
+
     /* SVG background */
     #bg-anim {
       position: fixed;
@@ -1087,6 +1095,8 @@
   <section id="word-section"></section>
 
   <!-- Fixed word overlay — shown only while #word-section is in viewport -->
+  <div class="edge-curtain" id="edge-left"></div>
+  <div class="edge-curtain" id="edge-right"></div>
   <div id="word-overlay">
     <div class="word-line" id="word-line-1">BUILT FOR SPEED</div>
     <div class="word-line" id="word-line-2">DESIGNED FOR EDGE</div>
