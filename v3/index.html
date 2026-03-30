@@ -204,9 +204,12 @@
       width: 130px; height: auto;
       opacity: 1;
     }
-    #yolo-logo svg {
-      width: 100%; height: auto;
-      display: block;
+    #yolo-logo svg { width: 100%; height: auto; display: block; }
+    @media (orientation: portrait) {
+      #yolo-logo {
+        left: 50%;
+        transform: translateX(-50%);
+      }
     }
     @media (max-width: 768px) {
       .slide-title { max-width: 85vw; }
@@ -217,9 +220,12 @@
     @media (orientation: portrait) {
       .word-line { font-size: clamp(36px, 9vw, 72px); }
       #hero-copy {
-        justify-content: center;
-        padding-top: 0;
-        padding-bottom: 12vh; /* push text above center to leave gap above phone */
+        justify-content: flex-start;
+        padding-top: 18vh;
+        padding-bottom: 0;
+      }
+      #hero-copy h1 {
+        font-size: clamp(2.8rem, 11vw, 5rem);
       }
     }
     /* SVG background */
