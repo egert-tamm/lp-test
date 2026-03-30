@@ -96,8 +96,8 @@
       top: 0; left: 0;
       width: 100%; height: 100%;
       pointer-events: none;
-      z-index: 3;
-      display: none;   /* shown only while #word-section is in view */
+      z-index: 1;   /* below canvas (z:2) — phone occludes words */
+      display: none;
       overflow: hidden;
     }
     .word-line {
@@ -527,20 +527,29 @@
       const wordSection  = document.getElementById('word-section');
       const wordOverlay  = document.getElementById('word-overlay');
 
-      function updateWords() {
-        const rect = wordSection.getBoundingClientRect();
-        const sectionH = wordSection.offsetHeight;  // 300vh
+      const heroSection = document.getElementById('hero-section');
 
-        // Is the word section on screen?
-        if (rect.bottom <= 0 || rect.top >= window.innerHeight) {
+      function updateWords() {
+        const wordRect = wordSection.getBoundingClientRect();
+        const heroRect = heroSection.getBoundingClientRect();
+        const sectionH = wordSection.offsetHeight;
+        const vh = window.innerHeight;
+
+        // Start when the last 100vh of hero is scrolling (heroRect.top < -200vh)
+        // End when word-section bottom leaves viewport top
+        const heroH = heroSection.offsetHeight;  // 300vh
+        // triggerStart: 100vh before word-section enters (i.e. last third of hero)
+        const startScroll = heroSection.offsetTop + heroH - vh * 2;
+        const endScroll   = wordSection.offsetTop + sectionH - vh;
+        const currentScroll = window.scrollY;
+
+        if (currentScroll < startScroll || currentScroll > endScroll) {
           wordOverlay.style.display = 'none';
           return;
         }
         wordOverlay.style.display = 'block';
 
-        // progress: 0 when section top hits viewport top, 1 when section bottom hits viewport top
-        const scrolled = -rect.top;
-        const p = Math.max(0, Math.min(1, scrolled / (sectionH - window.innerHeight)));
+        const p = Math.max(0, Math.min(1, (currentScroll - startScroll) / (endScroll - startScroll)));
 
         const W = window.innerWidth;
         const h = window.innerHeight;
