@@ -209,7 +209,9 @@
       #yolo-logo {
         left: 50%;
         transform: translateX(-50%);
+        transition: opacity 0.3s ease;
       }
+      #yolo-logo.hidden { opacity: 0; pointer-events: none; }
     }
     @media (max-width: 768px) {
       .slide-title { max-width: 85vw; }
@@ -218,7 +220,7 @@
       #hero-copy { padding-top: 8vh; }
     }
     @media (orientation: portrait) {
-      .word-line { font-size: clamp(36px, 9vw, 72px); }
+      .word-line { font-size: clamp(72px, 22vw, 160px); }
       #hero-copy {
         justify-content: flex-start;
         padding-top: 18vh;
@@ -1460,6 +1462,7 @@
       ══════════════════════════════════════════════ */
       const wl1 = document.getElementById('word-line-1');
       const wl2 = document.getElementById('word-line-2');
+      const logoEl = document.getElementById('yolo-logo');
 
       // Word overlay: driven by raw scroll position — no GSAP, no sticky, no diagonal
       const wordSection  = document.getElementById('word-section');
@@ -1483,9 +1486,11 @@
 
         if (currentScroll < startScroll || currentScroll > endScroll) {
           wordOverlay.style.display = 'none';
+          if (window.innerWidth < window.innerHeight) logoEl.classList.remove('hidden');
           return;
         }
         wordOverlay.style.display = 'block';
+        if (window.innerWidth < window.innerHeight) logoEl.classList.add('hidden');
 
         const p = Math.max(0, Math.min(1, (currentScroll - startScroll) / (endScroll - startScroll)));
 
