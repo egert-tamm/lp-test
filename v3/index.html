@@ -111,6 +111,7 @@
       top: 0; left: 0;
       white-space: nowrap;
       width: max-content;
+      padding-right: 2vw;
       font-family: "obviously-variable", sans-serif;
       font-size: clamp(60px, 11vw, 140px);
       font-weight: 800;
@@ -118,6 +119,7 @@
       text-transform: uppercase;
       letter-spacing: -0.02em;
       line-height: 1.12;
+      will-change: transform;
     }
     #word-line-1 { color: rgba(255,255,255,0.9); }
     #word-line-2 { color: #9EFF78; }
@@ -1485,7 +1487,7 @@
         // End when word-section bottom leaves viewport top
         const heroH = heroSection.offsetHeight;  // 300vh
         // triggerStart: 100vh before word-section enters (i.e. last third of hero)
-        const startScroll = heroSection.offsetTop + heroH - vh * 1.8;
+        const startScroll = heroSection.offsetTop + heroH - vh * 2.5;
         const endScroll   = wordSection.offsetTop + sectionH - vh;
         const currentScroll = window.scrollY;
 
