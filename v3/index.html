@@ -93,7 +93,7 @@
       position: sticky; top: 0;
       height: 100vh;
       overflow: hidden;
-      z-index: 1;
+      z-index: 3;   /* above canvas so words are definitely visible */
       pointer-events: none;
       display: flex;
       flex-direction: column;
@@ -521,9 +521,10 @@
       const wl1 = document.getElementById('word-line-1');
       const wl2 = document.getElementById('word-line-2');
 
-      // Position them off-screen initially
-      wl1.style.transform = `translateX(-110vw)`;
-      wl2.style.transform = `translateX(110vw)`;
+      // Position off-screen in px
+      const vw = () => window.innerWidth;
+      wl1.style.transform = `translateX(${-vw() * 1.1}px)`;
+      wl2.style.transform = `translateX(${vw() * 1.1}px)`;
 
       ScrollTrigger.create({
         trigger: '#word-section',
@@ -531,19 +532,17 @@
         end: 'bottom top',
         scrub: 0.8,
         onUpdate(self) {
-          const p = self.progress;
-          const eInOut = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
-          const t = eInOut(p);
+          const p    = self.progress;
+          const ease = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+          const t    = ease(p);
+          const w    = vw();
 
-          // Line 1: comes from left (-110vw) → rests at -30vw (visible left of phone)
-          const x1 = -110 + t * 80;   // -110vw → -30vw
-          // Line 2: comes from right (110vw) → rests at -10vw (visible right, behind phone)
-          const x2 = 110 - t * 80;    // 110vw → 30vw
+          // Line 1: left → center-ish
+          wl1.style.transform = `translateX(${lerp(-w * 1.1, -w * 0.1, t)}px)`;
+          // Line 2: right → center-ish
+          wl2.style.transform = `translateX(${lerp(w * 1.1, w * 0.05, t)}px)`;
 
-          wl1.style.transform = `translateX(${x1}vw)`;
-          wl2.style.transform = `translateX(${x2}vw)`;
-
-          // Phone stays locked at heroRest during word section too
+          // Phone stays locked
           phoneGroup.position.x = phoneXOffset();
           phoneGroup.position.y = heroRest.y;
           camera.position.z     = heroRest.camZ;
