@@ -563,12 +563,12 @@
         const y1 = h / 2 - lineH * 1.1;
         const y2 = h / 2 + lineH * 0.1;
 
-        // Horizontal: line1 travels right→left, line2 travels left→right
-        // At p=0: line1 starts off-right, line2 starts off-left
-        // At p=1: line1 ends off-left,   line2 ends off-right
-        const travel = W + (wl1.offsetWidth || W * 2);
-        const x1 = W - p * travel;           // W → W - travel  (right to left)
-        const x2 = -(wl2.offsetWidth || W * 2) + p * travel;  // off-left → off-right
+        // Line1 (white "BUILT FOR SPEED"):   left → right
+        // Line2 (green "DESIGNED FOR EDGE"): right → left
+        const w1w = wl1.offsetWidth || W * 2;
+        const w2w = wl2.offsetWidth || W * 2;
+        const x1 = -w1w + p * (W + w1w);    // off-left → off-right
+        const x2 = W    - p * (W + w2w);    // off-right → off-left
 
         wl1.style.transform = `translate(${x1}px, ${y1}px)`;
         wl2.style.transform = `translate(${x2}px, ${y2}px)`;
