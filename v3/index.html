@@ -166,16 +166,201 @@
     #watch-video-btn:hover { opacity: 0.85; }
     #watch-video-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
 
-    /* Portrait */
+    /* Portrait / mobile — section 3 */
     @media (orientation: portrait) {
       #feature-inner {
         flex-direction: column;
         justify-content: center;
-        align-items: flex-start;
+        align-items: center;
         padding: 0 5vw;
         gap: 0;
       }
-      #feature-svg { max-width: 90vw; }
+      #feature-copy {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      /* Mobile SVG: switch to centered anchor, tighter viewBox fits screen */
+      #feature-svg {
+        width: 100%;
+        max-width: 100%;
+        overflow: visible;
+      }
+      #feature-btn-wrap {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 28px;
+      }
+      #watch-video-btn {
+        width: 84vw;
+        max-width: 328px;
+        justify-content: center;
+        font-size: 17px;
+        height: 60px;
+      }
+    }
+
+    /* ── SECTION 4: CTA ── */
+    #cta-section {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      z-index: 3;
+      padding: 80px 6vw 0;
+    }
+    #cta-bg {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 120% 80% at 50% 110%, rgba(158,255,120,0.12) 0%, transparent 65%),
+                  #080808;
+      z-index: 0;
+    }
+    #cta-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 32px;
+      width: 100%;
+      max-width: 700px;
+    }
+    #cta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.12);
+      font-family: "DM Sans", sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.7);
+    }
+    #cta-badge svg { width: 14px; height: 14px; flex-shrink: 0; }
+    #cta-headline {
+      font-family: "obviously-variable", sans-serif;
+      font-weight: 800;
+      font-style: italic;
+      text-transform: uppercase;
+      letter-spacing: -0.025em;
+      line-height: 1.0;
+      font-size: clamp(3rem, 8vw, 7.5rem);
+      color: #fff;
+      margin: 0;
+    }
+    #cta-headline .hl-green { color: #9EFF78; }
+    #cta-form {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      align-items: center;
+      background: rgba(255,255,255,0.96);
+      border-radius: 9999px;
+      padding: 4px 4px 4px 24px;
+      gap: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    #cta-email {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-family: "DM Sans", sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      color: #080808;
+      outline: none;
+      min-width: 0;
+    }
+    #cta-email::placeholder { color: rgba(8,8,8,0.45); }
+    #cta-submit {
+      flex-shrink: 0;
+      height: 56px;
+      padding: 0 28px;
+      background: #9EFF78;
+      border: none;
+      border-radius: 9999px;
+      font-family: "obviously-variable", sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      color: #080808;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+    }
+    #cta-submit:hover { opacity: 0.88; transform: scale(1.02); }
+    #cta-sub {
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+    }
+    #cta-phone-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 440px;
+      margin-top: 24px;
+      flex-shrink: 0;
+    }
+    #cta-phone-glow {
+      position: absolute;
+      bottom: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70%;
+      height: 200px;
+      background: radial-gradient(ellipse at center, rgba(158,255,120,0.25) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    #cta-footer {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      margin-top: 48px;
+      padding: 24px 6vw;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    #cta-footer-logo svg { width: 90px; height: auto; display: block; opacity: 0.7; }
+    #cta-footer-links {
+      display: flex;
+      gap: 24px;
+    }
+    #cta-footer-links a {
+      font-family: "DM Sans", sans-serif;
+      font-size: 14px;
+      color: rgba(255,255,255,0.45);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    #cta-footer-links a:hover { color: rgba(255,255,255,0.9); }
+    @media (orientation: portrait) {
+      #cta-section { padding: 60px 5vw 0; justify-content: flex-start; }
+      #cta-headline { font-size: clamp(2.8rem, 12vw, 4.5rem); }
+      #cta-form {
+        flex-direction: column;
+        border-radius: 20px;
+        padding: 16px;
+        gap: 12px;
+        align-items: stretch;
+      }
+      #cta-email { padding: 8px 4px; font-size: 16px; }
+      #cta-submit { width: 100%; height: 60px; font-size: 16px; border-radius: 9999px; }
+      #cta-footer { justify-content: center; padding: 20px 5vw; }
     }
 
     /* Word overlay: fixed to viewport, driven purely by JS scroll progress */
@@ -380,7 +565,7 @@
       <div id="feature-copy">
         <svg id="feature-svg" xmlns="http://www.w3.org/2000/svg"
              viewBox="0 0 1000 720" preserveAspectRatio="xMinYMid meet">
-          <!-- font-size 110 with line-height ~120 -->
+          <!-- font-size 110, line-height ~120; x switched to 500+text-anchor-middle on mobile by JS -->
           <text id="fl-0" class="fl-green active" x="0" y="110"  font-size="110">LIVE ACTION</text>
           <text id="fl-1"                          x="0" y="232"  font-size="110">FIND YOUR EDGE</text>
           <text id="fl-2"                          x="0" y="354"  font-size="110">PLAY WHAT&#x2019;S TRENDING</text>
@@ -397,6 +582,36 @@
         </div>
       </div>
     </div>
+  </section>
+
+  <!-- ── SECTION 4: CTA / Waitlist ── -->
+  <section id="cta-section">
+    <div id="cta-bg"></div>
+    <div id="cta-content">
+      <!-- Badge -->
+      <div id="cta-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Coming soon on iOS and Android
+      </div>
+      <!-- Headline -->
+      <h2 id="cta-headline">Bet Smarter<br><span class="hl-green">Win Faster</span></h2>
+      <!-- Email form -->
+      <form id="cta-form" onsubmit="ctaSubmit(event)">
+        <input id="cta-email" type="email" placeholder="Enter your email" autocomplete="email" required>
+        <button id="cta-submit" type="submit">Join waitlist</button>
+      </form>
+      <p id="cta-sub">No spam. Unsubscribe anytime.</p>
+    </div>
+    <!-- Footer -->
+    <footer id="cta-footer">
+      <div id="cta-footer-logo">
+        <svg width="790" height="382" viewBox="0 0 790 382" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#cta_clip0)"><path d="M154.155 333.116C154.155 336.323 151.733 338.68 148.329 338.68C145.056 338.68 142.503 336.323 142.503 333.116C142.503 329.908 145.056 327.617 148.329 327.617C151.733 327.617 154.155 329.908 154.155 333.116ZM143.616 344.244H152.977V380.247H143.616V344.244Z" fill="white"/><path d="M36.1595 360.776H80.2809L167.528 132.871H123.407L86.5839 232.393H85.9204L46.4435 132.871H0L65.0208 285.14L36.1595 360.776ZM251.056 298.077C301.481 298.077 336.977 263.577 336.977 214.147C336.977 164.387 301.481 130.549 251.056 130.549C199.305 130.549 164.804 165.714 164.804 214.147C164.804 262.581 199.305 298.077 251.056 298.077ZM251.056 258.932C226.176 258.932 208.925 239.36 208.925 214.148C208.925 188.604 225.844 169.363 251.056 169.363C274.942 169.363 292.855 187.608 292.855 214.148C292.855 240.687 274.278 258.932 251.056 258.932ZM361.434 295.092H404.892V50.9319H361.434V295.092ZM515.839 298.077C566.264 298.077 601.76 263.577 601.76 214.147C601.76 164.387 566.264 130.549 515.839 130.549C464.088 130.549 429.587 165.714 429.587 214.147C429.587 262.581 464.088 298.077 515.839 298.077ZM515.839 258.932C490.959 258.932 473.708 239.36 473.708 214.148C473.708 188.604 490.627 169.363 515.839 169.363C539.725 169.363 557.638 187.608 557.638 214.148C557.638 240.687 539.061 258.932 515.839 258.932Z" fill="white"/><path d="M748.578 81.7341C771.148 81.7341 789.445 63.4373 789.445 40.8671C789.445 18.2968 771.148 0 748.578 0C726.008 0 707.711 18.2968 707.711 40.8671C707.711 63.4373 726.008 81.7341 748.578 81.7341Z" fill="#FFD700"/><path d="M605.604 7.08509C682.714 55.9781 720.002 116.941 711.27 209.619C708.437 235.398 672.128 235.743 668.654 210.227C665.45 180.032 657.498 149.501 638.537 126.812C629.91 116.363 619.486 107.673 607.289 100.108C595.103 92.5507 581.36 86.0601 566.733 80.1436C545.433 71.5278 535.151 47.2762 543.766 25.9764C553.265 1.64967 584.155 -7.70633 605.604 7.08509Z" fill="url(#cta_paint0)"/></g><defs><linearGradient id="cta_paint0" x1="572.5" y1="31" x2="692.5" y2="229" gradientUnits="userSpaceOnUse"><stop stop-color="#FF6200"/><stop offset="1" stop-color="#FFD700"/></linearGradient><clipPath id="cta_clip0"><rect width="789.445" height="381.033" fill="white"/></clipPath></defs></svg>
+      </div>
+      <nav id="cta-footer-links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Privacy Notice</a>
+      </nav>
+    </footer>
   </section>
 
   <!-- slide-text overlay hidden — no per-slide copy for now -->
@@ -950,6 +1165,36 @@
         window.addEventListener('scroll', updateFeatureLines, { passive: true });
         updateFeatureLines();
       })();
+
+    /* ── Feature SVG: center text on mobile ── */
+    function applyFeatureSvgLayout() {
+      const portrait = window.innerWidth < window.innerHeight;
+      const svg = document.getElementById('feature-svg');
+      const texts = svg ? svg.querySelectorAll('text') : [];
+      texts.forEach(t => {
+        if (portrait) {
+          t.setAttribute('x', '500');
+          t.setAttribute('text-anchor', 'middle');
+        } else {
+          t.setAttribute('x', '0');
+          t.removeAttribute('text-anchor');
+        }
+      });
+    }
+    applyFeatureSvgLayout();
+    window.addEventListener('resize', applyFeatureSvgLayout);
+
+    /* ── CTA form ── */
+    function ctaSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('cta-email').value.trim();
+      const btn = document.getElementById('cta-submit');
+      if (!email) return;
+      btn.textContent = '✓ You\'re on the list!';
+      btn.style.opacity = '0.7';
+      btn.disabled = true;
+      document.getElementById('cta-email').disabled = true;
+    }
 
     // No mouse parallax — phone rotation stays exactly where scroll puts it
     let glintAngle = 0, lastTime = 0;

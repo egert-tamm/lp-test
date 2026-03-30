@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>star.io — debug</title>
+  <meta name="robots" content="noindex" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      background: #000;
+      overflow: hidden;
+    }
+    canvas { display: block; }
+    #hint {
+      position: fixed; bottom: 1.5rem; left: 50%;
+      transform: translateX(-50%);
+      font-family: system-ui, sans-serif;
+      font-size: 0.7rem; letter-spacing: 0.1em;
+      text-transform: uppercase; color: rgba(255,255,255,0.3);
+      pointer-events: none; white-space: nowrap;
+    }
+    /* Video offscreen — never opacity:0 (black box on some browsers) */
+    #vid {
+      position: fixed; left: -400px; top: 0;
+      width: 200px; height: 100px;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+  <video id="vid"
+    src="https://cdn.star.io/videos/screen-recording.mp4"
+    playsinline muted loop autoplay
+    crossorigin="anonymous"
+  ></video>
+  <div id="hint">Scroll to rotate</div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+    // ── Renderer ──────────────────────────────────────────────────────────────
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    renderer.physicallyCorrectLights = true;
+    document.body.prepend(renderer.domElement);
+
+    // ── Scene / Camera ────────────────────────────────────────────────────────
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+
+    const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.01, 100);
+    camera.position.set(0, 0, 3.5);
+
+    // ── Lights (same as main landing) ─────────────────────────────────────────
+    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+    const key = new THREE.DirectionalLight(0xffffff, 2.2);
+    key.position.set(3, 5, 5);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xb0c8ff, 0.8);
+    fill.position.set(-4, 0, -2);
+    scene.add(fill);
+
+    // ── Video texture setup ───────────────────────────────────────────────────
+    const vid = document.getElementById('vid');
+    vid.play().catch(() => {});
+
+    const videoTex = new THREE.VideoTexture(vid);
+    videoTex.minFilter = THREE.LinearFilter;
+    videoTex.magFilter = THREE.LinearFilter;
+    videoTex.generateMipmaps = false; // REQUIRED — non-POT dims (1206×2622)
+    videoTex.flipY = false;           // REQUIRED — GLTFLoader pre-bakes V-flip
+    videoTex.encoding = THREE.sRGBEncoding;
+
+    // requestVideoFrameCallback for mobile Safari/Chrome (passive polling unreliable)
+    if ('requestVideoFrameCallback' in vid) {
+      const onFrame = () => { videoTex.needsUpdate = true; vid.requestVideoFrameCallback(onFrame); };
+      vid.requestVideoFrameCallback(onFrame);
+    } else {
+      setInterval(() => { if (vid.readyState >= 2) videoTex.needsUpdate = true; }, 33);
+    }
+
+    // ── UV remap for screen.001 ───────────────────────────────────────────────
+    // screen.001 UVs are packed for baked PBR — need planar remap from bounding box
+    // Projection: Y→U, Z→V  (screen faces +X; Y=width, Z=height)
+    // flipU=true, flipV=true (confirmed via debug grid)
+    // Cover mode (crop edges to fill, no letterbox)
+    function remapUVs(mesh) {
+      const pos = mesh.geometry.attributes.position;
+      const box = new THREE.Box3().setFromBufferAttribute(pos);
+      const size = new THREE.Vector3(); box.getSize(size);
+      const meshW = size.y, meshH = size.z;
+      const vidAR = (vid.videoWidth && vid.videoHeight) ? vid.videoWidth / vid.videoHeight : 9 / 16;
+      const meshAR = meshW / (meshH || 1);
+      let scaleU = 1, scaleV = 1, offU = 0, offV = 0;
+      if (meshAR > vidAR) {
+        scaleV = meshAR / vidAR; offV = (1 - scaleV) / 2;
+      } else {
+        scaleU = vidAR / meshAR; offU = (1 - scaleU) / 2;
+      }
+      const uvArr = new Float32Array(pos.count * 2);
+      for (let i = 0; i < pos.count; i++) {
+        let u = (pos.getY(i) - box.min.y) / (meshW || 1);
+        let v = (pos.getZ(i) - box.min.z) / (meshH || 1);
+        u = 1 - (u * scaleU + offU); // flipU
+        v = 1 - (v * scaleV + offV); // flipV
+        uvArr[i * 2]     = u;
+        uvArr[i * 2 + 1] = v;
+      }
+      mesh.geometry = mesh.geometry.clone();
+      mesh.geometry.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
+    }
+
+    // ── Scroll → diagonal rotation ────────────────────────────────────────────
+    // Diagonal axis: normalised [1, 1, 0] — Y=X plane
+    const DIAG_AXIS = new THREE.Vector3(1, 1, 0).normalize();
+    const SCROLL_FACTOR = (Math.PI * 2) / 2000; // 1 full rotation per 2000px
+    let scrollY = 0;
+    let totalAngle = 0;
+
+    window.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      scrollY += e.deltaY;
+      totalAngle = scrollY * SCROLL_FACTOR;
+    }, { passive: false });
+
+    // Touch
+    let lastTouchY = null;
+    window.addEventListener('touchstart', (e) => { lastTouchY = e.touches[0].clientY; }, { passive: true });
+    window.addEventListener('touchmove', (e) => {
+      if (lastTouchY === null) return;
+      const delta = lastTouchY - e.touches[0].clientY;
+      scrollY += delta * 3;
+      totalAngle = scrollY * SCROLL_FACTOR;
+      lastTouchY = e.touches[0].clientY;
+    }, { passive: true });
+
+    // ── Load GLB ──────────────────────────────────────────────────────────────
+    const phoneGroup = new THREE.Group();
+    scene.add(phoneGroup);
+
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/gltf/');
+
+    const loader = new GLTFLoader();
+    loader.setDRACOLoader(dracoLoader);
+
+    loader.load('https://cdn.star.io/models/iphone17.glb', (gltf) => {
+      const model = gltf.scene;
+
+      // Fix orientation — model loads sideways (screen faces +X)
+      model.rotation.y = Math.PI / 2;
+
+      // Centre model
+      const box = new THREE.Box3().setFromObject(model);
+      const centre = box.getCenter(new THREE.Vector3());
+      model.position.sub(centre);
+
+      // Scale to ~2 units tall
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      model.scale.setScalar(2 / maxDim);
+
+      // Apply materials
+      model.traverse((child) => {
+        if (!child.isMesh) return;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach((mat, idx) => {
+          if (!mat) return;
+          const name = mat.name;
+
+          // Hide artefacts
+          if (name === 'glass.002' || name === 'lensinglass') {
+            child.visible = false;
+            return;
+          }
+
+          // Video on screen
+          if (name === 'screen.001') {
+            remapUVs(child);
+            const vidMat = new THREE.MeshBasicMaterial({
+              map: videoTex,
+              side: THREE.DoubleSide,
+              toneMapped: false,
+            });
+            if (Array.isArray(child.material)) {
+              child.material[idx] = vidMat;
+            } else {
+              child.material = vidMat;
+            }
+            return;
+          }
+
+          // Body tinting — titanium dark
+          const bodyNames = ['basecolor.001', 'backpanel.001', 'Material.005', 'Material.006', 'Material.007', 'gray.001'];
+          if (bodyNames.includes(name)) {
+            mat.color.set(0x1c1c1e);
+            mat.metalness = 0.7;
+            mat.roughness = 0.25;
+          }
+          if (name === 'metalframe.002' || name === 'metaL.001') {
+            mat.color.set(0x3a3a3c);
+            mat.metalness = 0.95;
+            mat.roughness = 0.1;
+          }
+        });
+      });
+
+      // Re-apply UVs once video metadata is available (timing safety)
+      if (!vid.videoWidth) {
+        vid.addEventListener('loadedmetadata', () => {
+          model.traverse((child) => {
+            if (!child.isMesh) return;
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            if (mats.some(m => m && m.map === videoTex)) remapUVs(child);
+          });
+        }, { once: true });
+      }
+
+      phoneGroup.add(model);
+    });
+
+    // ── Render loop ───────────────────────────────────────────────────────────
+    const rotationQuat = new THREE.Quaternion();
+    function animate() {
+      requestAnimationFrame(animate);
+      rotationQuat.setFromAxisAngle(DIAG_AXIS, totalAngle);
+      phoneGroup.quaternion.copy(rotationQuat);
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // ── Resize ────────────────────────────────────────────────────────────────
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
