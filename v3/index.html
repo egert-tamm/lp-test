@@ -93,8 +93,8 @@
       position: sticky; top: 0;
       height: 100vh;
       overflow: hidden;
-      /* z-index below canvas (0) so phone occludes the words */
-      z-index: -1;
+      z-index: 1;  /* above canvas so words are visible */
+      pointer-events: none;
     }
     .word-line {
       position: absolute;
