@@ -222,34 +222,33 @@
     }
     .cs-particle {
       position: absolute;
-      color: rgba(158,255,120,0.25);
+      color: rgba(158,255,120,0.28);
       font-size: 14px;
       line-height: 1;
       user-select: none;
     }
-    /* Logo top-left */
+    /* Logo — top center on mobile, top left on desktop */
     #cs-logo {
       position: absolute;
       top: 20px;
-      left: 24px;
+      left: 28px;
       z-index: 2;
-      width: 90px;
+      width: 100px;
       height: auto;
-      opacity: 0.85;
+      opacity: 0.9;
     }
     #cs-logo svg { width: 100%; height: auto; display: block; }
-    /* Marquee center — vertically centered */
+    /* Marquee — vertically centered, diagonal */
     #cs-marquee-wrap {
       position: absolute;
       top: 50%;
       left: 0;
       right: 0;
       transform: translateY(-50%) rotate(-6deg);
-      overflow: hidden;
       z-index: 1;
-      /* clip outside area to avoid overflow artifacts */
-      width: 120%;
-      margin-left: -10%;
+      overflow: visible;
+      width: 130%;
+      margin-left: -15%;
     }
     #cs-marquee-track {
       display: flex;
@@ -265,10 +264,33 @@
       text-transform: uppercase;
       letter-spacing: -0.04em;
       color: #fff;
-      font-size: clamp(96px, 14vw, 220px);
+      font-size: clamp(80px, 13vw, 220px);
       line-height: 1.1;
-      padding-right: 0.4em;
+      padding-right: 0.3em;
     }
+    /* Telegram join button */
+    #cs-tg-btn {
+      position: absolute;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      text-decoration: none;
+    }
+    #cs-tg-btn:hover { background: rgba(255,255,255,0.18); transform: translateX(-50%) scale(1.08); }
+    #cs-tg-btn svg { width: 24px; height: 24px; }
     /* Footer */
     #cs-footer {
       position: absolute;
@@ -291,8 +313,13 @@
     }
     #cs-footer-links {
       display: flex;
-      gap: 20px;
+      gap: 16px;
       align-items: center;
+    }
+    #cs-footer-divider {
+      width: 1px;
+      height: 14px;
+      background: rgba(255,255,255,0.2);
     }
     #cs-footer-links a {
       font-family: "DM Sans", sans-serif;
@@ -303,11 +330,11 @@
     }
     #cs-footer-links a:hover { color: rgba(255,255,255,0.8); }
     @media (orientation: portrait) {
-      #cs-logo { width: 70px; top: 16px; left: 16px; }
-      #cs-marquee-wrap { transform: translateY(-50%) rotate(-6deg); }
-      .cs-marquee-item { font-size: clamp(56px, 16vw, 110px); }
-      #cs-footer { padding: 14px 16px; }
-      #cs-footer-copy, #cs-footer-links a { font-size: 11px; }
+      #cs-logo { left: 50%; transform: translateX(-50%); width: 80px; top: 20px; }
+      .cs-marquee-item { font-size: clamp(64px, 22vw, 120px); }
+      #cs-tg-btn { bottom: 80px; }
+      #cs-footer { flex-direction: column; align-items: center; gap: 6px; padding: 14px 16px; }
+      #cs-footer-copy, #cs-footer-links a { font-size: 12px; }
     }
 
     /* Word overlay: fixed to viewport, driven purely by JS scroll progress */
@@ -548,11 +575,17 @@
       </div>
     </div>
 
+    <!-- Telegram button -->
+    <a id="cs-tg-btn" href="https://t.me/yoloinvestment" target="_blank" rel="noopener" title="Join on Telegram">
+      <svg viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.932z"/></svg>
+    </a>
+
     <!-- Footer -->
     <footer id="cs-footer">
       <span id="cs-footer-copy">© 2026 Yolo Investment</span>
       <nav id="cs-footer-links">
         <a href="#">Privacy Policy</a>
+        <span id="cs-footer-divider"></span>
         <a href="#">Privacy Notice</a>
       </nav>
     </footer>
