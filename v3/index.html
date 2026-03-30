@@ -543,7 +543,7 @@
         // End when word-section bottom leaves viewport top
         const heroH = heroSection.offsetHeight;  // 300vh
         // triggerStart: 100vh before word-section enters (i.e. last third of hero)
-        const startScroll = heroSection.offsetTop + heroH - vh * 2;
+        const startScroll = heroSection.offsetTop + heroH - vh * 3.5;
         const endScroll   = wordSection.offsetTop + sectionH - vh;
         const currentScroll = window.scrollY;
 
