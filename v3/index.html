@@ -105,6 +105,9 @@
       z-index: 1;   /* below canvas (z:2) — phone occludes words */
       display: none;
       overflow: visible;
+      /* Fade both edges so text gracefully dissolves instead of hard-clipping on iOS */
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
     }
     .word-line {
       position: absolute;
@@ -1420,8 +1423,8 @@
             phoneGroup.rotation.x = lerp(-startTilt * Math.PI / 180, 0, t);
             camera.position.z     = lerp(startCamZ, heroRest.camZ, t);
             camera.fov            = lerp(startFov,  heroRest.fov,  t);
-            // Fade copy: starts at p=0.15, gone by p=0.35
-            const fadeT = clamp01((p - 0.15) / 0.20);
+            // Fade copy: starts at p=0.3, gone by p=0.5
+            const fadeT = clamp01((p - 0.3) / 0.2);
             heroCopy.style.display   = 'flex';
             heroCopy.style.opacity   = String(1 - fadeT);
             heroCopy.style.transform = `translateY(${-fadeT * 36}px)`;
@@ -1514,15 +1517,8 @@
 
           const w1w = wl1.offsetWidth || W * 2;
           const w2w = wl2.offsetWidth || W * 2;
-          // Words travel from off-screen to a resting position where last letter is visible
-          // x1: starts fully left off-screen, ends at -(w1w - W*0.9) so last 10% is on screen
-          // x2: starts fully right, ends at W*0.1 so first letters are just off left edge
-          const margin = W * 0.08; // 8% right margin so last letter is never clipped
-          const x1End = -(w1w - W + margin);   // line 1 final x: most of text scrolled left, last chars visible
-          const x2End = margin;                 // line 2 final x: starts near left edge
-
-          const x1 = lerp(-w1w, x1End, p);
-          const x2 = lerp(W,    x2End, p);
+          const x1 = -w1w + p * (W + w1w);
+          const x2 = W    - p * (W + w2w);
 
           wl1.style.transform = `translate(${x1}px, ${y1}px)`;
           wl2.style.transform = `translate(${x2}px, ${y2}px)`;
@@ -1533,11 +1529,8 @@
 
           const w1w = wl1.offsetWidth || W * 2;
           const w2w = wl2.offsetWidth || W * 2;
-          const margin = 40;
-          const x1End = -(w1w - W + margin);
-          const x2End = margin;
-          const x1 = lerp(-w1w, x1End, p);
-          const x2 = lerp(W,    x2End, p);
+          const x1 = -w1w + p * (W + w1w);
+          const x2 = W    - p * (W + w2w);
 
           wl1.style.transform = `translate(${x1}px, ${y1}px)`;
           wl2.style.transform = `translate(${x2}px, ${y2}px)`;
