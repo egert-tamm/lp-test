@@ -209,9 +209,7 @@
       #yolo-logo {
         left: 50%;
         transform: translateX(-50%);
-        transition: opacity 0.3s ease;
       }
-      #yolo-logo.hidden { opacity: 0; pointer-events: none; }
     }
     @media (max-width: 768px) {
       .slide-title { max-width: 85vw; }
@@ -1407,6 +1405,14 @@
           camera.position.x = 0;
           camera.position.y = 0;
 
+          // Logo fades out on portrait as soon as scrolling begins (p 0→0.15)
+          if (window.innerWidth < window.innerHeight) {
+            const logoFade = clamp01(1 - p / 0.15);
+            logoEl.style.opacity = String(logoFade);
+          } else {
+            logoEl.style.opacity = '1';
+          }
+
           if (p <= 0.5) {
             // Phase 1: zoom out — camera pulls back, phone rises into full view
             const t = eOut3(p / 0.5);
@@ -1501,10 +1507,10 @@
 
         if (isPortrait) {
           // Portrait (mobile): line 1 above phone, line 2 below — scroll horizontally
-          const phoneTop    = h * 0.18;   // rough top of phone area
-          const phoneBottom = h * 0.82;   // rough bottom of phone area
-          const y1 = phoneTop - lineH * 1.5;   // bigger gap above
-          const y2 = phoneBottom + lineH * 0.3; // bigger gap below
+          const phoneTop    = h * 0.22;   // rough top of phone area
+          const phoneBottom = h * 0.78;   // rough bottom of phone area
+          const y1 = phoneTop - lineH * 0.9;   // tight above phone
+          const y2 = phoneBottom - lineH * 0.1; // tight below phone
 
           const w1w = wl1.offsetWidth || W * 2;
           const w2w = wl2.offsetWidth || W * 2;
