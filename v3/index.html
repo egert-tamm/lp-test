@@ -124,22 +124,19 @@
       font-family: "obviously-variable", sans-serif;
       font-weight: 800;
       font-style: normal;
-      font-size: clamp(2rem, 5.4vw, 104px);
-      line-height: 1.12;
+      font-size: clamp(1.8rem, 5.4vw, 104px);
+      line-height: 1.1;
       letter-spacing: -0.02em;
       text-transform: uppercase;
-      /* Outlined default: transparent fill, stroke behind text */
-      color: transparent;
-      -webkit-text-stroke: 1px rgba(255,255,255,0.35);
-      paint-order: stroke fill;
-      transition: color 0.32s ease, -webkit-text-stroke-color 0.32s ease;
+      /* Inactive: very faint so active line dominates */
+      color: rgba(255,255,255,0.12);
+      transition: color 0.35s ease, opacity 0.35s ease;
     }
     #feature-lines .fl.fl-green {
-      -webkit-text-stroke-color: rgba(158,255,120,0.35);
+      color: rgba(158,255,120,0.12);
     }
     #feature-lines .fl.active {
       color: #fff;
-      -webkit-text-stroke: 1px transparent;
     }
     #feature-lines .fl.fl-green.active {
       color: #9EFF78;
@@ -176,7 +173,7 @@
         padding: 0 5vw;
         gap: 0;
       }
-      #feature-lines .fl { font-size: clamp(1.6rem, 8vw, 3rem); }
+      #feature-lines .fl { font-size: clamp(1.2rem, 5.5vw, 2.4rem); line-height: 1.15; }
     }
 
     /* Word overlay: fixed to viewport, driven purely by JS scroll progress */
