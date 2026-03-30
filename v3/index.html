@@ -433,7 +433,7 @@
             phoneGroup.position.y = lerp(-1.4, heroRest.y, t);
             camera.position.z     = lerp(3.8,  heroRest.camZ, t);
             camera.fov            = lerp(34,   heroRest.fov, t);
-            heroCopy.style.opacity  = '1';
+            heroCopy.style.opacity   = '1';
             heroCopy.style.transform = 'translateY(0)';
           } else {
             // Phase 2: copy fades out, phone stays locked
@@ -441,7 +441,9 @@
             camera.position.z     = heroRest.camZ;
             camera.fov            = heroRest.fov;
             const t2 = eInOut((p - 0.5) / 0.5);
-            heroCopy.style.opacity  = String(1 - t2);
+            // Always write opacity from scroll progress — no stale display:none can block it
+            heroCopy.style.display   = 'flex';
+            heroCopy.style.opacity   = String(1 - t2);
             heroCopy.style.transform = `translateY(${-t2 * 36}px)`;
           }
 
@@ -456,13 +458,15 @@
       });
 
       /* ══════════════════════════════════════════════
-         Hide hero copy when existing slides start
+         Fade hero copy out when existing slides start — no display toggle,
+         opacity only so scroll-back always restores it correctly
       ══════════════════════════════════════════════ */
       ScrollTrigger.create({
         trigger: '#sections',
         start: 'top top',
-        onEnter:     () => { heroCopy.style.display = 'none'; },
-        onEnterBack: () => { heroCopy.style.display = 'flex'; }
+        end: 'top top',
+        onEnter:     () => { heroCopy.style.opacity = '0'; heroCopy.style.pointerEvents = 'none'; },
+        onEnterBack: () => { heroCopy.style.opacity = ''; heroCopy.style.pointerEvents = 'none'; }
       });
 
       // slide-text is hidden — no per-slide copy needed right now
