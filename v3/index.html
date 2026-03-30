@@ -106,6 +106,7 @@
       letter-spacing: -0.03em;
       line-height: 0.95;
       font-optical-sizing: auto;
+      text-transform: uppercase;
     }
     #hero-copy h1 .accent { color: #c8f55a; display: block; }
     .hero-cta {
@@ -406,13 +407,13 @@
       const heroSect   = document.getElementById('hero-section');
 
       // Start: phone low — bottom ~40% cropped, only top portion visible
-      phoneGroup.position.set(0.0, -1.4, 0);
+      phoneGroup.position.set(0.08, -1.4, 0);
       phoneGroup.rotation.set(0, 0, 0);
       camera.position.z = 3.8;
       camera.fov = 34; camera.updateProjectionMatrix();
 
       // End: phone still low-ish so text above is readable — bottom edge just in frame
-      const heroRest = { x: 0.0, y: -0.7, rotY: 0.0, rotZ: 0, camZ: 5.5, fov: 38 };
+      const heroRest = { x: 0.08, y: -0.7, rotY: 0.0, rotZ: 0, camZ: 5.5, fov: 38 };
 
       ScrollTrigger.create({
         trigger: '#hero-section',
@@ -475,7 +476,7 @@
         scrub: true,
         onUpdate(self) {
           // Lock phone at rest position
-          phoneGroup.position.x = heroRest.x;
+          phoneGroup.position.x = 0.08;
           phoneGroup.position.y = heroRest.y;
           phoneGroup.rotation.z = 0;
           phoneGroup.rotation.y = heroRest.rotY;
