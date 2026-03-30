@@ -519,27 +519,23 @@
       const wl1 = document.getElementById('word-line-1');
       const wl2 = document.getElementById('word-line-2');
 
-      setTimeout(() => {
-        const w1 = wl1.offsetWidth;
-        const w2 = wl2.offsetWidth;
-        const W  = window.innerWidth;
+      // Use a fixed large offset — guarantees off-screen regardless of font load timing
+      const OFFSCREEN = window.innerWidth * 1.5;
 
-        // Full horizontal sweep — text travels the entire width plus its own width
-        // Line 1 (white): left → right  (starts off-left, ends off-right)
-        // Line 2 (green): right → left  (starts off-right, ends off-left)
-        gsap.fromTo(wl1,
-          { x: -w1 },           // starts just off left edge
-          { x: W,               // ends just off right edge
-            ease: 'none',
-            scrollTrigger: { trigger: '#word-section', start: 'top top', end: 'bottom top', scrub: true } }
-        );
-        gsap.fromTo(wl2,
-          { x: W },             // starts just off right edge
-          { x: -w2,             // ends just off left edge
-            ease: 'none',
-            scrollTrigger: { trigger: '#word-section', start: 'top top', end: 'bottom top', scrub: true } }
-        );
-      }, 100);
+      // Force initial positions immediately (before any paint)
+      gsap.set(wl1, { x: -OFFSCREEN });
+      gsap.set(wl2, { x:  OFFSCREEN });
+
+      gsap.to(wl1, {
+        x: OFFSCREEN,
+        ease: 'none',
+        scrollTrigger: { trigger: '#word-section', start: 'top top', end: 'bottom top', scrub: true }
+      });
+      gsap.to(wl2, {
+        x: -OFFSCREEN,
+        ease: 'none',
+        scrollTrigger: { trigger: '#word-section', start: 'top top', end: 'bottom top', scrub: true }
+      });
 
       // Per-slide scroll trigger
       // Phone stays locked at heroRest for all remaining scroll — no more movement.
