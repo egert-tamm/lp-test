@@ -98,9 +98,9 @@
 
     /* ── FEATURE SECTION (after word scroll) ── */
     #feature-section {
-      height: 100vh;
+      height: 700vh; /* 6 lines × ~100vh each + exit room */
       position: relative;
-      z-index: 3; /* above canvas so text/button are clickable */
+      z-index: 3;
     }
     #feature-inner {
       position: sticky;
@@ -119,15 +119,32 @@
     }
     #feature-lines {
       font-family: "obviously-variable", sans-serif;
-      font-weight: 580;
+      font-weight: 800;
       font-style: normal;
       font-size: clamp(2rem, 5.4vw, 104px);
       line-height: 1.12;
       letter-spacing: -0.02em;
-      color: #fff;
+      text-transform: uppercase;
     }
-    #feature-lines .fl { display: block; }
-    #feature-lines .fl-green { color: #9EFF78; }
+    /* Default: outlined/ghost */
+    #feature-lines .fl {
+      display: block;
+      color: transparent;
+      -webkit-text-stroke: 1.5px rgba(255,255,255,0.35);
+      transition: color 0.3s ease, -webkit-text-stroke-color 0.3s ease;
+    }
+    #feature-lines .fl.fl-green {
+      -webkit-text-stroke-color: rgba(158,255,120,0.35);
+    }
+    /* Active: filled */
+    #feature-lines .fl.active {
+      color: #fff;
+      -webkit-text-stroke-color: transparent;
+    }
+    #feature-lines .fl.fl-green.active {
+      color: #9EFF78;
+      -webkit-text-stroke-color: transparent;
+    }
     #watch-video-btn {
       display: inline-flex;
       align-items: center;
@@ -151,7 +168,7 @@
     #watch-video-btn:hover { opacity: 0.85; }
     #watch-video-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
 
-    /* Portrait: stack text top, phone below */
+    /* Portrait */
     @media (orientation: portrait) {
       #feature-inner {
         flex-direction: column;
@@ -1169,10 +1186,14 @@
           <span class="fl">Bet your way</span>
           <span class="fl">Built-in games</span>
         </div>
-        <button id="watch-video-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>
-          Watch video
-        </button>
+        <!-- button shown only when last line is active -->
+        <div id="feature-btn-wrap" style="opacity:0;transition:opacity 0.3s">
+          <button id="watch-video-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>
+            Watch video
+          </button>
+        </div>
+
       </div>
     </div>
   </section>
@@ -1692,6 +1713,32 @@
           phoneGroup.rotation.z = 0;
         }
       });
+
+      /* ── Feature section: scroll-driven active line ── */
+      (function() {
+        const featureSection = document.getElementById('feature-section');
+        const lines = Array.from(document.querySelectorAll('#feature-lines .fl'));
+        const btnWrap = document.getElementById('feature-btn-wrap');
+        const N = lines.length;
+
+        // First line active by default
+        lines[0].classList.add('active');
+
+        function updateFeatureLines() {
+          const rect = featureSection.getBoundingClientRect();
+          const sectionH = featureSection.offsetHeight;
+          const vh = window.innerHeight;
+          // p: 0 when section top hits viewport top, 1 when section bottom hits viewport top
+          const p = Math.max(0, Math.min(1, -rect.top / (sectionH - vh)));
+          const activeIdx = Math.min(N - 1, Math.floor(p * N));
+          lines.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+          // Show button only on last line
+          btnWrap.style.opacity = activeIdx === N - 1 ? '1' : '0';
+        }
+
+        window.addEventListener('scroll', updateFeatureLines, { passive: true });
+        updateFeatureLines();
+      })();
 
     // No mouse parallax — phone rotation stays exactly where scroll puts it
     let glintAngle = 0, lastTime = 0;
