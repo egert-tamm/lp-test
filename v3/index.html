@@ -113,18 +113,36 @@
       gap: 0;
       pointer-events: none;
     }
-    /* SVG text lines — proper fill/stroke with no bleed */
-    #feature-svg {
-      display: block;
-      width: 100%;
-      overflow: visible;
+    /* Feature lines — paint-order: stroke fill prevents bleed */
+    #feature-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
     }
-    #feature-svg text {
+    #feature-lines .fl {
+      display: block;
       font-family: "obviously-variable", sans-serif;
       font-weight: 800;
-      text-transform: uppercase;
+      font-style: normal;
+      font-size: clamp(2rem, 5.4vw, 104px);
+      line-height: 1.12;
       letter-spacing: -0.02em;
-      transition: fill 0.32s ease, stroke 0.32s ease, stroke-opacity 0.32s ease, fill-opacity 0.32s ease;
+      text-transform: uppercase;
+      /* Outlined default: transparent fill, stroke behind text */
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(255,255,255,0.35);
+      paint-order: stroke fill;
+      transition: color 0.32s ease, -webkit-text-stroke-color 0.32s ease;
+    }
+    #feature-lines .fl.fl-green {
+      -webkit-text-stroke-color: rgba(158,255,120,0.35);
+    }
+    #feature-lines .fl.active {
+      color: #fff;
+      -webkit-text-stroke: 1px transparent;
+    }
+    #feature-lines .fl.fl-green.active {
+      color: #9EFF78;
     }
     #watch-video-btn {
       display: inline-flex;
@@ -158,8 +176,7 @@
         padding: 0 5vw;
         gap: 0;
       }
-      #feature-svg text { font-size: 52px; }
-      #feature-svg { viewBox: "0 0 900 700"; }
+      #feature-lines .fl { font-size: clamp(1.6rem, 8vw, 3rem); }
     }
 
     /* Word overlay: fixed to viewport, driven purely by JS scroll progress */
@@ -362,15 +379,14 @@
   <section id="feature-section">
     <div id="feature-inner">
       <div id="feature-copy">
-        <!-- SVG text: fill/stroke toggled by JS — no -webkit-text-stroke bleed -->
-        <svg id="feature-svg" viewBox="0 0 900 700" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <text id="fl-0" x="0" y="115"  font-size="104" fill="#9EFF78" stroke="#9EFF78" stroke-width="0" fill-opacity="1">LIVE ACTION</text>
-          <text id="fl-1" x="0" y="232"  font-size="104" fill="#fff"    stroke="rgba(255,255,255,0.35)" stroke-width="1" fill-opacity="0">FIND YOUR EDGE</text>
-          <text id="fl-2" x="0" y="349"  font-size="104" fill="#fff"    stroke="rgba(255,255,255,0.35)" stroke-width="1" fill-opacity="0">PLAY WHAT'S TRENDING</text>
-          <text id="fl-3" x="0" y="466"  font-size="104" fill="#fff"    stroke="rgba(255,255,255,0.35)" stroke-width="1" fill-opacity="0">TAP. YOU'RE IN.</text>
-          <text id="fl-4" x="0" y="583"  font-size="104" fill="#fff"    stroke="rgba(255,255,255,0.35)" stroke-width="1" fill-opacity="0">BET YOUR WAY</text>
-          <text id="fl-5" x="0" y="700"  font-size="104" fill="#fff"    stroke="rgba(255,255,255,0.35)" stroke-width="1" fill-opacity="0">BUILT-IN GAMES</text>
-        </svg>
+        <div id="feature-lines">
+          <span class="fl fl-green active" id="fl-0">Live action</span>
+          <span class="fl" id="fl-1">Find your edge</span>
+          <span class="fl" id="fl-2">Play what's trending</span>
+          <span class="fl" id="fl-3">Tap. You're in.</span>
+          <span class="fl" id="fl-4">Bet your way</span>
+          <span class="fl" id="fl-5">Built-in games</span>
+        </div>
         <!-- button shown only when last line is active -->
         <div id="feature-btn-wrap" style="opacity:0;transition:opacity 0.3s;pointer-events:none">
           <button id="watch-video-btn">
@@ -904,34 +920,22 @@
         }
       });
 
-      /* ── Feature section: scroll-driven SVG fill/stroke ── */
+      /* ── Feature section: scroll-driven active line ── */
       (function() {
         const featureSection = document.getElementById('feature-section');
-        const N = 6;
+        const lines = Array.from({length: 6}, (_, i) => document.getElementById('fl-' + i));
         const btnWrap = document.getElementById('feature-btn-wrap');
-
-        // SVG text elements
-        const svgLines = Array.from({length: N}, (_, i) => document.getElementById('fl-' + i));
-        const isGreen = [true, false, false, false, false, false];
+        const N = lines.length;
 
         function setActive(idx) {
-          svgLines.forEach((el, i) => {
+          lines.forEach((el, i) => {
             if (!el) return;
-            if (i === idx) {
-              // filled
-              el.setAttribute('fill-opacity', '1');
-              el.setAttribute('stroke-width', '0');
-            } else {
-              // outlined
-              el.setAttribute('fill-opacity', '0');
-              el.setAttribute('stroke-width', '1');
-            }
+            el.classList.toggle('active', i === idx);
           });
           btnWrap.style.opacity = idx === N - 1 ? '1' : '0';
           btnWrap.style.pointerEvents = idx === N - 1 ? 'all' : 'none';
         }
 
-        // First line active on load
         setActive(0);
 
         function updateFeatureLines() {
@@ -939,8 +943,7 @@
           const sectionH = featureSection.offsetHeight;
           const vh = window.innerHeight;
           const p = Math.max(0, Math.min(1, -rect.top / (sectionH - vh)));
-          const activeIdx = Math.min(N - 1, Math.floor(p * N));
-          setActive(activeIdx);
+          setActive(Math.min(N - 1, Math.floor(p * N)));
         }
 
         window.addEventListener('scroll', updateFeatureLines, { passive: true });
