@@ -105,19 +105,20 @@
       z-index: 1;   /* below canvas (z:2) — phone occludes words */
       display: none;
       overflow: visible;
-      /* clip-path crops the rendering box — text cut cleanly at inset edges, never ragged iOS clip */
-      clip-path: inset(0 0 0 0);
     }
     .word-line {
-      position: absolute;
+      position: fixed;
       top: 0; left: 0;
       white-space: nowrap;
       width: max-content;
-      padding-right: 2vw;
       font-family: "obviously-variable", sans-serif;
       font-size: clamp(60px, 11vw, 140px);
       font-weight: 800;
       font-style: italic;
+      /* Own GPU layer — iOS compositor doesn't viewport-clip sub-layers */
+      will-change: transform;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
       
       text-transform: uppercase;
       letter-spacing: -0.02em;
