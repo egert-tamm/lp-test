@@ -439,14 +439,18 @@
       top: 0; left: 0;
       white-space: nowrap;
       width: max-content;
-      padding-right: 2vw;
+      /* Padding prevents iOS Safari will-change layer clipping on italic overhang.
+         Safari rasterizes will-change layers to layout bounds, not ink bounds.
+         Bold italic at 140px overhangs significantly — needs room on all sides. */
+      padding: 0.15em 0.3em 0.05em 0.15em; /* top right bottom left */
+      margin: -0.15em -0.3em -0.05em -0.15em; /* cancel out padding so position stays correct */
       font-family: "obviously-variable", sans-serif;
       font-size: clamp(60px, 11vw, 140px);
       font-weight: 800;
       font-style: italic;
       text-transform: uppercase;
       letter-spacing: -0.02em;
-      line-height: 1.12;
+      line-height: 1.15;
       will-change: transform;
     }
     #word-line-1 { color: rgba(255,255,255,0.9); }
