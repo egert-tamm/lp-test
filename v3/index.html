@@ -1297,11 +1297,10 @@
       // - Eliminates overscroll bounce (iOS ignores overscroll-behavior CSS)
       // - Synchronizes scroll + repaint on JS thread (no pin jumping)
       // GSAP 3.14.2 has extensive iOS fixes vs 3.12.x where this was unreliable.
-      ScrollTrigger.normalizeScroll({
-        allowNestedScroll: true,
-        momentum: self => Math.min(3, self.velocityY / 1000),
-        type: "touch,wheel,pointer",  // also enables desktop drag-scroll
-      });
+      // NOTE: use boolean `true` — custom momentum callbacks can cause boundary
+      // overshoot leading to rubberbanding. GSAP's internal momentum handles
+      // boundary clamping correctly out of the box.
+      ScrollTrigger.normalizeScroll(true);
 
       const _scrubLag = _isIOS ? 0.1 : 0.3;  // iOS: near-instant, Android/desktop: slight smoothing
 
