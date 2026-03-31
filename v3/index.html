@@ -478,6 +478,30 @@
       text-transform: uppercase;
     }
     #hero-copy h1 .accent { color: #fff; display: block; }
+    .hero-line {
+      display: block;
+    }
+    .hero-char-wrap {
+      display: inline-block;
+      overflow: hidden;
+      vertical-align: top;
+    }
+    .hero-char {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(100%);
+      filter: blur(8px);
+    }
+    .hero-char.revealed {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0px);
+      transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+                  filter 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    /* Spaces need width */
+    .hero-char-space { width: 0.3em; }
     .coming-soon-badge {
       position: relative;
       display: inline-block;
@@ -635,8 +659,10 @@
   <section id="hero-section">
     <div id="hero-copy">
       <span class="coming-soon-badge">Coming soon on iOS and Android</span>
-      <h1>Bet Smarter<span class="accent">Win Faster</span></h1>
-
+      <h1>
+        <span class="hero-line" id="hero-line-1">Bet Smarter</span>
+        <span class="hero-line accent" id="hero-line-2">Win Faster</span>
+      </h1>
     </div>
   </section>
 
@@ -1044,6 +1070,51 @@
 
       document.getElementById('loading').style.opacity = '0';
       setTimeout(() => document.getElementById('loading')?.remove(), 600);
+
+      // Per-character reveal for hero text
+      (function() {
+        function splitLine(el) {
+          const text = el.textContent;
+          el.textContent = '';
+          const chars = [];
+          for (let i = 0; i < text.length; i++) {
+            const c = text[i];
+            if (c === ' ') {
+              const space = document.createElement('span');
+              space.className = 'hero-char-wrap hero-char-space';
+              space.innerHTML = '<span class="hero-char">&nbsp;</span>';
+              el.appendChild(space);
+              chars.push(space.firstChild);
+            } else {
+              const wrap = document.createElement('span');
+              wrap.className = 'hero-char-wrap';
+              const charEl = document.createElement('span');
+              charEl.className = 'hero-char';
+              charEl.textContent = c;
+              wrap.appendChild(charEl);
+              el.appendChild(wrap);
+              chars.push(charEl);
+            }
+          }
+          return chars;
+        }
+
+        const line1Chars = splitLine(document.getElementById('hero-line-1'));
+        const line2Chars = splitLine(document.getElementById('hero-line-2'));
+
+        const baseDelay = 400; // ms
+        const stagger = 40;    // ms per character
+        const line2Offset = 150; // ms gap between lines
+
+        line1Chars.forEach((ch, i) => {
+          setTimeout(() => ch.classList.add('revealed'), baseDelay + i * stagger);
+        });
+
+        const line2Start = baseDelay + line1Chars.length * stagger + line2Offset;
+        line2Chars.forEach((ch, i) => {
+          setTimeout(() => ch.classList.add('revealed'), line2Start + i * stagger);
+        });
+      })();
 
       setupScroll();
     }, null, err => { console.error(err); document.getElementById('loading').style.opacity='0'; });
