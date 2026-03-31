@@ -77,24 +77,35 @@
     .slide-title .word-inner:nth-child(2) { transition-delay: 0.06s; }
     .slide-title .word-inner:nth-child(3) { transition-delay: 0.12s; }
 
-    /* Each slide is 200vh: 100vh for text reveal, 100vh for phone reveal */
-    .slide { height: 200vh; }
+    /* Scroll snap: every section is exactly 100vh */
+    html {
+      scroll-snap-type: y mandatory;
+      overflow-y: scroll;
+      height: 100%;
+    }
+    body {
+      height: auto;
+    }
+
+    /* Each slide is 100vh snap section */
+    .slide { height: 100vh; scroll-snap-align: start; }
 
     #phone-video {
       position: fixed; width: 1px; height: 1px;
       left: -200px; top: -200px; pointer-events: none;
     }
 
-    /* ── HERO section (prepended before slides) ── */
-    #hero-section { height: 300vh; position: relative; z-index: 1; }
+    /* ── HERO section ── */
+    #hero-section { height: 100vh; scroll-snap-align: start; position: relative; z-index: 1; }
     #sections { position: relative; z-index: 1; }
 
     /* ── WORD SECTION ── */
-    #word-section { height: 300vh; position: relative; }
+    #word-section { height: 100vh; scroll-snap-align: start; position: relative; }
 
-    /* ── FEATURE SECTION (after word scroll) ── */
+    /* ── FEATURE SECTION ── */
     #feature-section {
-      height: 700vh; /* 6 lines × ~100vh each + exit room */
+      height: 100vh;
+      scroll-snap-align: start;
       position: relative;
       z-index: 3;
     }
@@ -560,7 +571,7 @@
     </div>
   </section>
 
-  <!-- Slide spacers (populated by JS) — must be before cs-section so cs-section is the page end -->
+  <!-- Phone slides (100vh each, populated by JS) -->
   <div id="sections"></div>
 
   <!-- ── SECTION 4: Coming Soon Marquee ── -->
@@ -596,83 +607,41 @@
     </footer>
   </section>
 
-  <!-- slide-text overlay hidden — no per-slide copy for now -->
-  <div class="slide-text" id="slide-text" style="display:none">
-    <div class="slide-title" id="slide-title"></div>
-  </div>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script>
+    // ── Slides (100vh each, scroll-snap) ──
     const SLIDES = [
       'Introducing\nYapp App',
       'Find Your\nFast Edge',
       'Play What\'s\nTrending',
       'Bet Your Way',
+      'AI When\nYou Want It',
+      'Built-In\nNative Games',
+      'Fast Deposits,\nFull Control',
+      'Built Different',
+      'Powered by AI',
+      'Designed to Win',
+      'Powered by\nYolo Investment',
     ];
 
-    // Per-slide keyframes
-    // style: 'slide' | 'spin' | 'zoom' | 'tilt' | 'float' | 'snap'
-    // from: 'right' | 'left' | 'bottom' | 'top'
     const PHONE_KEYS = [
-      { x:  0.3, y:  0.0, rotY: -0.15, camZ: 4.2, fov: 34, from: 'right',  style: 'zoom'  }, // 1 — rush in from distance
-      { x: -0.3, y:  0.0, rotY:  0.15, camZ: 4.2, fov: 34, from: 'left',   style: 'spin'  }, // 2 — spin Y on entry
-      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.6, fov: 30, from: 'bottom', style: 'float' }, // 3 — slow drift up
-      { x:  0.4, y: -0.1, rotY: -0.2,  camZ: 4.5, fov: 36, from: 'right',  style: 'tilt'  }, // 4 — tilts in on Z axis
+      { x:  0.3, y:  0.0, rotY: -0.15, camZ: 4.2, fov: 34, from: 'right',  style: 'zoom'  },
+      { x: -0.3, y:  0.0, rotY:  0.15, camZ: 4.2, fov: 34, from: 'left',   style: 'spin'  },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.6, fov: 30, from: 'bottom', style: 'float' },
+      { x:  0.4, y: -0.1, rotY: -0.2,  camZ: 4.5, fov: 36, from: 'right',  style: 'tilt'  },
+      { x:  0.0, y:  0.1, rotY:  0.0,  camZ: 3.8, fov: 32, from: 'top',    style: 'snap'  },
+      { x: -0.3, y:  0.0, rotY:  0.2,  camZ: 4.2, fov: 35, from: 'left',   style: 'zoom'  },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 3.2, fov: 28, from: 'bottom', style: 'tilt'  },
+      { x:  0.3, y:  0.1, rotY: -0.15, camZ: 4.8, fov: 38, from: 'right',  style: 'spin'  },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 4.0, fov: 34, from: 'left',   style: 'float' },
+      { x: -0.2, y:  0.0, rotY:  0.1,  camZ: 3.8, fov: 32, from: 'top',    style: 'snap'  },
+      { x:  0.0, y:  0.0, rotY:  0.0,  camZ: 4.5, fov: 36, from: 'bottom', style: 'zoom'  },
     ];
 
-    // Start position per direction
-    function hiddenPos(from) {
-      switch(from) {
-        case 'left':   return { x: -3.5, y:  0.0 };
-        case 'bottom': return { x:  0.0, y: -4.5 };
-        case 'top':    return { x:  0.0, y:  4.5 };
-        default:       return { x:  3.5, y:  0.0 };
-      }
-    }
-    function exitPos(from) {
-      switch(from) {
-        case 'left':   return { x:  3.5, y:  0.0 };
-        case 'bottom': return { x:  0.0, y:  4.5 };
-        case 'top':    return { x:  0.0, y: -4.5 };
-        default:       return { x: -3.5, y:  0.0 };
-      }
-    }
-
-    // Per-style easing & extra transforms
-    function styleEase(style, t) {
-      switch(style) {
-        case 'snap':  return t < 0.7 ? (t/0.7)**3 : 1;           // slow then snap
-        case 'float': return t * t * (3 - 2*t);                    // smoothstep, dreamy
-        case 'zoom':  return 1 - Math.pow(1 - t, 3);              // ease-out cubic, rushes in
-        case 'spin':  return t < 0.5 ? 2*t*t : -1+(4-2*t)*t;     // standard easeInOut
-        case 'tilt':  return t;                                     // linear — tilt handled via rotZ
-        default:      return t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
-      }
-    }
-    // Extra rotation Z for tilt style
-    function styleTiltZ(style, t) {
-      if (style === 'tilt') return (1 - t) * 0.5;  // starts tilted, straightens
-      return 0;
-    }
-    // Extra rotY for spin style (half rotation on entry)
-    function styleSpinY(style, t, restRotY) {
-      if (style === 'spin') return restRotY + (1 - t) * Math.PI * 0.6;
-      return null;
-    }
-    // Zoom: starts far (camZ * 2), rushes to resting camZ
-    function styleZoomCamZ(style, t, startCamZ, restCamZ) {
-      if (style === 'zoom') return lerp(startCamZ * 2.2, restCamZ, t);
-      return null;
-    }
-
-    const isMobileViewport = innerWidth < 768;
-    const CAM_SCALE = isMobileViewport ? 1.2 : 1.0; // push camera back on mobile
-    const PHONE_HIDDEN = { x: 0, y: 0, rotY: -0.3, camZ: 6.0 * CAM_SCALE, fov: 40 };
-
-    // Build slide spacers
+    // Build slide snap sections (100vh each) before cs-section
     const sectionsEl = document.getElementById('sections');
     SLIDES.forEach((_, i) => {
       const div = document.createElement('div');
@@ -786,9 +755,7 @@
     function lerp(a, b, t) { return a + (b - a) * t; }
     function eio(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
 
-    const slideTitle = document.getElementById('slide-title');
-    const slideTextEl = document.getElementById('slide-text');
-    let currentSlideIdx = -1;
+
 
     const loader = new THREE.GLTFLoader();
     loader.load('https://cdn.star.io/models/iphone17.glb', (gltf) => {
@@ -838,299 +805,185 @@
       setupScroll();
     }, null, err => { console.error(err); document.getElementById('loading').style.opacity='0'; });
 
-    function setSlideText(title) {
-      // Split into words, each wrapped for mask animation
-      const lines = title.split('\n');
-      slideTitle.innerHTML = lines.map(line =>
-        line.split(' ').map(word =>
-          `<span class="word"><span class="word-inner">${word}</span></span>`
-        ).join(' ')
-      ).join('<br>');
-    }
-
     function setupScroll() {
+      // With scroll-snap (100vh sections), we use IntersectionObserver
+      // to detect active section, then animate phone/words/lines via GSAP tweens.
       gsap.registerPlugin(ScrollTrigger);
 
-      /* ══════════════════════════════════════════════
-         HERO SECTION — tilt → upright (300vh)
-         Phone starts: tilted ~−38° on Z, bottom-right off-canvas
-         0→50% scroll: rises + straightens, copy stays
-         50→100%: copy fades up, phone locks to resting pos
-      ══════════════════════════════════════════════ */
-      const heroCopy   = document.getElementById('hero-copy');
-      const heroSect   = document.getElementById('hero-section');
-
-      // The GLTF model is rotated π/2 so its geometric center isn't at origin.
       const isPortrait = () => innerWidth < innerHeight;
+      function phoneXOffset() { return isPortrait() ? 0.0 : 0.22; }
 
-      // Portrait: phone fully centered; landscape: slight right offset
-      function phoneXOffset() {
-        return isPortrait() ? 0.0 : 0.22;
-      }
+      const heroCopy = document.getElementById('hero-copy');
+      const logoEl   = document.getElementById('yolo-logo');
+      const wl1      = document.getElementById('word-line-1');
+      const wl2      = document.getElementById('word-line-2');
+      const wordOverlay = document.getElementById('word-overlay');
 
-      // Portrait start: phone higher (-0.6), closer cam, 40° tilt (matches Figma)
-      // Landscape start: phone low (-1.4), 32° tilt
-      const startY   = isPortrait() ? -0.7  : -1.4;
-      const startCamZ = isPortrait() ? 3.2   : 3.8;
-      const startFov  = isPortrait() ? 30    : 34;
-      const startTilt = isPortrait() ? 40    : 32;
-
+      // ── Phone initial state ──
+      const startY    = isPortrait() ? -0.7 : -1.4;
+      const startCamZ = isPortrait() ? 3.2  : 3.8;
+      const startFov  = isPortrait() ? 30   : 34;
+      const startTilt = isPortrait() ? 40   : 32;
       phoneGroup.position.set(phoneXOffset(), startY, 0);
       phoneGroup.rotation.set(-startTilt * Math.PI / 180, 0, 0);
-      camera.position.z = startCamZ;
-      camera.fov = startFov; camera.updateProjectionMatrix();
+      camera.position.z = startCamZ; camera.fov = startFov;
+      camera.updateProjectionMatrix();
 
-      // End: phone upright — portrait slightly closer for bigger feel
-      const heroRest = {
-        x: phoneXOffset(), y: 0.0, rotY: 0.0, rotZ: 0,
-        camZ: isPortrait() ? 5.5 : 5.5,
-        fov:  isPortrait() ? 36  : 36
-      };
+      const restCamZ = isPortrait() ? 5.5 : 5.5;
+      const restFov  = isPortrait() ? 36  : 36;
 
-      ScrollTrigger.create({
-        trigger: '#hero-section',
-        start: 'top top',
-        end: 'bottom top',
-        scrub: 0.9,
-        onUpdate(self) {
-          const p = self.progress;
-          const clamp01 = v => Math.min(1, Math.max(0, v));
-          const eOut3   = t => 1 - Math.pow(1-t, 3);
-          const eInOut  = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+      // Section IDs in order
+      const SECTION_IDS = [
+        'hero-section',
+        'word-section',
+        'feature-section',
+        'cs-section',
+      ];
+      // Also include slide sections from #sections
+      let currentSection = 'hero-section';
 
-          // Always keep phone centered and camera x=0 during hero
-          phoneGroup.position.x = phoneXOffset();
-          camera.position.x = 0;
-          camera.position.y = 0;
+      // ── Tween helpers ──
+      function tweenPhone(target, duration) {
+        gsap.to(phoneGroup.position, { x: target.x ?? phoneXOffset(), y: target.y ?? 0, z: 0, duration, ease: 'power3.out' });
+        gsap.to(phoneGroup.rotation, { x: (target.rx ?? 0), y: (target.ry ?? 0), z: (target.rz ?? 0), duration, ease: 'power3.out' });
+        gsap.to(camera.position, { z: target.camZ ?? restCamZ, duration, ease: 'power3.out', onUpdate: () => camera.updateProjectionMatrix() });
+        gsap.to(camera, { fov: target.fov ?? restFov, duration, ease: 'power3.out', onUpdate: () => camera.updateProjectionMatrix() });
+      }
 
-          // Logo fades out on portrait as soon as scrolling begins (p 0→0.15)
-          if (window.innerWidth < window.innerHeight) {
-            const logoFade = clamp01(1 - p / 0.15);
-            logoEl.style.opacity = String(logoFade);
-          } else {
-            logoEl.style.opacity = '1';
-          }
+      // ── Hero: animate phone up on load ──
+      setTimeout(() => {
+        tweenPhone({ x: phoneXOffset(), y: 0, rx: 0, ry: 0, rz: 0, camZ: restCamZ, fov: restFov }, 1.6);
+        gsap.to(heroCopy, { opacity: 1, y: 0, duration: 0.8, delay: 0.3 });
+      }, 200);
 
-          if (p <= 0.5) {
-            // Phase 1: zoom out — camera pulls back, phone rises into full view
-            const t = eOut3(p / 0.5);
-            phoneGroup.position.y = lerp(startY, heroRest.y, t);
-            phoneGroup.rotation.x = lerp(-startTilt * Math.PI / 180, 0, t);
-            camera.position.z     = lerp(startCamZ, heroRest.camZ, t);
-            camera.fov            = lerp(startFov,  heroRest.fov,  t);
-            // Fade copy: starts at p=0.1, gone by p=0.28
-            const fadeT = clamp01((p - 0.1) / 0.18);
-            heroCopy.style.display   = 'flex';
-            heroCopy.style.opacity   = String(1 - fadeT);
-            heroCopy.style.transform = `translateY(${-fadeT * 36}px)`;
-          } else {
-            // Phase 2: copy gone, phone stays locked
-            phoneGroup.position.y = heroRest.y;
-            phoneGroup.rotation.x = 0;
-            camera.position.z     = heroRest.camZ;
-            camera.fov            = heroRest.fov;
-            heroCopy.style.display   = 'flex';
-            heroCopy.style.opacity   = '0';
-            heroCopy.style.transform = `translateY(-36px)`;
-          }
-
-          // Scrub video through first 55% of its duration during hero
-          if (videoReady && vid.duration) {
-            const target = p * vid.duration * 0.55;
-            if (Math.abs(vid.currentTime - target) > 0.04) vid.currentTime = target;
-            videoTex.needsUpdate = true;
-          }
-          camera.updateProjectionMatrix();
-        }
-      });
-
-      /* ══════════════════════════════════════════════
-         Fade hero copy out when existing slides start — no display toggle,
-         opacity only so scroll-back always restores it correctly
-      ══════════════════════════════════════════════ */
-      ScrollTrigger.create({
-        trigger: '#sections',
-        start: 'top top',
-        end: 'top top',
-        onEnter:     () => { heroCopy.style.opacity = '0'; heroCopy.style.pointerEvents = 'none'; },
-        onEnterBack: () => { heroCopy.style.opacity = ''; heroCopy.style.pointerEvents = 'none'; }
-      });
-
-      // slide-text is hidden — no per-slide copy needed right now
-
-      /* ══════════════════════════════════════════════
-         WORD SCROLL SECTION
-         "BUILT FOR SPEED" slides in from left (white)
-         "DESIGNED FOR EDGE" slides in from right (green)
-         Both start off-canvas, meet behind the centered phone.
-      ══════════════════════════════════════════════ */
-      const wl1 = document.getElementById('word-line-1');
-      const wl2 = document.getElementById('word-line-2');
-      const logoEl = document.getElementById('yolo-logo');
-
-      // Word overlay: driven by raw scroll position — no GSAP, no sticky, no diagonal
-      const wordSection  = document.getElementById('word-section');
-      const wordOverlay  = document.getElementById('word-overlay');
-
-      const heroSection = document.getElementById('hero-section');
-
-      function updateWords() {
-        const wordRect = wordSection.getBoundingClientRect();
-        const heroRect = heroSection.getBoundingClientRect();
-        const sectionH = wordSection.offsetHeight;
-        const vh = window.innerHeight;
-
-        // Start when the last 100vh of hero is scrolling (heroRect.top < -200vh)
-        // End when word-section bottom leaves viewport top
-        const heroH = heroSection.offsetHeight;  // 300vh
-        // triggerStart: 100vh before word-section enters (i.e. last third of hero)
-        const startScroll = heroSection.offsetTop + heroH - vh * 1.8;
-        const endScroll   = wordSection.offsetTop + sectionH - vh;
-        const currentScroll = window.scrollY;
-
-        if (currentScroll < startScroll || currentScroll > endScroll) {
-          wordOverlay.style.display = 'none';
-          return;
-        }
-        wordOverlay.style.display = 'block';
-
-        const p = Math.max(0, Math.min(1, (currentScroll - startScroll) / (endScroll - startScroll)));
-
-        const W = window.innerWidth;
-        const h = window.innerHeight;
+      // ── Word section: fly-in on enter ──
+      function showWords(entering) {
+        const W = window.innerWidth, H = window.innerHeight;
         const lineH = wl1.offsetHeight || 100;
-        const isPortrait = W < h;
-
-        if (isPortrait) {
-          // Portrait (mobile): line 1 above phone, line 2 below — scroll horizontally
-          const phoneTop    = h * 0.22;   // rough top of phone area
-          const phoneBottom = h * 0.78;   // rough bottom of phone area
-          const y1 = phoneTop - lineH * 0.9;   // tight above phone
-          const y2 = phoneBottom - lineH * 0.2; // slightly up
-
-          const w1w = wl1.offsetWidth || W * 2;
-          const w2w = wl2.offsetWidth || W * 2;
-          const x1 = -w1w + p * (W + w1w);
-          const x2 = W    - p * (W + w2w);
-
-          wl1.style.transform = `translate(${x1}px, ${y1}px)`;
-          wl2.style.transform = `translate(${x2}px, ${y2}px)`;
+        wordOverlay.style.display = 'block';
+        if (entering) {
+          // Start off-canvas, animate to center
+          const y1 = isPortrait() ? H * 0.22 - lineH * 0.9 : H / 2 - lineH * 1.1;
+          const y2 = isPortrait() ? H * 0.78 - lineH * 0.2 : H / 2 + lineH * 0.1;
+          wl1.style.transform = `translate(${-(wl1.offsetWidth || W * 2)}px, ${y1}px)`;
+          wl2.style.transform = `translate(${W}px, ${y2}px)`;
+          gsap.to(wl1, { x: 0, duration: 0.9, ease: 'power3.out', onUpdate: () => {
+            wl1.style.transform = `translate(${gsap.getProperty(wl1, 'x')}px, ${y1}px)`;
+          }});
+          gsap.to(wl2, { x: 0, duration: 0.9, ease: 'power3.out', onUpdate: () => {
+            wl2.style.transform = `translate(${gsap.getProperty(wl2, 'x')}px, ${y2}px)`;
+          }});
         } else {
-          // Landscape: both lines centered vertically, scroll horizontally
-          const y1 = h / 2 - lineH * 1.1;
-          const y2 = h / 2 + lineH * 0.1;
-
-          const w1w = wl1.offsetWidth || W * 2;
-          const w2w = wl2.offsetWidth || W * 2;
-          const x1 = -w1w + p * (W + w1w);
-          const x2 = W    - p * (W + w2w);
-
-          wl1.style.transform = `translate(${x1}px, ${y1}px)`;
-          wl2.style.transform = `translate(${x2}px, ${y2}px)`;
+          wordOverlay.style.display = 'none';
         }
       }
 
-      window.addEventListener('scroll', updateWords, { passive: true });
-      updateWords();
+      // ── Feature section: cycle through lines on a timer while visible ──
+      let featureInterval = null;
+      let featureIdx = 0;
+      const lines = Array.from({length: 6}, (_, i) => document.getElementById('fl-' + i));
+      const btnWrap = document.getElementById('feature-btn-wrap');
+      const featureDeg = Math.PI / 180;
 
-      // Per-slide scroll trigger
-      // Phone stays locked at heroRest for all remaining scroll — no more movement.
-      // Video continues scrubbing through remaining duration across all slides.
-      ScrollTrigger.create({
-        trigger: '#sections',
-        start: 'top top',
-        end: 'bottom top',
-        scrub: true,
-        onUpdate(self) {
-          // Lock phone at rest position
-          phoneGroup.position.x = phoneXOffset();
-          phoneGroup.position.y = heroRest.y;
-          phoneGroup.rotation.z = 0;
-          phoneGroup.rotation.y = heroRest.rotY;
-          camera.position.x     = 0;
-          camera.position.y     = 0;
-          camera.position.z     = heroRest.camZ;
-          camera.fov            = heroRest.fov;
-          camera.updateProjectionMatrix();
+      function setFeatureLine(idx) {
+        lines.forEach((el, i) => { if (el) el.classList.toggle('active', i === idx); });
+        btnWrap.style.opacity = idx === 5 ? '1' : '0';
+        btnWrap.style.pointerEvents = idx === 5 ? 'all' : 'none';
+      }
+      setFeatureLine(0);
 
-          // Continue scrubbing video through remaining 45%
-          if (videoReady && vid.duration) {
-            const target = vid.duration * 0.55 + self.progress * vid.duration * 0.45;
-            if (Math.abs(vid.currentTime - target) > 0.04) vid.currentTime = target;
-            videoTex.needsUpdate = true;
+      function startFeatureCycle() {
+        featureIdx = 0; setFeatureLine(0);
+        featureInterval = setInterval(() => {
+          featureIdx = (featureIdx + 1) % 6;
+          setFeatureLine(featureIdx);
+        }, 1000);
+      }
+      function stopFeatureCycle() {
+        clearInterval(featureInterval);
+        featureInterval = null;
+      }
+
+      // ── IntersectionObserver: detect active section ──
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (!e.isIntersecting) return;
+          const id = e.target.id || e.target.dataset.sectionId;
+
+          if (id === 'hero-section') {
+            heroCopy.style.display = 'flex';
+            gsap.to(heroCopy, { opacity: 1, y: 0, duration: 0.6 });
+            tweenPhone({ x: phoneXOffset(), y: 0, rx: 0, ry: 0, rz: 0, camZ: restCamZ, fov: restFov }, 0.8);
+            logoEl.style.opacity = '1';
+            wordOverlay.style.display = 'none';
+            stopFeatureCycle();
+          } else if (id === 'word-section') {
+            gsap.to(heroCopy, { opacity: 0, duration: 0.4 });
+            showWords(true);
+            tweenPhone({ x: phoneXOffset(), y: 0, rx: 0, ry: 0, rz: 0, camZ: restCamZ, fov: restFov }, 0.8);
+            stopFeatureCycle();
+          } else if (id === 'feature-section') {
+            wordOverlay.style.display = 'none';
+            gsap.to(heroCopy, { opacity: 0, duration: 0.3 });
+            // Feature phone: tilted on desktop
+            if (!isPortrait()) {
+              tweenPhone({ x: 0.5, y: 0, rx: 4*featureDeg, ry: 32*featureDeg, rz: 16*featureDeg, camZ: 4.8, fov: 36 }, 0.8);
+            } else {
+              tweenPhone({ x: 0, y: 0, rx: 0, ry: 0, rz: 0, camZ: restCamZ, fov: restFov }, 0.8);
+            }
+            startFeatureCycle();
+          } else if (id === 'cs-section') {
+            wordOverlay.style.display = 'none';
+            gsap.to(heroCopy, { opacity: 0, duration: 0.3 });
+            stopFeatureCycle();
+            tweenPhone({ x: 0, y: -6, rx: 0, ry: 0, rz: 0, camZ: 8, fov: 36 }, 0.6);
+          } else if (id && id.startsWith('slide-')) {
+            // Phone slides: animate per PHONE_KEYS
+            wordOverlay.style.display = 'none';
+            gsap.to(heroCopy, { opacity: 0, duration: 0.3 });
+            stopFeatureCycle();
+            const slideIdx = parseInt(id.replace('slide-', ''), 10);
+            const key = PHONE_KEYS[slideIdx] || PHONE_KEYS[0];
+            const isMob = isPortrait();
+            tweenPhone({
+              x: isMob ? 0 : key.x,
+              y: key.y ?? 0,
+              rx: 0,
+              ry: key.rotY ?? 0,
+              rz: 0,
+              camZ: isMob ? restCamZ : key.camZ,
+              fov: isMob ? restFov : key.fov
+            }, 0.7);
+            // Scrub video by slide position
+            if (videoReady && vid.duration) {
+              const t = (slideIdx + 1) / (SLIDES.length + 3); // rough position in full journey
+              vid.currentTime = t * vid.duration;
+              videoTex.needsUpdate = true;
+            }
           }
-        }
+
+          // Video scrub for named sections
+          if (!id.startsWith('slide-')) {
+            const sectionOrder = ['hero-section', 'word-section', 'feature-section', 'cs-section'];
+            const sidx = sectionOrder.indexOf(id);
+            if (sidx >= 0 && videoReady && vid.duration) {
+              const t = sidx / (sectionOrder.length - 1);
+              vid.currentTime = t * vid.duration;
+              videoTex.needsUpdate = true;
+            }
+          }
+        });
+      }, { threshold: 0.6 });
+
+      // Observe all snap sections including slides
+      document.querySelectorAll('#hero-section, #word-section, #feature-section, #cs-section, .slide').forEach(el => {
+        el.setAttribute('data-snap-section', '1');
+        observer.observe(el);
       });
     }
 
-      /* ══════════════════════════════════════════════
-         FEATURE SECTION — smooth interpolation from heroRest → tilted position
-         scrub: true so progress drives the lerp (smooth in both directions)
-      ══════════════════════════════════════════════ */
-      ScrollTrigger.create({
-        trigger: '#feature-section',
-        start: 'top bottom',   // start lerping as section enters from bottom
-        end: 'top top',        // fully transitioned when section top hits viewport top
-        scrub: true,
-        onUpdate(self) {
-          const t = self.progress; // 0 = heroRest, 1 = feature target
-          const eased = t < 0.5 ? 2*t*t : -1+(4-2*t)*t; // easeInOut
-          const portrait = window.innerWidth < window.innerHeight;
-          const deg = Math.PI / 180;
-
-          if (portrait) {
-            // Mobile: stay centered and upright
-            phoneGroup.position.x = lerp(phoneXOffset(), 0, eased);
-            phoneGroup.rotation.x = lerp(0, 0, eased);
-            phoneGroup.rotation.y = lerp(heroRest.rotY, 0, eased);
-            phoneGroup.rotation.z = lerp(0, 0, eased);
-            camera.position.z     = lerp(heroRest.camZ, heroRest.camZ, eased);
-            camera.fov            = lerp(heroRest.fov, heroRest.fov, eased);
-          } else {
-            // Desktop: lerp to Egert's tilt values
-            phoneGroup.position.x = lerp(phoneXOffset(), 0.5, eased);
-            phoneGroup.rotation.x = lerp(0, 4  * deg, eased);
-            phoneGroup.rotation.y = lerp(heroRest.rotY, 32 * deg, eased);
-            phoneGroup.rotation.z = lerp(0, 16 * deg, eased);
-            camera.position.z     = lerp(heroRest.camZ, 4.8, eased);
-            camera.fov            = lerp(heroRest.fov, 36, eased);
-          }
-          phoneGroup.position.y = heroRest.y;
-          camera.position.x = 0;
-          camera.position.y = 0;
-          camera.updateProjectionMatrix();
-        }
-      });
-
-      /* ── Feature section: scroll-driven active line ── */
-      (function() {
-        const featureSection = document.getElementById('feature-section');
-        const lines = Array.from({length: 6}, (_, i) => document.getElementById('fl-' + i));
-        const btnWrap = document.getElementById('feature-btn-wrap');
-        const N = lines.length;
-
-        function setActive(idx) {
-          lines.forEach((el, i) => {
-            if (!el) return;
-            el.classList.toggle('active', i === idx);
-          });
-          btnWrap.style.opacity = idx === N - 1 ? '1' : '0';
-          btnWrap.style.pointerEvents = idx === N - 1 ? 'all' : 'none';
-        }
-
-        setActive(0);
-
-        function updateFeatureLines() {
-          const rect = featureSection.getBoundingClientRect();
-          const sectionH = featureSection.offsetHeight;
-          const vh = window.innerHeight;
-          const p = Math.max(0, Math.min(1, -rect.top / (sectionH - vh)));
-          setActive(Math.min(N - 1, Math.floor(p * N)));
-        }
-
-        window.addEventListener('scroll', updateFeatureLines, { passive: true });
-        updateFeatureLines();
-      })();
+    /* ── Feature section: all lines visible on 100vh — no scroll cycling needed ──
+       The interval-based cycling above handles it. Show all as static on mobile. ── */
 
     /* ── Section 4: Coming Soon Marquee ── */
     (function() {
@@ -1231,7 +1084,6 @@
     window.addEventListener('resize', () => {
       camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
-      ScrollTrigger.refresh();
     });
     // Video unlock handled above (unlockVideo)
   </script>
