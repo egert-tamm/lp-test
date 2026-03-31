@@ -255,7 +255,7 @@
       }
       /* Hide arrow on mobile */
       #arrow-drawing { display: none; }
-      /* Button: full width at bottom, above fade + phone */
+      /* Button: centered at bottom with safe margin from viewport edge */
       #feature-btn-wrap {
         position: relative;
         transform: none;
@@ -263,6 +263,9 @@
         display: flex;
         justify-content: center;
         z-index: 2;
+        padding-bottom: max(env(safe-area-inset-bottom, 0px), 24px);
+        bottom: 0;
+        right: auto;
       }
       #watch-video-btn {
         width: 328px;
@@ -1432,15 +1435,15 @@
           const deg = Math.PI / 180;
 
           if (portrait) {
-            // Mobile: phone sits low — mostly below fold, top portion visible
+            // Mobile: phone centered between headings (top) and button (bottom)
             phoneGroup.position.x = lerp(phoneXOffset(), 0, eased);
-            phoneGroup.position.y = lerp(heroRest.y, -1.6, eased);
+            phoneGroup.position.y = lerp(heroRest.y, -0.6, eased);
             phoneGroup.rotation.x = 0;
             phoneGroup.rotation.y = lerp(heroRest.rotY, 0, eased);
             phoneGroup.rotation.z = 0;
             camera.position.y = 0;
-            camera.position.z = lerp(heroRest.camZ, 4.2, eased);
-            camera.fov = lerp(heroRest.fov, 42, eased);
+            camera.position.z = lerp(heroRest.camZ, 5.0, eased);
+            camera.fov = lerp(heroRest.fov, 38, eased);
           } else {
             // Desktop: lerp to Figma feature-section position (phone right, tilted)
             phoneGroup.position.x = lerp(phoneXOffset(), 1.35, eased);
