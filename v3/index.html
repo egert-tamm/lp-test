@@ -132,13 +132,14 @@
       position: relative;
       margin-bottom: 24px;
     }
-    /* Filled overlay — clipped left→right by JS */
+    /* Filled overlay — clipped left→right by JS, opaque bg covers outline beneath */
     .feature-line .fl-fill-overlay {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
       clip-path: inset(0 100% 0 0);
       pointer-events: none;
+      background: #080808;
     }
     /* Each SVG keeps natural width, fixed height so all lines are same size */
     .feature-line svg.fl-desktop {
@@ -1322,32 +1323,32 @@
             const lineEnd   = (i + 1) / totalLines;
             const fill = Math.max(0, Math.min(1, (p - lineStart) / (lineEnd - lineStart)));
             const clipRight = (1 - fill) * 100;
-            // Reveal fill from left
             overlays[i].style.clipPath = `inset(0 ${clipRight}% 0 0)`;
-            // Hide outline from left (inverse clip)
-            const fillLeft = fill * 100;
-            lines[i].querySelectorAll(':scope > svg').forEach(svg => {
-              svg.style.clipPath = fill >= 1 ? 'none' : fill <= 0 ? 'none' : `inset(0 0 0 ${fillLeft}%)`;
-            });
           }
 
           const inSection = rect.top <= 0 && rect.bottom > vh;
           // Hide phone when past feature section
           canvasEl.style.opacity = (p >= 1) ? '0' : '1';
 
-          if (inSection) {
-            // Phone: smooth animated flip at each message boundary
+          // Drive phone + video whenever feature section overlaps viewport
+          const overlapsViewport = rect.top < vh && rect.bottom > 0;
+          if (overlapsViewport) {
             const portrait = window.innerWidth < window.innerHeight;
             if (!portrait && window.phoneGroup) {
+              const clampedP = Math.min(p, 1);
               const totalSpin = spinPerLine * (totalLines - 1);
-              phoneGroup.rotation.y = featureRest.rotY + p * totalSpin;
-              phoneGroup.rotation.x = featureRest.rotX + Math.sin(p * Math.PI * 2) * 3 * deg;
-              phoneGroup.rotation.z = featureRest.rotZ + Math.sin(p * Math.PI * 3) * 2 * deg;
+              phoneGroup.rotation.y = featureRest.rotY + clampedP * totalSpin;
+              phoneGroup.rotation.x = featureRest.rotX + Math.sin(clampedP * Math.PI * 2) * 3 * deg;
+              phoneGroup.rotation.z = featureRest.rotZ + Math.sin(clampedP * Math.PI * 3) * 2 * deg;
+              phoneGroup.position.x = featureRest.x;
+              phoneGroup.position.y = featureRest.y;
+              camera.position.z = featureRest.camZ;
+              camera.fov = featureRest.fov;
+              camera.updateProjectionMatrix();
             }
 
-            // Scrub video through feature section
             if (videoReady && vid.duration) {
-              const target = p * vid.duration;
+              const target = Math.min(p, 1) * vid.duration;
               if (Math.abs(vid.currentTime - target) > 0.04) vid.currentTime = target;
               videoTex.needsUpdate = true;
             }
