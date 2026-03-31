@@ -77,18 +77,8 @@
     .slide-title .word-inner:nth-child(2) { transition-delay: 0.06s; }
     .slide-title .word-inner:nth-child(3) { transition-delay: 0.12s; }
 
-    /* Scroll snap: every section is exactly 100vh */
-    html {
-      scroll-snap-type: y mandatory;
-      overflow-y: scroll;
-      height: 100%;
-    }
-    body {
-      height: auto;
-    }
-
-    /* Each slide is 100vh snap section */
-    .slide { height: 100vh; scroll-snap-align: start; }
+    /* Each slide is 200vh: 100vh text reveal + 100vh phone reveal */
+    .slide { height: 200vh; }
 
     #phone-video {
       position: fixed; width: 1px; height: 1px;
@@ -96,11 +86,11 @@
     }
 
     /* ── HERO section ── */
-    #hero-section { height: 100vh; scroll-snap-align: start; position: relative; z-index: 1; }
+    #hero-section { height: 300vh; position: relative; z-index: 1; }
     #sections { position: relative; z-index: 1; }
 
     /* ── WORD SECTION ── */
-    #word-section { height: 100vh; scroll-snap-align: start; position: relative; }
+    #word-section { height: 300vh; position: relative; }
 
     /* ── FEATURE SECTION ── */
     #feature-section {
