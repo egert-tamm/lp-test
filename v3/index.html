@@ -1137,7 +1137,7 @@
 
       // End: phone upright — portrait slightly closer for bigger feel
       const heroRest = {
-        x: phoneXOffset(), y: 0.0, rotY: 0.0, rotZ: 0,
+        x: phoneXOffset(), y: isPortrait() ? 0.5 : 0.0, rotY: 0.0, rotZ: 0,
         camZ: isPortrait() ? 5.5 : 5.5,
         fov:  isPortrait() ? 36  : 36
       };
