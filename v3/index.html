@@ -1330,11 +1330,15 @@
 
       const heroSection = document.getElementById('hero-section');
 
+      // Cache viewport height to prevent jumps from mobile URL bar show/hide
+      // Only real resizes (width change) update this — see resize handler below
+      let _cachedVH = window.innerHeight;
+
       function updateWords() {
         const wordRect = wordSection.getBoundingClientRect();
         const heroRect = heroSection.getBoundingClientRect();
         const sectionH = wordSection.offsetHeight;
-        const vh = window.innerHeight;
+        const vh = _cachedVH;
 
         // Start when the last 100vh of hero is scrolling (heroRect.top < -200vh)
         // End when word-section bottom leaves viewport top
@@ -1354,7 +1358,7 @@
         const p = Math.max(0, Math.min(1, (currentScroll - startScroll) / (endScroll - startScroll)));
 
         const W = window.innerWidth;
-        const h = window.innerHeight;
+        const h = _cachedVH;
         const lineH = wl1.offsetHeight || 100;
         const isPortrait = W < h;
 
@@ -1525,7 +1529,7 @@
         function updateFeatureLines() {
           const rect = featureSection.getBoundingClientRect();
           const sectionH = featureSection.offsetHeight;
-          const vh = window.innerHeight;
+          const vh = _cachedVH;
           const p = Math.max(0, Math.min(1, -rect.top / (sectionH - vh)));
 
           const totalLines = 6;
@@ -1582,7 +1586,7 @@
           const heroEl = document.getElementById('hero-section');
           const heroH = heroEl.offsetHeight;
           const heroTop = heroEl.getBoundingClientRect().top;
-          const vh = window.innerHeight;
+          const vh = _cachedVH;
           // Hero scroll progress: 0 at top, 1 when hero fully scrolled
           const heroP = Math.max(0, Math.min(1, -heroTop / (heroH - vh)));
           // Fade out over first 15% of hero scroll
@@ -1679,10 +1683,19 @@
       renderer.render(scene, camera);
     })(0);
 
+    // Debounced resize: ignore mobile URL bar show/hide (only width changes matter)
+    let _lastW = innerWidth;
     window.addEventListener('resize', () => {
+      const newW = innerWidth;
       camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
-      ScrollTrigger.refresh();
+      // Only refresh ScrollTrigger + cached VH if width actually changed (orientation / real resize)
+      // URL bar show/hide only changes height — skip to prevent position jumps
+      if (newW !== _lastW) {
+        _lastW = newW;
+        _cachedVH = window.innerHeight;
+        ScrollTrigger.refresh();
+      }
     });
     // Video unlock handled above (unlockVideo)
     } // end setupScroll
