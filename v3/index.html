@@ -1219,6 +1219,13 @@
     function setupScroll() {
       gsap.registerPlugin(ScrollTrigger);
 
+      // Prevent ScrollTrigger from recalculating on mobile URL bar show/hide
+      ScrollTrigger.config({
+        ignoreMobileResize: true  // ignore height-only viewport changes (URL bar)
+      });
+      // Normalize scroll position — immune to mobile browser chrome changes
+      ScrollTrigger.normalizeScroll(true);
+
       /* ══════════════════════════════════════════════
          HERO SECTION — tilt → upright (300vh)
          Phone starts: tilted ~−38° on Z, bottom-right off-canvas
@@ -1338,65 +1345,47 @@
       // Only real resizes (width change) update this — see resize handler below
       let _cachedVH = window.innerHeight;
 
-      function updateWords() {
-        const wordRect = wordSection.getBoundingClientRect();
-        const heroRect = heroSection.getBoundingClientRect();
-        const sectionH = wordSection.offsetHeight;
-        const vh = _cachedVH;
+      // Word overlay driven by ScrollTrigger (uses normalizeScroll, immune to URL bar)
+      ScrollTrigger.create({
+        trigger: '#word-section',
+        start: () => `top-=${_cachedVH * 0.8} top`,  // start ~0.8vh before section enters
+        end: 'bottom top',
+        scrub: 0,  // immediate, no lag
+        onUpdate(self) {
+          const p = self.progress;
+          const W = window.innerWidth;
+          const h = _cachedVH;
+          const lineH = wl1.offsetHeight || 100;
+          const isPortrait = W < h;
 
-        // Start when the last 100vh of hero is scrolling (heroRect.top < -200vh)
-        // End when word-section bottom leaves viewport top
-        const heroH = heroSection.offsetHeight;  // 300vh
-        // triggerStart: 100vh before word-section enters (i.e. last third of hero)
-        const startScroll = heroSection.offsetTop + heroH - vh * 1.8;
-        const endScroll   = wordSection.offsetTop + sectionH - vh;
-        const currentScroll = window.scrollY;
+          wordOverlay.style.display = (p <= 0 || p >= 1) ? 'none' : 'block';
+          if (p <= 0 || p >= 1) return;
 
-        const featureTop = document.getElementById('feature-section').offsetTop;
-        if (currentScroll < startScroll || currentScroll > endScroll || currentScroll > featureTop - vh) {
-          wordOverlay.style.display = 'none';
-          return;
-        }
-        wordOverlay.style.display = 'block';
-
-        const p = Math.max(0, Math.min(1, (currentScroll - startScroll) / (endScroll - startScroll)));
-
-        const W = window.innerWidth;
-        const h = _cachedVH;
-        const lineH = wl1.offsetHeight || 100;
-        const isPortrait = W < h;
-
-        if (isPortrait) {
-          // Portrait (mobile): line 1 above phone, line 2 below — scroll horizontally
-          const phoneTop    = h * 0.22;   // rough top of phone area
-          const phoneBottom = h * 0.78;   // rough bottom of phone area
-          const y1 = phoneTop - lineH * 0.9;   // tight above phone
-          const y2 = phoneBottom - lineH * 0.2; // slightly up
-
-          const w1w = wl1.offsetWidth || W * 2;
-          const w2w = wl2.offsetWidth || W * 2;
-          const x1 = -w1w + p * (W + w1w);
-          const x2 = W    - p * (W + w2w);
-
-          wl1.style.transform = `translate(${x1}px, ${y1}px)`;
-          wl2.style.transform = `translate(${x2}px, ${y2}px)`;
-        } else {
-          // Landscape: both lines centered vertically, scroll horizontally
-          const y1 = h / 2 - lineH * 1.1;
-          const y2 = h / 2 + lineH * 0.1;
-
-          const w1w = wl1.offsetWidth || W * 2;
-          const w2w = wl2.offsetWidth || W * 2;
-          const x1 = -w1w + p * (W + w1w);
-          const x2 = W    - p * (W + w2w);
-
-          wl1.style.transform = `translate(${x1}px, ${y1}px)`;
-          wl2.style.transform = `translate(${x2}px, ${y2}px)`;
-        }
-      }
-
-      window.addEventListener('scroll', updateWords, { passive: true });
-      updateWords();
+          if (isPortrait) {
+            const phoneTop    = h * 0.22;
+            const phoneBottom = h * 0.78;
+            const y1 = phoneTop - lineH * 0.9;
+            const y2 = phoneBottom - lineH * 0.2;
+            const w1w = wl1.offsetWidth || W * 2;
+            const w2w = wl2.offsetWidth || W * 2;
+            const x1 = -w1w + p * (W + w1w);
+            const x2 = W    - p * (W + w2w);
+            wl1.style.transform = `translate(${x1}px, ${y1}px)`;
+            wl2.style.transform = `translate(${x2}px, ${y2}px)`;
+          } else {
+            const y1 = h / 2 - lineH * 1.1;
+            const y2 = h / 2 + lineH * 0.1;
+            const w1w = wl1.offsetWidth || W * 2;
+            const w2w = wl2.offsetWidth || W * 2;
+            const x1 = -w1w + p * (W + w1w);
+            const x2 = W    - p * (W + w2w);
+            wl1.style.transform = `translate(${x1}px, ${y1}px)`;
+            wl2.style.transform = `translate(${x2}px, ${y2}px)`;
+          }
+        },
+        onLeave:     () => { wordOverlay.style.display = 'none'; },
+        onLeaveBack: () => { wordOverlay.style.display = 'none'; },
+      });
 
       // Per-slide scroll trigger
       // Phone stays locked at heroRest for all remaining scroll — no more movement.
@@ -1530,11 +1519,10 @@
         const csSecEl = document.getElementById('cs-section');
         canvasEl.style.transition = 'opacity 0.3s';
 
+        let _featureP = 0;  // driven by ScrollTrigger below
         function updateFeatureLines() {
-          const rect = featureSection.getBoundingClientRect();
-          const sectionH = featureSection.offsetHeight;
+          const p = _featureP;
           const vh = _cachedVH;
-          const p = Math.max(0, Math.min(1, -rect.top / (sectionH - vh)));
 
           const totalLines = 6;
           for (let i = 0; i < totalLines; i++) {
@@ -1546,17 +1534,15 @@
             overlays[i].style.clipPath = `inset(0 ${clipRight}% 0 0)`;
           }
 
-          const inSection = rect.top <= 0 && rect.bottom > vh;
           // Hide phone when past feature section
           canvasEl.style.opacity = (p >= 1) ? '0' : '1';
 
-          // Drive phone + video only after entry transition is done (section top at/past viewport top)
-          const entryDone = rect.top <= 0;
-          // Show mobile fade only while in feature section
+          // p > 0 means section top is at/past viewport top (entry done)
+          const entryDone = p > 0;
           const portrait = window.innerWidth < window.innerHeight;
           document.getElementById('mobile-fade').style.display = (portrait && entryDone && p < 1) ? 'block' : 'none';
 
-          if (entryDone && rect.bottom > 0) {
+          if (entryDone && p < 1) {
             if (window.phoneGroup) {
               const clampedP = Math.min(p, 1);
               if (portrait) {
@@ -1582,29 +1568,43 @@
           }
         }
 
-        window.addEventListener('scroll', updateFeatureLines, { passive: true });
+        // Drive feature lines via ScrollTrigger (normalized scroll, immune to URL bar)
+        ScrollTrigger.create({
+          trigger: '#feature-section',
+          start: 'top top',
+          end: 'bottom bottom',
+          scrub: 0,
+          onUpdate(self) {
+            _featureP = self.progress;
+            updateFeatureLines();
+          }
+        });
 
-        // Global logo visibility: fade with hero scroll, reappear in footer
+        // Global logo visibility: driven by ScrollTrigger (immune to URL bar)
         const logoEl2 = document.getElementById('yolo-logo');
-        function updateLogoVisibility() {
-          const heroEl = document.getElementById('hero-section');
-          const heroH = heroEl.offsetHeight;
-          const heroTop = heroEl.getBoundingClientRect().top;
-          const vh = _cachedVH;
-          // Hero scroll progress: 0 at top, 1 when hero fully scrolled
-          const heroP = Math.max(0, Math.min(1, -heroTop / (heroH - vh)));
-          // Fade out over first 15% of hero scroll
-          const heroFade = Math.max(0, 1 - heroP / 0.15);
-
-          const btnRect = document.getElementById('watch-video-btn').getBoundingClientRect();
-          const inFooter = btnRect.bottom < 0;
-
-          logoEl2.style.transition = 'opacity 0.3s ease';
-          logoEl2.style.opacity = (inFooter || heroFade > 0.5) ? '1' : '0';
-        }
-        window.addEventListener('scroll', updateLogoVisibility, { passive: true });
-        updateLogoVisibility();
-        updateFeatureLines();
+        logoEl2.style.transition = 'opacity 0.3s ease';
+        let _heroLogoP = 0;
+        ScrollTrigger.create({
+          trigger: '#hero-section',
+          start: 'top top',
+          end: 'bottom top',
+          scrub: 0,
+          onUpdate(self) {
+            _heroLogoP = self.progress;
+            const heroFade = Math.max(0, 1 - _heroLogoP / 0.15);
+            logoEl2.style.opacity = heroFade > 0.5 ? '1' : '0';
+          }
+        });
+        // Reappear in footer (when feature section is past)
+        ScrollTrigger.create({
+          trigger: '#cs-section',
+          start: 'top bottom',
+          onEnter: () => { logoEl2.style.opacity = '1'; },
+          onLeaveBack: () => {
+            const heroFade = Math.max(0, 1 - _heroLogoP / 0.15);
+            logoEl2.style.opacity = heroFade > 0.5 ? '1' : '0';
+          }
+        });
       })();
 
     /* ── Section 4: Coming Soon Marquee ── */
