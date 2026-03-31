@@ -889,7 +889,7 @@
     const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.01, 100);
     window.camera = camera;
     camera.position.set(0, 0, 4.5);
-    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: false, alpha: true });
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(devicePixelRatio);
     renderer.outputEncoding = THREE.sRGBEncoding;
@@ -1029,11 +1029,11 @@
 
     const canvasTex = new THREE.CanvasTexture(phoneCanvas);
     canvasTex.minFilter = THREE.LinearFilter;
-    canvasTex.magFilter = THREE.LinearFilter;
+    canvasTex.magFilter = THREE.NearestFilter;  // pixel-sharp when screen faces camera
     canvasTex.generateMipmaps = false;
     canvasTex.flipY = false;
-    // Use LinearEncoding to avoid double-gamma (renderer already outputs sRGB)
-    canvasTex.encoding = THREE.LinearEncoding;
+    canvasTex.encoding = THREE.sRGBEncoding;
+    canvasTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     // Alias for compatibility with existing code
     const videoTex = canvasTex;
     const vid = { videoWidth: 1206, videoHeight: 2622, duration: TOTAL_FRAMES / 12 };
