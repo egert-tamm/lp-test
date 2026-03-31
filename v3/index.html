@@ -924,6 +924,7 @@
     const TOTAL_FRAMES = 181;
     const FRAME_CDN_TINY = 'https://cdn.star.io/frames-tiny/';
     const FRAME_CDN_FULL = 'https://cdn.star.io/frames/';
+    const FRAME_BUST = '?v=2';  // cache bust after re-extraction at 1206px
     const phoneCanvas = document.getElementById('phone-canvas');
     const phoneCtx = phoneCanvas.getContext('2d');
     // Two layers: tiny (placeholder) and full (retina)
@@ -964,7 +965,7 @@
           videoReady = true;
         }
       };
-      img.src = FRAME_CDN_TINY + String(i + 1).padStart(4, '0') + '.webp';
+      img.src = FRAME_CDN_TINY + String(i + 1).padStart(4, '0') + '.webp' + FRAME_BUST;
     }
     for (let i = 0; i < TOTAL_FRAMES; i++) loadTinyFrame(i);
 
@@ -988,7 +989,7 @@
         }
       };
       img.onerror = () => { fullLoadQueue.delete(i); };
-      img.src = FRAME_CDN_FULL + String(i + 1).padStart(4, '0') + '.webp';
+      img.src = FRAME_CDN_FULL + String(i + 1).padStart(4, '0') + '.webp' + FRAME_BUST;
     }
 
     // Prioritize frames around current scroll position
@@ -1016,7 +1017,7 @@
           canvasTex.needsUpdate = true;
         }
       };
-      hero.src = FRAME_CDN_FULL + '0001.webp';
+      hero.src = FRAME_CDN_FULL + '0001.webp' + FRAME_BUST;
     })();
 
     // Load remaining full-res after tiny pass is underway
