@@ -857,6 +857,7 @@
       ══════════════════════════════════════════════ */
       const heroCopy   = document.getElementById('hero-copy');
       const heroSect   = document.getElementById('hero-section');
+      const logoEl     = document.getElementById('yolo-logo');
 
       // The GLTF model is rotated π/2 so its geometric center isn't at origin.
       const isPortrait = () => innerWidth < innerHeight;
@@ -964,7 +965,6 @@
       ══════════════════════════════════════════════ */
       const wl1 = document.getElementById('word-line-1');
       const wl2 = document.getElementById('word-line-2');
-      const logoEl = document.getElementById('yolo-logo');
 
       // Word overlay: driven by raw scroll position — no GSAP, no sticky, no diagonal
       const wordSection  = document.getElementById('word-section');
