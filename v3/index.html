@@ -1106,35 +1106,45 @@
         });
       });
       // ── Patch: cover Dynamic Island cutout with video texture ──
-      // screen.001 has a hole from y=-0.265 to y=0.236 at z<-0.75 (top of phone)
-      // Place a small plane slightly in front of the bezel to fill it
+      // screen.001 has a hole from y≈-0.265 to y≈0.236 at z≈-0.83 (top of phone)
+      // The screen plane sits at x = -0.0444, facing -X direction
+      // PlaneGeometry default faces +Z; rotate -PI/2 on Y to face -X
       (function patchDynamicIsland() {
-        const patchW = 0.53;   // Y span of the hole (0.236 - (-0.265)) + margin
-        const patchH = 0.10;   // Z height of the island area
+        // Hole boundary: y from -0.265 to 0.236, z from -0.832 to ~-0.78
+        const holeMinY = -0.29, holeMaxY = 0.30;  // slight margin
+        const holeMinZ = -0.835, holeMaxZ = -0.78;
+        const patchW = holeMaxY - holeMinY;  // ~0.59 (spans Y axis = width)
+        const patchH = holeMaxZ - holeMinZ;  // ~0.055 (spans Z axis = height)
         const patchGeo = new THREE.PlaneGeometry(patchW, patchH);
-        const patchMat = new THREE.MeshBasicMaterial({ map: canvasTex, side: THREE.FrontSide });
+        const patchMat = new THREE.MeshBasicMaterial({ map: canvasTex, side: THREE.DoubleSide });
         const patchMesh = new THREE.Mesh(patchGeo, patchMat);
-        // Position: centered on the hole, slightly in front of black.002 (x ~ -0.044)
-        // The screen is at x=-0.0444, place patch at x=-0.0446 (just in front)
-        patchMesh.position.set(-0.0446, -0.015, -0.80);  // x=front, y=center of hole, z=top of phone
-        patchMesh.rotation.y = Math.PI / 2;  // face the plane toward -X (toward camera)
-        // UV: map to the corresponding region of the video frame
-        // The hole spans roughly the top 3-5% of the screen height
+        // After rotation -PI/2 on Y: plane's local X maps to world Y, local Y maps to world Z
+        // Position at screen x, centered on the hole
+        const centerY = (holeMinY + holeMaxY) / 2;
+        const centerZ = (holeMinZ + holeMaxZ) / 2;
+        patchMesh.position.set(-0.0448, centerY, centerZ);
+        patchMesh.rotation.y = -Math.PI / 2;  // face -X (toward camera)
+        // UV mapping: match the screen's remapUVs convention
+        // remapUVs does: u = 1 - (y - screenMinY) / screenW, v = 1 - (z - screenMinZ) / screenH
         const uvs = patchGeo.attributes.uv;
-        const screenMinY = -0.387, screenMaxY = 0.390;  // full screen Y range
-        const screenMinZ = -0.832, screenMaxZ = 0.832;  // full screen Z range
+        const screenMinY = -0.387, screenMaxY = 0.390;
+        const screenMinZ = -0.832, screenMaxZ = 0.832;
         const screenW = screenMaxY - screenMinY;
         const screenH = screenMaxZ - screenMinZ;
-        // Patch corners in screen-space
-        const patchMinY = -0.015 - patchW/2, patchMaxY = -0.015 + patchW/2;
-        const patchMinZ = -0.80 - patchH/2, patchMaxZ = -0.80 + patchH/2;
+        // PlaneGeometry verts after -PI/2 Y rotation:
+        // local X → world -Z, local Y → world Y... no, UVs are in local space before rotation
+        // PlaneGeometry: 4 verts at (-w/2,-h/2), (w/2,-h/2), (-w/2,h/2), (w/2,h/2)
+        // UV (0,0)=bottom-left, (1,0)=bottom-right, (0,1)=top-left, (1,1)=top-right
+        // In world after rotation: local X becomes Y offset, local Y becomes Z offset
+        // So UV.x=0 → worldY = centerY - patchW/2 = holeMinY
+        //    UV.x=1 → worldY = centerY + patchW/2 = holeMaxY
+        //    UV.y=0 → worldZ = centerZ - patchH/2 = holeMinZ
+        //    UV.y=1 → worldZ = centerZ + patchH/2 = holeMaxZ
         for (let i = 0; i < uvs.count; i++) {
-          // PlaneGeometry UVs: (0,0) bottom-left to (1,1) top-right
-          const pu = uvs.getX(i);  // 0..1 across width
-          const pv = uvs.getY(i);  // 0..1 across height
-          const worldY = patchMinY + pu * patchW;
-          const worldZ = patchMinZ + pv * patchH;
-          // Map to screen UV (matching remapUVs logic: u = 1 - (y-minY)/range, v = 1 - (z-minZ)/range)
+          const pu = uvs.getX(i);
+          const pv = uvs.getY(i);
+          const worldY = holeMinY + pu * patchW;
+          const worldZ = holeMinZ + pv * patchH;
           let u = 1.0 - (worldY - screenMinY) / screenW;
           let v = 1.0 - (worldZ - screenMinZ) / screenH;
           uvs.setXY(i, u, v);
