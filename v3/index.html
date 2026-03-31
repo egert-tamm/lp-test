@@ -986,17 +986,40 @@
       return fullFrames[i] || tinyFrames[i] || null;
     }
 
-    function showFrame(idx) {
-      idx = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(idx)));
-      if (idx === currentFrameIdx && (fullFrames[idx] || !fullFrames[currentFrameIdx])) return;
+    // Throttle showFrame: only redraw canvas + upload texture at most once per rAF.
+    // Scroll events fire at 60-120Hz; drawImage + GPU texture upload per tick = main jank source.
+    let _pendingFrameIdx = -1;
+    let _frameRafQueued = false;
+
+    function _flushFrame() {
+      _frameRafQueued = false;
+      const idx = _pendingFrameIdx;
+      if (idx < 0) return;
       const img = getBestFrame(idx);
       if (!img) return;
       currentFrameIdx = idx;
       phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
       canvasTex.needsUpdate = true;
       if (window._renderDirty !== undefined) window._renderDirty = true;
-      // Prioritize full-res loading around current scroll position
-      loadFullNearby(idx, 10);
+    }
+
+    // Throttle loadFullNearby: at most every 200ms (not every scroll tick)
+    let _lastNearbyLoad = 0;
+
+    function showFrame(idx) {
+      idx = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(idx)));
+      if (idx === currentFrameIdx) return;
+      _pendingFrameIdx = idx;
+      if (!_frameRafQueued) {
+        _frameRafQueued = true;
+        requestAnimationFrame(_flushFrame);
+      }
+      // Throttle nearby preloading — don't spam on every scroll tick
+      const now = performance.now();
+      if (now - _lastNearbyLoad > 200) {
+        _lastNearbyLoad = now;
+        loadFullNearby(idx, _isMobile ? 5 : 10);
+      }
     }
 
     // ── Pass 1: Load tiny placeholders — batched on mobile to avoid decode pipeline stall ──
@@ -1341,6 +1364,10 @@
         fov:  isPortrait() ? 36  : 36
       };
 
+      // Cache last hero progress to skip redundant updates (scroll fires faster than
+      // visual change at 60-120Hz). Quantize to ~0.3% steps = ~300 distinct positions.
+      let _lastHeroP = -1;
+
       ScrollTrigger.create({
         trigger: '#hero-section',
         start: 'top top',
@@ -1348,45 +1375,61 @@
         scrub: _scrubLag,
         onUpdate(self) {
           const p = self.progress;
+
+          // Quantize: skip if progress hasn't changed enough to be visible (~0.3%)
+          const quantized = Math.round(p * 300) / 300;
+          if (quantized === _lastHeroP) return;
+          _lastHeroP = quantized;
+
           const clamp01 = v => Math.min(1, Math.max(0, v));
           const eOut3   = t => 1 - Math.pow(1-t, 3);
-          const eInOut  = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
 
-          // Always keep phone centered and camera x=0 during hero
+          // ── WebGL updates (all pure JS, no layout thrash) ──
           phoneGroup.position.x = phoneXOffset();
           camera.position.x = 0;
           camera.position.y = 0;
 
-          // Logo visibility handled globally below
-
           if (p <= 0.5) {
-            // Phase 1: zoom out — camera pulls back, phone rises into full view
             const t = eOut3(p / 0.5);
             phoneGroup.position.y = lerp(startY, heroRest.y, t);
             phoneGroup.rotation.x = lerp(-startTilt * Math.PI / 180, 0, t);
             camera.position.z     = lerp(startCamZ, heroRest.camZ, t);
-            camera.fov            = lerp(startFov,  heroRest.fov,  t);
-            // Fade copy: starts at p=0.1, gone by p=0.28
-            const fadeT = clamp01((p - 0.1) / 0.18);
-            heroCopy.style.display   = 'flex';
-            heroCopy.style.opacity   = String(1 - fadeT);
-            heroCopy.style.transform = `translateY(${-fadeT * 36}px)`;
+            const newFov = lerp(startFov, heroRest.fov, t);
+            if (camera.fov !== newFov) {
+              camera.fov = newFov;
+              camera.updateProjectionMatrix();
+            }
           } else {
-            // Phase 2: copy gone, phone stays locked
             phoneGroup.position.y = heroRest.y;
             phoneGroup.rotation.x = 0;
             camera.position.z     = heroRest.camZ;
-            camera.fov            = heroRest.fov;
-            heroCopy.style.display   = 'flex';
-            heroCopy.style.opacity   = '0';
-            heroCopy.style.transform = `translateY(-36px)`;
+            if (camera.fov !== heroRest.fov) {
+              camera.fov = heroRest.fov;
+              camera.updateProjectionMatrix();
+            }
           }
 
-          // Scrub frames through first 55% during hero
+          // Mark WebGL dirty so render loop picks up the position/rotation changes
+          window._renderDirty = true;
+
+          // Frame scrubbing (deferred to rAF via showFrame throttle)
           if (videoReady) {
             showFrame(Math.round(p * TOTAL_FRAMES * 0.55));
           }
-          camera.updateProjectionMatrix();
+
+          // ── DOM updates LAST (batched, separated from WebGL) ──
+          // Use requestAnimationFrame to avoid interleaving DOM style writes
+          // with WebGL context operations in the same microtask.
+          const fadeT = p <= 0.5 ? clamp01((p - 0.1) / 0.18) : 1;
+          requestAnimationFrame(() => {
+            if (fadeT >= 1) {
+              heroCopy.style.opacity   = '0';
+              heroCopy.style.transform = 'translateY(-36px)';
+            } else {
+              heroCopy.style.opacity   = String(1 - fadeT);
+              heroCopy.style.transform = `translateY(${-fadeT * 36}px)`;
+            }
+          });
         }
       });
 
@@ -1750,8 +1793,10 @@
 
     // Dirty-flag render: only render when something changes (scroll, resize, texture)
     window._renderDirty = true;
-    const _markDirty = () => { window._renderDirty = true; };
-    window.addEventListener('scroll', _markDirty, { passive: true });
+    // NOTE: removed per-scroll _markDirty listener — the ScrollTrigger onUpdate
+    // callbacks and _flushFrame already set _renderDirty when there's actual visual
+    // change. Firing renderer.render() on every scroll event (60-120Hz) when nothing
+    // changed was a major source of jank on mobile.
 
     // Mobile: throttle glint updates more aggressively, disable glow plane entirely
     const _glintInterval = _isMobile ? 250 : 100;  // ms between glint position updates
