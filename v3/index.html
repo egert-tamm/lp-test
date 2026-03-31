@@ -144,6 +144,16 @@
     .feature-line.active {
       opacity: 1;
     }
+    /* Active line: fill white (override SVG fill="none") */
+    .feature-line.active svg path {
+      fill: #ffffff !important;
+      stroke: none !important;
+    }
+    /* fl-green active: fill green */
+    .feature-line.fl-green.active svg path {
+      fill: #9EFF78 !important;
+      stroke: none !important;
+    }
     #watch-video-btn {
       display: inline-flex;
       align-items: center;
