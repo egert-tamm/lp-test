@@ -1849,21 +1849,29 @@
       }
     })(0);
 
-    // Debounced resize: ignore mobile URL bar show/hide (only width changes matter)
+    // Resize: only react to WIDTH changes (orientation, real resize).
+    // Safari URL bar show/hide fires resize with height-only change — if we
+    // resize the renderer + camera aspect on those, the 3D model visibly
+    // rescales and the canvas re-allocates. Lock to width changes only.
     let _lastW = innerWidth;
+    let _lastH = innerHeight;
     window.addEventListener('resize', () => {
       const newW = innerWidth;
-      camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
-      renderer.setSize(innerWidth, innerHeight);
-      renderer.setPixelRatio(_effectiveDPR);  // maintain capped DPR after resize
-      // Only refresh ScrollTrigger + cached VH if width actually changed (orientation / real resize)
-      // URL bar show/hide only changes height — skip to prevent position jumps
+      const newH = innerHeight;
       if (newW !== _lastW) {
+        // Real resize (orientation change, window resize) — update everything
         _lastW = newW;
-        _cachedVH = window.innerHeight;
-        _cacheWordDims();  // re-measure word-line dimensions on real resize
+        _lastH = newH;
+        camera.aspect = newW / newH;
+        camera.updateProjectionMatrix();
+        renderer.setSize(newW, newH);
+        renderer.setPixelRatio(_effectiveDPR);
+        _cachedVH = newH;
+        _cacheWordDims();
         ScrollTrigger.refresh();
       }
+      // Height-only change (Safari URL bar) — ignore entirely.
+      // The canvas stays at the last real size. position:fixed makes this invisible.
     });
     // Video unlock handled above (unlockVideo)
     } // end setupScroll
