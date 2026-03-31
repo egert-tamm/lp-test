@@ -18,6 +18,11 @@
       background-position: center;
       background-repeat: no-repeat;
       background-attachment: fixed;
+    }
+    @media (orientation: portrait) {
+      html, body {
+        background-size: cover;
+      }
       color: #fff;
       font-family: "obviously-variable", sans-serif;
       overflow-x: clip;
@@ -265,14 +270,10 @@
 
     /* ── SECTION 4: Coming Soon Marquee ── */
     #cs-section {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      position: relative;
       height: 100vh;
       min-height: 500px;
-      background: #000 url('svgs/bg-pattern.svg') center / inherit no-repeat fixed;
-      position: relative;
+      background: #000;
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -1157,13 +1158,8 @@
           camera.position.x = 0;
           camera.position.y = 0;
 
-          // Logo fades out on portrait as soon as scrolling begins (p 0→0.15)
-          if (window.innerWidth < window.innerHeight) {
-            const logoFade = clamp01(1 - p / 0.15);
-            logoEl.style.opacity = String(logoFade);
-          } else {
-            logoEl.style.opacity = '1';
-          }
+          // Logo always visible
+          logoEl.style.opacity = '1';
 
           if (p <= 0.5) {
             // Phase 1: zoom out — camera pulls back, phone rises into full view
