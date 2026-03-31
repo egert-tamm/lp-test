@@ -830,8 +830,9 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.2/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.2/Observer.min.js"></script>
   <script>
     const SLIDES = [
       'Introducing\nYapp App',
@@ -1234,21 +1235,30 @@
     }
 
     function setupScroll() {
-      gsap.registerPlugin(ScrollTrigger);
+      gsap.registerPlugin(ScrollTrigger, Observer);
 
       // Prevent ScrollTrigger from recalculating on mobile URL bar show/hide
       ScrollTrigger.config({
         ignoreMobileResize: true  // ignore height-only viewport changes (URL bar)
       });
-      // iOS detection: normalizeScroll causes jitter on Safari (misreports touch positions)
+
+      // iOS detection (used for scrub tuning only — normalizeScroll now enabled everywhere)
       const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      // On iOS: native scroll (no normalizeScroll), instant scrub (native momentum is enough)
-      // On Android: normalizeScroll for stable position, slight scrub lag for smooth feel
-      if (!_isIOS) {
-        ScrollTrigger.normalizeScroll(true);
-      }
-      const _scrubLag = _isIOS ? 0 : 0.3;  // iOS: instant, Android: slight smoothing
+
+      // normalizeScroll on ALL devices including iOS:
+      // - Prevents address bar show/hide viewport jumps
+      // - Works around iOS Safari's broken scroll/touch position reporting
+      // - Eliminates overscroll bounce (iOS ignores overscroll-behavior CSS)
+      // - Synchronizes scroll + repaint on JS thread (no pin jumping)
+      // GSAP 3.14.2 has extensive iOS fixes vs 3.12.x where this was unreliable.
+      ScrollTrigger.normalizeScroll({
+        allowNestedScroll: true,
+        momentum: self => Math.min(3, self.velocityY / 1000),
+        type: "touch,wheel,pointer",  // also enables desktop drag-scroll
+      });
+
+      const _scrubLag = _isIOS ? 0.1 : 0.3;  // iOS: near-instant, Android/desktop: slight smoothing
 
       /* ══════════════════════════════════════════════
          HERO SECTION — tilt → upright (300vh)
