@@ -205,7 +205,7 @@
         flex-direction: column;
         justify-content: flex-start;
         align-items: center;
-        padding: 12vh 5vw 0;
+        padding: 32px 24px 0;
         gap: 0;
       }
       #feature-copy {
@@ -215,18 +215,27 @@
         align-items: center;
         text-align: center;
       }
-      /* Mobile: feature lines centered, tighter gap */
       .feature-line {
-        margin-bottom: 4px;
+        margin-bottom: 16px;
       }
+      .feature-line svg.fl-mobile {
+        height: auto;
+        width: 80vw;
+        max-width: 345px;
+      }
+      /* Hide arrow on mobile */
+      #arrow-drawing { display: none; }
+      /* Button: full width, centered, at bottom */
       #feature-btn-wrap {
+        position: static;
+        transform: none;
         width: 100%;
         display: flex;
         justify-content: center;
         margin-top: 28px;
       }
       #watch-video-btn {
-        width: 84vw;
+        width: 100%;
         max-width: 328px;
         justify-content: center;
         font-size: 17px;
@@ -309,6 +318,10 @@
     }
     /* Telegram join button */
     #cs-tg-btn {
+      position: absolute;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -319,6 +332,7 @@
       text-decoration: none;
       cursor: pointer;
       transition: background 0.2s;
+      z-index: 2;
     }
     #cs-tg-btn:hover { background: rgba(255,255,255,0.1); }
     #cs-tg-btn svg { width: 12px; height: 12px; }
@@ -361,12 +375,38 @@
     }
     #cs-footer-links a:hover { color: rgba(255,255,255,0.8); }
     @media (orientation: portrait) {
-      #cs-logo { left: 50%; transform: translateX(-50%); width: 80px; top: 20px; }
-      #cs-marquee-wrap { transform: translateY(-50%); }
-      .cs-marquee-item { font-size: clamp(64px, 22vw, 120px); }
-      #cs-tg-btn { bottom: 80px; }
-      #cs-footer { flex-direction: column; align-items: center; gap: 6px; padding: 14px 16px; }
-      #cs-footer-copy, #cs-footer-links a { font-size: 12px; }
+      .cs-marquee-item { font-size: clamp(64px, 22vw, 124px); }
+      #cs-footer {
+        flex-direction: column-reverse;
+        align-items: center;
+        gap: 0;
+        padding: 0;
+      }
+      #cs-footer-copy {
+        font-size: 12px;
+        padding: 12px 20px;
+        text-align: center;
+        width: 100%;
+      }
+      #cs-footer-links {
+        width: 100%;
+        justify-content: center;
+        padding: 12px 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        gap: 0;
+      }
+      #cs-footer-links a {
+        font-size: 14px;
+        flex: 1;
+        text-align: center;
+      }
+      #cs-tg-btn {
+        position: static;
+        transform: none;
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 20px;
+      }
     }
 
     /* Word overlay: fixed to viewport, driven purely by JS scroll progress */
@@ -730,6 +770,11 @@
       </div>
     </div>
 
+    <!-- Telegram button -->
+    <a id="cs-tg-btn" href="https://t.me/yoloinvestment" target="_blank" rel="noopener" title="Join on Telegram">
+      <svg viewBox="0 0 24 24" fill="white" width="12" height="12"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.932z"/></svg>
+    </a>
+
     <!-- Footer -->
     <footer id="cs-footer">
       <span id="cs-footer-copy">© 2026 Yolo Investment</span>
@@ -737,9 +782,6 @@
         <a href="#">Privacy Policy</a>
         <span id="cs-footer-divider"></span>
         <a href="#">Privacy Notice</a>
-        <a id="cs-tg-btn" href="https://t.me/yoloinvestment" target="_blank" rel="noopener" title="Join on Telegram">
-          <svg viewBox="0 0 24 24" fill="white" width="12" height="12"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.932z"/></svg>
-        </a>
       </nav>
     </footer>
   </section>
@@ -956,7 +998,7 @@
           }
           if (name === 'glass.002' || name === 'lensinglass') { child.visible = false; return; }
           const body = ['basecolor.001','backpanel.001','Material.005','Material.006','Material.007','gray.001'];
-          if (body.includes(name)) { mat.color?.set(0x1c1c1e); if (mat.metalness!==undefined){mat.metalness=0.7;mat.roughness=0.25;} window._phoneBodyMats = window._phoneBodyMats||[]; window._phoneBodyMats.push(mat); }
+          if (body.includes(name)) { mat.color?.set(0x9EFF78); if (mat.metalness!==undefined){mat.metalness=0.7;mat.roughness=0.25;} window._phoneBodyMats = window._phoneBodyMats||[]; window._phoneBodyMats.push(mat); }
           if (name==='metalframe.002'||name==='metaL.001') { mat.color?.set(0x3a3a3c); if(mat.metalness!==undefined){mat.metalness=0.95;mat.roughness=0.1;} window._phoneFrameMats = window._phoneFrameMats||[]; window._phoneFrameMats.push(mat); }
           if (name==='black.002') mat.color?.set(0x000000);
         });
@@ -1449,6 +1491,7 @@
   </script>
 <!-- DEBUG PANEL -->
 <div id="debug-panel" style="
+  display:none;
   position:fixed; top:12px; right:12px; z-index:9999;
   background:rgba(0,0,0,0.75); backdrop-filter:blur(8px);
   border:1px solid rgba(255,255,255,0.15); border-radius:10px;
