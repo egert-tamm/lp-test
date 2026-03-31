@@ -906,28 +906,43 @@
       sectionsEl.appendChild(div);
     });
 
-    // Three.js
+    // Three.js — iOS performance: cap DPR, skip antialias on mobile, request high-perf GPU
+    const _isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const _effectiveDPR = _isMobile ? Math.min(devicePixelRatio, 2) : devicePixelRatio;
+
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.01, 100);
+    const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 50);
     window.camera = camera;
     camera.position.set(0, 0, 4.5);
-    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({
+      canvas: document.getElementById('canvas'),
+      antialias: !_isMobile,  // pointless at DPR ≥ 2, saves ~2x fill rate
+      alpha: true,
+      powerPreference: 'high-performance',  // request discrete/high-perf GPU on iOS
+      stencil: false,   // not used — free perf
+      depth: true,
+    });
     renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(devicePixelRatio);
+    renderer.setPixelRatio(_effectiveDPR);
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.NoToneMapping;
-    renderer.physicallyCorrectLights = true;
+    // physicallyCorrectLights removed — no visual difference for this scene, saves GPU
     renderer.setClearColor(0x000000, 0); // fully transparent canvas so DOM word layer shows through
     // Background handled by CSS on body
 
-    scene.add(new THREE.AmbientLight(0x112233, 1.0));
+    // Lighting: reduced for mobile — merge fill+rim into single stronger fill
+    scene.add(new THREE.AmbientLight(0x112233, _isMobile ? 1.5 : 1.0));
     const key = new THREE.DirectionalLight(0xffffff, 3.0);
     key.position.set(4, 6, 5); scene.add(key);
-    const fill = new THREE.DirectionalLight(0x4488ff, 1.2);
+    const fill = new THREE.DirectionalLight(0x4488ff, _isMobile ? 1.6 : 1.2);
     fill.position.set(-5, 1, -3); scene.add(fill);
-    const rim = new THREE.DirectionalLight(0x00ffcc, 0.6);
-    rim.position.set(0, -4, -5); scene.add(rim);
-    const glint = new THREE.PointLight(0xffffff, 2.5, 8);
+    if (!_isMobile) {
+      // Rim light only on desktop — 3rd directional light is expensive on mobile GPU
+      const rim = new THREE.DirectionalLight(0x00ffcc, 0.6);
+      rim.position.set(0, -4, -5); scene.add(rim);
+    }
+    const glint = new THREE.PointLight(0xffffff, _isMobile ? 1.5 : 2.5, 8);
     glint.position.set(2, 2, 3); scene.add(glint);
 
 
@@ -975,7 +990,7 @@
       loadFullNearby(idx, 10);
     }
 
-    // ── Pass 1: Load ALL tiny placeholders immediately (~630KB) ──
+    // ── Pass 1: Load tiny placeholders — batched on mobile to avoid decode pipeline stall ──
     function loadTinyFrame(i) {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -990,7 +1005,18 @@
       };
       img.src = FRAME_CDN_TINY + String(i + 1).padStart(4, '0') + '.webp' + FRAME_BUST;
     }
-    for (let i = 0; i < TOTAL_FRAMES; i++) loadTinyFrame(i);
+    if (_isMobile) {
+      // Stagger tiny frame loads in batches of 20 — iOS Safari chokes on 181 concurrent decodes
+      (function loadTinyBatch(start) {
+        const batchSize = 20;
+        for (let i = start; i < Math.min(start + batchSize, TOTAL_FRAMES); i++) loadTinyFrame(i);
+        if (start + batchSize < TOTAL_FRAMES) {
+          setTimeout(() => loadTinyBatch(start + batchSize), 50);
+        }
+      })(0);
+    } else {
+      for (let i = 0; i < TOTAL_FRAMES; i++) loadTinyFrame(i);
+    }
 
     // ── Pass 2: Load full-res frames progressively near scroll position ──
     const fullLoadQueue = new Set();
@@ -1044,20 +1070,30 @@
     })();
 
     // Load remaining full-res after tiny pass is underway
+    // Mobile: skip bulk preload — only load full-res on-demand near scroll position
     setTimeout(() => {
-      loadFullNearby(1, 20);
-      setTimeout(() => {
-        for (let i = 0; i < TOTAL_FRAMES; i++) loadFullFrame(i);
-      }, 2000);
+      loadFullNearby(1, _isMobile ? 10 : 20);
+      if (!_isMobile) {
+        // Desktop: preload all full-res frames after short delay
+        setTimeout(() => {
+          for (let i = 0; i < TOTAL_FRAMES; i++) loadFullFrame(i);
+        }, 2000);
+      }
+      // Mobile: full-res loaded on-demand via loadFullNearby() in showFrame()
     }, 300);
 
+    // On mobile, downsize the phone screen canvas — 1206×2622 is overkill for a phone-sized viewport element
+    if (_isMobile) {
+      phoneCanvas.width = 603;   // half res — still sharp at phone-in-scene scale
+      phoneCanvas.height = 1311;
+    }
     const canvasTex = new THREE.CanvasTexture(phoneCanvas);
     canvasTex.minFilter = THREE.LinearFilter;
     canvasTex.magFilter = THREE.LinearFilter;
     canvasTex.generateMipmaps = false;
     canvasTex.flipY = false;
     canvasTex.encoding = THREE.sRGBEncoding;
-    canvasTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    canvasTex.anisotropy = _isMobile ? 1 : renderer.capabilities.getMaxAnisotropy();  // aniso expensive on mobile GPU
     // Alias for compatibility with existing code
     const videoTex = canvasTex;
     const vid = { videoWidth: 1206, videoHeight: 2622, duration: TOTAL_FRAMES / 12 };
@@ -1709,16 +1745,22 @@
     const _markDirty = () => { window._renderDirty = true; };
     window.addEventListener('scroll', _markDirty, { passive: true });
 
+    // Mobile: throttle glint updates more aggressively, disable glow plane entirely
+    const _glintInterval = _isMobile ? 250 : 100;  // ms between glint position updates
+    if (_isMobile) glowPlane.material.opacity = 0;  // skip glow — transparent overdraw is expensive
+
     (function render(now) {
       requestAnimationFrame(render);
       const dt = Math.min((now - lastTime) / 1000, 0.05); lastTime = now;
 
-      // Subtle glint/glow animation — only update every ~100ms to save GPU
+      // Subtle glint animation — throttled more on mobile
       glintAngle += dt * 0.4;
-      if (now - (render._lastGlint || 0) > 100) {
+      if (now - (render._lastGlint || 0) > _glintInterval) {
         glint.position.set(Math.sin(glintAngle)*3.5, Math.cos(glintAngle*0.7)*2, 3);
-        const t2 = now / 1000;
-        glowPlane.material.opacity = 0.04 + Math.sin(t2 * 1.2) * 0.02;
+        if (!_isMobile) {
+          const t2 = now / 1000;
+          glowPlane.material.opacity = 0.04 + Math.sin(t2 * 1.2) * 0.02;
+        }
         render._lastGlint = now;
         window._renderDirty = true;
       }
@@ -1743,6 +1785,7 @@
       const newW = innerWidth;
       camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
+      renderer.setPixelRatio(_effectiveDPR);  // maintain capped DPR after resize
       // Only refresh ScrollTrigger + cached VH if width actually changed (orientation / real resize)
       // URL bar show/hide only changes height — skip to prevent position jumps
       if (newW !== _lastW) {
