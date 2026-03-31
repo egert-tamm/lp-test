@@ -1486,7 +1486,7 @@
           const btnRect = document.getElementById('watch-video-btn').getBoundingClientRect();
           const inFooter = btnRect.bottom < 0;
 
-          logoEl2.style.transition = 'opacity 0.5s ease';
+          logoEl2.style.transition = 'opacity 0.3s ease';
           logoEl2.style.opacity = (inFooter || heroFade > 0.5) ? '1' : '0';
         }
         window.addEventListener('scroll', updateLogoVisibility, { passive: true });
