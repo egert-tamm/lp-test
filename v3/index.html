@@ -1329,7 +1329,13 @@
       // boundary clamping correctly out of the box.
       ScrollTrigger.normalizeScroll(true);
 
-      const _scrubLag = _isIOS ? 0.1 : 0.3;  // iOS: near-instant, Android/desktop: slight smoothing
+      // scrub: 0 = immediate (no interpolation). normalizeScroll already smooths
+      // the scroll position — adding scrub interpolation on top creates "double
+      // smoothing": two layers of lerp with different timing sources (GSAP ticker
+      // vs rAF). On iOS Safari these timers aren't synchronized, so the model
+      // position oscillates between "GSAP interpolated" and "rAF rendered" states,
+      // producing the rubbery/wobbly feel. scrub:0 = direct, no second lerp layer.
+      const _scrubLag = 0;
 
       /* ══════════════════════════════════════════════
          HERO SECTION — tilt → upright (300vh)
