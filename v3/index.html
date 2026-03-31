@@ -599,7 +599,7 @@
     src="videos/screen-recording-v3.mp4"
     preload="none" muted playsinline crossorigin="anonymous">
   </video>
-  <canvas id="phone-canvas" width="780" height="1694" style="display:none"></canvas>
+  <canvas id="phone-canvas" width="1206" height="2622" style="display:none"></canvas>
 
   <div id="yolo-logo"><svg width="790" height="382" viewBox="0 0 790 382" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_19_134)">
@@ -1002,11 +1002,27 @@
       }
     }
 
-    // Start loading full-res after tiny pass is underway (stagger 300ms)
+    // Load frame 0 full-res IMMEDIATELY (hero view — must be crisp)
+    (function() {
+      const hero = new Image();
+      hero.crossOrigin = 'anonymous';
+      hero.onload = () => {
+        fullFrames[0] = hero;
+        fullLoaded++;
+        // Force redraw if frame 0 is currently shown
+        if (currentFrameIdx <= 0) {
+          phoneCanvas.width = hero.naturalWidth;
+          phoneCanvas.height = hero.naturalHeight;
+          phoneCtx.drawImage(hero, 0, 0);
+          canvasTex.needsUpdate = true;
+        }
+      };
+      hero.src = FRAME_CDN_FULL + '0001.webp';
+    })();
+
+    // Load remaining full-res after tiny pass is underway
     setTimeout(() => {
-      // Load first 20 frames full-res immediately (above fold)
-      loadFullNearby(0, 20);
-      // Then fill rest in background
+      loadFullNearby(1, 20);
       setTimeout(() => {
         for (let i = 0; i < TOTAL_FRAMES; i++) loadFullFrame(i);
       }, 2000);
@@ -1020,7 +1036,7 @@
     canvasTex.encoding = THREE.sRGBEncoding;
     // Alias for compatibility with existing code
     const videoTex = canvasTex;
-    const vid = { videoWidth: 780, videoHeight: 1694, duration: TOTAL_FRAMES / 12 };
+    const vid = { videoWidth: 1206, videoHeight: 2622, duration: TOTAL_FRAMES / 12 };
 
     function remapUVs(mesh) {
       const pos = mesh.geometry.attributes.position;
