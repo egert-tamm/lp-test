@@ -1330,9 +1330,9 @@
           // Hide phone when past feature section
           canvasEl.style.opacity = (p >= 1) ? '0' : '1';
 
-          // Drive phone + video whenever feature section overlaps viewport
-          const overlapsViewport = rect.top < vh && rect.bottom > 0;
-          if (overlapsViewport) {
+          // Drive phone + video only after entry transition is done (section top at/past viewport top)
+          const entryDone = rect.top <= 0;
+          if (entryDone && rect.bottom > 0) {
             const portrait = window.innerWidth < window.innerHeight;
             if (!portrait && window.phoneGroup) {
               const clampedP = Math.min(p, 1);
