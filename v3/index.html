@@ -431,9 +431,8 @@
       width: 100%; height: 100%;
       pointer-events: none;
       z-index: 1;   /* below canvas (z:2) — phone occludes words */
-      display: block; /* always block — never toggle display (kills GPU raster cache) */
+      display: none;
       overflow: visible;
-      contain: layout style; /* isolate from main document reflow */
     }
     .word-line {
       position: absolute;
@@ -449,9 +448,6 @@
       letter-spacing: -0.02em;
       line-height: 1.12;
       will-change: transform;
-      transform: translate3d(-200vw, 0, 0); /* start offscreen — JS positions them */
-      backface-visibility: hidden; /* force own compositor layer */
-      -webkit-transform-style: preserve-3d; /* keep iOS in 3d compositing path */
     }
     #word-line-1 { color: rgba(255,255,255,0.9); }
     #word-line-2 { color: #9EFF78; }
@@ -1471,36 +1467,23 @@
       let _cachedVH = window.innerHeight;
 
       // ── Word overlay: pre-rasterize + cache dimensions ──
-      // The original used display:none→block toggle which forces expensive text
-      // rasterization on first scroll into view (140px italic bold = massive glyph textures).
-      // Fix: use visibility:hidden + translate offscreen (layer stays rasterized on GPU).
-      // Also cache offsetWidth/offsetHeight — reading them per tick forces layout reflow.
-
-      // Pre-measure text dimensions once (and on resize)
+      // Cache word-line dimensions — reading offsetWidth/offsetHeight per scroll tick
+      // forces synchronous layout reflow, which is the main jank source on iOS Safari.
+      // Safari's forced layout is measurably slower than Chrome's, and with normalizeScroll
+      // processing touch events on the JS thread, every reflow blocks the next paint.
       let _wl1W = 0, _wl2W = 0, _wlH = 0;
-      function _measureWordLines() {
-        // Temporarily make visible offscreen to measure
-        wordOverlay.style.visibility = 'hidden';
-        wordOverlay.style.display = 'block';
-        wl1.style.transform = 'translate3d(-9999px, 0, 0)';
-        wl2.style.transform = 'translate3d(-9999px, 0, 0)';
+      function _cacheWordDims() {
+        // Ensure measurable
+        const wasHidden = wordOverlay.style.display === 'none';
+        if (wasHidden) wordOverlay.style.display = 'block';
         _wl1W = wl1.offsetWidth || innerWidth * 2;
         _wl2W = wl2.offsetWidth || innerWidth * 2;
         _wlH = wl1.offsetHeight || 100;
-        wordOverlay.style.visibility = '';
-        // Park at viewport edges (NOT far offscreen) — so Safari pre-rasterizes
-        // the full tile backing store. Offscreen tiles get evicted/lazily rasterized.
-        wl1.style.transform = `translate3d(${-_wl1W}px, 0, 0)`;
-        wl2.style.transform = `translate3d(${innerWidth}px, 0, 0)`;
+        if (wasHidden) wordOverlay.style.display = 'none';
       }
-      _measureWordLines();
-      window.addEventListener('resize', () => {
-        if (innerWidth !== _lastW) _measureWordLines();
-      });
+      _cacheWordDims();
 
-      // Word overlay: always display:block, translate3d to position
-      // Using translate3d keeps iOS Safari in the 3D compositing path,
-      // which pre-rasterizes the entire layer (no tile boundary jank).
+      // Word overlay driven by ScrollTrigger (uses normalizeScroll, immune to URL bar)
       ScrollTrigger.create({
         trigger: '#word-section',
         start: () => `top-=${_cachedVH * 0.8} top`,
@@ -1508,27 +1491,34 @@
         scrub: 0,
         onUpdate(self) {
           const p = self.progress;
-          if (p <= 0 || p >= 1) {
-            // Park at viewport edge (just out of sight, not far offscreen)
-            wl1.style.transform = `translate3d(${-_wl1W}px, 0, 0)`;
-            wl2.style.transform = `translate3d(${innerWidth}px, 0, 0)`;
-            return;
-          }
-
-          const W = innerWidth;
+          const W = window.innerWidth;
           const h = _cachedVH;
           const isPortrait = W < h;
 
-          const y1 = isPortrait ? (h * 0.22 - _wlH * 0.9) : (h / 2 - _wlH * 1.1);
-          const y2 = isPortrait ? (h * 0.78 - _wlH * 0.2) : (h / 2 + _wlH * 0.1);
-          const x1 = -_wl1W + p * (W + _wl1W);
-          const x2 = W      - p * (W + _wl2W);
+          wordOverlay.style.display = (p <= 0 || p >= 1) ? 'none' : 'block';
+          if (p <= 0 || p >= 1) return;
 
-          wl1.style.transform = `translate3d(${x1}px, ${y1}px, 0)`;
-          wl2.style.transform = `translate3d(${x2}px, ${y2}px, 0)`;
+          // Use cached dimensions — NO offsetWidth/offsetHeight reads during scroll
+          if (isPortrait) {
+            const phoneTop    = h * 0.22;
+            const phoneBottom = h * 0.78;
+            const y1 = phoneTop - _wlH * 0.9;
+            const y2 = phoneBottom - _wlH * 0.2;
+            const x1 = -_wl1W + p * (W + _wl1W);
+            const x2 = W      - p * (W + _wl2W);
+            wl1.style.transform = `translate(${x1}px, ${y1}px)`;
+            wl2.style.transform = `translate(${x2}px, ${y2}px)`;
+          } else {
+            const y1 = h / 2 - _wlH * 1.1;
+            const y2 = h / 2 + _wlH * 0.1;
+            const x1 = -_wl1W + p * (W + _wl1W);
+            const x2 = W      - p * (W + _wl2W);
+            wl1.style.transform = `translate(${x1}px, ${y1}px)`;
+            wl2.style.transform = `translate(${x2}px, ${y2}px)`;
+          }
         },
-        onLeave()     { wl1.style.transform = `translate3d(${-_wl1W}px, 0, 0)`; wl2.style.transform = `translate3d(${innerWidth}px, 0, 0)`; },
-        onLeaveBack() { wl1.style.transform = `translate3d(${-_wl1W}px, 0, 0)`; wl2.style.transform = `translate3d(${innerWidth}px, 0, 0)`; },
+        onLeave:     () => { wordOverlay.style.display = 'none'; },
+        onLeaveBack: () => { wordOverlay.style.display = 'none'; },
       });
 
       // Per-slide scroll trigger
@@ -1867,6 +1857,7 @@
       if (newW !== _lastW) {
         _lastW = newW;
         _cachedVH = window.innerHeight;
+        _cacheWordDims();  // re-measure word-line dimensions on real resize
         ScrollTrigger.refresh();
       }
     });
