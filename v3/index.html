@@ -559,7 +559,7 @@
         padding-bottom: 0;
       }
       #hero-copy h1 {
-        font-size: clamp(2.4rem, 10vw, 5rem);
+        font-size: clamp(2rem, 9vw, 5rem);
       }
     }
 
@@ -1163,6 +1163,27 @@
 
         const line1Chars = splitLine(document.getElementById('hero-line-1'));
         const line2Chars = splitLine(document.getElementById('hero-line-2'));
+
+        // Auto-scale hero title to fit within container padding
+        function fitHeroTitle() {
+          const h1 = document.querySelector('#hero-copy h1');
+          if (!h1) return;
+          const containerW = h1.clientWidth;
+          let maxLineW = 0;
+          document.querySelectorAll('.hero-line').forEach(line => {
+            line.style.display = 'inline-block';
+            maxLineW = Math.max(maxLineW, line.scrollWidth);
+          });
+          if (maxLineW > containerW) {
+            const scale = containerW / maxLineW;
+            h1.style.transform = `scale(${scale})`;
+            h1.style.transformOrigin = 'center top';
+          } else {
+            h1.style.transform = '';
+          }
+        }
+        fitHeroTitle();
+        window.addEventListener('resize', fitHeroTitle);
 
         const baseDelay = 400; // ms
         const stagger = 40;    // ms per character
