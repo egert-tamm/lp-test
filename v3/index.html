@@ -774,7 +774,7 @@
     window.phoneGroup = phoneGroup;
     // Init to hero start position — corrected after setupScroll()
     const _isPortrait = () => window.innerWidth < window.innerHeight;
-    const _phoneXOffset = () => _isPortrait() ? 0.0 : 0.035;
+    const _phoneXOffset = () => _isPortrait() ? 0.0 : 0.005;
     const _startTilt = _isPortrait() ? 40 : 32;
     phoneGroup.position.set(_phoneXOffset(), _isPortrait() ? -0.7 : -1.4, 0);
     phoneGroup.rotation.set(-_startTilt * Math.PI / 180, 0, 0);
@@ -866,7 +866,7 @@
 
       // Portrait: phone fully centered; landscape: slight right offset
       function phoneXOffset() {
-        return isPortrait() ? 0.0 : 0.035;
+        return isPortrait() ? 0.0 : 0.005;
       }
 
       // Portrait start: phone higher (-0.6), closer cam, 40° tilt (matches Figma)
