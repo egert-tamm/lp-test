@@ -1097,6 +1097,8 @@
             if (Array.isArray(child.material)) child.material[idx] = vm; else child.material = vm; return;
           }
           if (name === 'glass.002' || name === 'lensinglass') { child.visible = false; return; }
+          // Hide front camera island + pinhole (unsightly over video content)
+          if (name === 'gray.001' || name === 'Material.006') { child.visible = false; return; }
           const body = ['basecolor.001','backpanel.001','Material.005','Material.006','Material.007','gray.001'];
           if (body.includes(name)) { mat.color?.set(0x9EFF78); if (mat.metalness!==undefined){mat.metalness=0.7;mat.roughness=0.25;} window._phoneBodyMats = window._phoneBodyMats||[]; window._phoneBodyMats.push(mat); }
           if (name==='metalframe.002'||name==='metaL.001') { mat.color?.set(0x3a3a3c); if(mat.metalness!==undefined){mat.metalness=0.95;mat.roughness=0.1;} window._phoneFrameMats = window._phoneFrameMats||[]; window._phoneFrameMats.push(mat); }
