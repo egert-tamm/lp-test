@@ -1096,7 +1096,11 @@
             const vm = new THREE.MeshBasicMaterial({ map: videoTex, side: THREE.DoubleSide, toneMapped: false });
             if (Array.isArray(child.material)) child.material[idx] = vm; else child.material = vm; return;
           }
-          if (name === 'glass.002') { mat.color?.set(0x000000); if(mat.metalness!==undefined){mat.metalness=0;mat.roughness=1;} mat.transparent = false; mat.opacity = 1; return; }
+          if (name === 'glass.002') {
+            const blackMat = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide, transparent: false });
+            if (Array.isArray(child.material)) child.material[idx] = blackMat; else child.material = blackMat;
+            return;
+          }
           if (name === 'lensinglass') { child.visible = false; return; }
           // Hide front camera island + pinhole (unsightly over video content)
           if (name === 'gray.001' || name === 'Material.006') { child.visible = false; return; }
