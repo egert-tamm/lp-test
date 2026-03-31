@@ -227,6 +227,18 @@
       .feature-line .fl-fill-overlay {
         background: #000;
       }
+      /* Gradient fade over phone area — black from bottom */
+      #feature-inner::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 55%;
+        background: linear-gradient(to bottom, rgba(0,0,0,0) 18%, black 87%);
+        pointer-events: none;
+        z-index: 1;
+      }
       /* Hide arrow on mobile */
       #arrow-drawing { display: none; }
       /* Button: full width at bottom, above phone */
@@ -1237,7 +1249,9 @@
         end: 'bottom top',
         scrub: true,
         onUpdate(self) {
-          // Lock phone at rest position
+          // Lock phone at rest position (only on desktop — mobile is handled by feature entry)
+          const portrait = window.innerWidth < window.innerHeight;
+          if (portrait) return;
           phoneGroup.position.x = phoneXOffset();
           phoneGroup.position.y = heroRest.y;
           phoneGroup.rotation.z = 0;
@@ -1273,14 +1287,15 @@
           const deg = Math.PI / 180;
 
           if (portrait) {
-            // Mobile: centered, pushed down so phone peeks from bottom
+            // Mobile: smoothly push phone down to peeking position
             phoneGroup.position.x = lerp(phoneXOffset(), 0, eased);
-            phoneGroup.position.y = lerp(heroRest.y, -1.4, eased);
-            phoneGroup.rotation.x = lerp(0, 0, eased);
+            phoneGroup.position.y = lerp(heroRest.y, heroRest.y - 1.8, eased);
+            phoneGroup.rotation.x = 0;
             phoneGroup.rotation.y = lerp(heroRest.rotY, 0, eased);
-            phoneGroup.rotation.z = lerp(0, 0, eased);
-            camera.position.z     = lerp(heroRest.camZ, 3.5, eased);
-            camera.fov            = lerp(heroRest.fov, 32, eased);
+            phoneGroup.rotation.z = 0;
+            camera.position.y = 0;
+            camera.position.z = heroRest.camZ;
+            camera.fov = heroRest.fov;
           } else {
             // Desktop: lerp to Figma feature-section position (phone right, tilted)
             phoneGroup.position.x = lerp(phoneXOffset(), 1.35, eased);
@@ -1290,7 +1305,9 @@
             camera.position.z     = lerp(heroRest.camZ, 5.2, eased);
             camera.fov            = lerp(heroRest.fov, 34, eased);
           }
-          phoneGroup.position.y = lerp(heroRest.y, -0.03, eased);
+          if (!portrait) {
+            phoneGroup.position.y = lerp(heroRest.y, -0.03, eased);
+          }
           camera.position.x = 0;
           camera.position.y = 0;
           camera.updateProjectionMatrix();
@@ -1381,16 +1398,21 @@
           const entryDone = rect.top <= 0;
           if (entryDone && rect.bottom > 0) {
             const portrait = window.innerWidth < window.innerHeight;
-            if (!portrait && window.phoneGroup) {
+            if (window.phoneGroup) {
               const clampedP = Math.min(p, 1);
-              const totalSpin = spinPerLine * (totalLines - 1);
-              phoneGroup.rotation.y = featureRest.rotY + clampedP * totalSpin;
-              phoneGroup.rotation.x = featureRest.rotX + Math.sin(clampedP * Math.PI * 2) * 3 * deg;
-              phoneGroup.rotation.z = featureRest.rotZ + Math.sin(clampedP * Math.PI * 3) * 2 * deg;
-              phoneGroup.position.x = featureRest.x;
-              phoneGroup.position.y = featureRest.y;
-              camera.position.z = featureRest.camZ;
-              camera.fov = featureRest.fov;
+              if (portrait) {
+                // Mobile: keep at peeking position (set by entry ScrollTrigger)
+                // No additional changes needed
+              } else {
+                const totalSpin = spinPerLine * (totalLines - 1);
+                phoneGroup.rotation.y = featureRest.rotY + clampedP * totalSpin;
+                phoneGroup.rotation.x = featureRest.rotX + Math.sin(clampedP * Math.PI * 2) * 3 * deg;
+                phoneGroup.rotation.z = featureRest.rotZ + Math.sin(clampedP * Math.PI * 3) * 2 * deg;
+                phoneGroup.position.x = featureRest.x;
+                phoneGroup.position.y = featureRest.y;
+                camera.position.z = featureRest.camZ;
+                camera.fov = featureRest.fov;
+              }
               camera.updateProjectionMatrix();
             }
 
