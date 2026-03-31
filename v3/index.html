@@ -985,7 +985,7 @@
     const _isPortrait = () => window.innerWidth < window.innerHeight;
     const _phoneXOffset = () => _isPortrait() ? 0.0 : 0.005;
     const _startTilt = _isPortrait() ? 40 : 32;
-    phoneGroup.position.set(_phoneXOffset(), _isPortrait() ? -0.7 : -1.4, 0);
+    phoneGroup.position.set(_phoneXOffset(), _isPortrait() ? -0.3 : -1.4, 0);
     phoneGroup.rotation.set(-_startTilt * Math.PI / 180, 0, 0);
     camera.position.z = _isPortrait() ? 3.2 : 3.8;
     camera.fov = _isPortrait() ? 30 : 34;
@@ -1125,7 +1125,7 @@
 
       // Portrait start: phone higher (-0.6), closer cam, 40° tilt (matches Figma)
       // Landscape start: phone low (-1.4), 32° tilt
-      const startY   = isPortrait() ? -0.7  : -1.4;
+      const startY   = isPortrait() ? -0.3  : -1.4;
       const startCamZ = isPortrait() ? 3.2   : 3.8;
       const startFov  = isPortrait() ? 30    : 34;
       const startTilt = isPortrait() ? 40    : 32;
