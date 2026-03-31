@@ -449,8 +449,9 @@
       letter-spacing: -0.02em;
       line-height: 1.12;
       will-change: transform;
-      transform: translateX(-200vw); /* start offscreen — JS positions them */
+      transform: translate3d(-200vw, 0, 0); /* start offscreen — JS positions them */
       backface-visibility: hidden; /* force own compositor layer */
+      -webkit-transform-style: preserve-3d; /* keep iOS in 3d compositing path */
     }
     #word-line-1 { color: rgba(255,255,255,0.9); }
     #word-line-2 { color: #9EFF78; }
@@ -1481,24 +1482,25 @@
         // Temporarily make visible offscreen to measure
         wordOverlay.style.visibility = 'hidden';
         wordOverlay.style.display = 'block';
-        wl1.style.transform = 'translate(-9999px, 0)';
-        wl2.style.transform = 'translate(-9999px, 0)';
+        wl1.style.transform = 'translate3d(-9999px, 0, 0)';
+        wl2.style.transform = 'translate3d(-9999px, 0, 0)';
         _wl1W = wl1.offsetWidth || innerWidth * 2;
         _wl2W = wl2.offsetWidth || innerWidth * 2;
         _wlH = wl1.offsetHeight || 100;
-        // Leave display:block but hidden — layer stays rasterized on GPU
         wordOverlay.style.visibility = '';
-        // Park offscreen until scroll activates
-        wl1.style.transform = `translate(${-_wl1W - 100}px, 0)`;
-        wl2.style.transform = `translate(${innerWidth + 100}px, 0)`;
+        // Park at viewport edges (NOT far offscreen) — so Safari pre-rasterizes
+        // the full tile backing store. Offscreen tiles get evicted/lazily rasterized.
+        wl1.style.transform = `translate3d(${-_wl1W}px, 0, 0)`;
+        wl2.style.transform = `translate3d(${innerWidth}px, 0, 0)`;
       }
       _measureWordLines();
-      // Re-measure on orientation change (width changes only, handled by resize listener below)
       window.addEventListener('resize', () => {
         if (innerWidth !== _lastW) _measureWordLines();
       });
 
-      // Word overlay: always display:block (GPU layers pre-rasterized), use translate to hide
+      // Word overlay: always display:block, translate3d to position
+      // Using translate3d keeps iOS Safari in the 3D compositing path,
+      // which pre-rasterizes the entire layer (no tile boundary jank).
       ScrollTrigger.create({
         trigger: '#word-section',
         start: () => `top-=${_cachedVH * 0.8} top`,
@@ -1507,9 +1509,9 @@
         onUpdate(self) {
           const p = self.progress;
           if (p <= 0 || p >= 1) {
-            // Park offscreen (no display toggle — layer stays warm)
-            wl1.style.transform = `translate(${-_wl1W - 100}px, 0)`;
-            wl2.style.transform = `translate(${innerWidth + 100}px, 0)`;
+            // Park at viewport edge (just out of sight, not far offscreen)
+            wl1.style.transform = `translate3d(${-_wl1W}px, 0, 0)`;
+            wl2.style.transform = `translate3d(${innerWidth}px, 0, 0)`;
             return;
           }
 
@@ -1522,11 +1524,11 @@
           const x1 = -_wl1W + p * (W + _wl1W);
           const x2 = W      - p * (W + _wl2W);
 
-          wl1.style.transform = `translate(${x1}px, ${y1}px)`;
-          wl2.style.transform = `translate(${x2}px, ${y2}px)`;
+          wl1.style.transform = `translate3d(${x1}px, ${y1}px, 0)`;
+          wl2.style.transform = `translate3d(${x2}px, ${y2}px, 0)`;
         },
-        onLeave()     { wl1.style.transform = `translate(${-_wl1W - 100}px, 0)`; wl2.style.transform = `translate(${innerWidth + 100}px, 0)`; },
-        onLeaveBack() { wl1.style.transform = `translate(${-_wl1W - 100}px, 0)`; wl2.style.transform = `translate(${innerWidth + 100}px, 0)`; },
+        onLeave()     { wl1.style.transform = `translate3d(${-_wl1W}px, 0, 0)`; wl2.style.transform = `translate3d(${innerWidth}px, 0, 0)`; },
+        onLeaveBack() { wl1.style.transform = `translate3d(${-_wl1W}px, 0, 0)`; wl2.style.transform = `translate3d(${innerWidth}px, 0, 0)`; },
       });
 
       // Per-slide scroll trigger
