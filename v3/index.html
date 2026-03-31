@@ -1105,6 +1105,43 @@
           if (name==='black.002') mat.color?.set(0x000000);
         });
       });
+      // ── Patch: cover Dynamic Island cutout with video texture ──
+      // screen.001 has a hole from y=-0.265 to y=0.236 at z<-0.75 (top of phone)
+      // Place a small plane slightly in front of the bezel to fill it
+      (function patchDynamicIsland() {
+        const patchW = 0.53;   // Y span of the hole (0.236 - (-0.265)) + margin
+        const patchH = 0.10;   // Z height of the island area
+        const patchGeo = new THREE.PlaneGeometry(patchW, patchH);
+        const patchMat = new THREE.MeshBasicMaterial({ map: canvasTex, side: THREE.FrontSide });
+        const patchMesh = new THREE.Mesh(patchGeo, patchMat);
+        // Position: centered on the hole, slightly in front of black.002 (x ~ -0.044)
+        // The screen is at x=-0.0444, place patch at x=-0.0446 (just in front)
+        patchMesh.position.set(-0.0446, -0.015, -0.80);  // x=front, y=center of hole, z=top of phone
+        patchMesh.rotation.y = Math.PI / 2;  // face the plane toward -X (toward camera)
+        // UV: map to the corresponding region of the video frame
+        // The hole spans roughly the top 3-5% of the screen height
+        const uvs = patchGeo.attributes.uv;
+        const screenMinY = -0.387, screenMaxY = 0.390;  // full screen Y range
+        const screenMinZ = -0.832, screenMaxZ = 0.832;  // full screen Z range
+        const screenW = screenMaxY - screenMinY;
+        const screenH = screenMaxZ - screenMinZ;
+        // Patch corners in screen-space
+        const patchMinY = -0.015 - patchW/2, patchMaxY = -0.015 + patchW/2;
+        const patchMinZ = -0.80 - patchH/2, patchMaxZ = -0.80 + patchH/2;
+        for (let i = 0; i < uvs.count; i++) {
+          // PlaneGeometry UVs: (0,0) bottom-left to (1,1) top-right
+          const pu = uvs.getX(i);  // 0..1 across width
+          const pv = uvs.getY(i);  // 0..1 across height
+          const worldY = patchMinY + pu * patchW;
+          const worldZ = patchMinZ + pv * patchH;
+          // Map to screen UV (matching remapUVs logic: u = 1 - (y-minY)/range, v = 1 - (z-minZ)/range)
+          let u = 1.0 - (worldY - screenMinY) / screenW;
+          let v = 1.0 - (worldZ - screenMinZ) / screenH;
+          uvs.setXY(i, u, v);
+        }
+        model.add(patchMesh);
+      })();
+
       // Center model within group so phoneGroup.position is truly the phone center
       const bbox = new THREE.Box3().setFromObject(model);
       const center = new THREE.Vector3();
