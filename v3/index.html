@@ -969,6 +969,7 @@
       currentFrameIdx = idx;
       phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
       canvasTex.needsUpdate = true;
+      if (window._renderDirty !== undefined) window._renderDirty = true;
       // Prioritize full-res loading around current scroll position
       loadFullNearby(idx, 10);
     }
@@ -1239,14 +1240,15 @@
       ScrollTrigger.config({
         ignoreMobileResize: true  // ignore height-only viewport changes (URL bar)
       });
-      // Normalize scroll: intercepts native scroll for stable position tracking
-      // iOS Safari: normalizeScroll causes jitter (Safari misreports touch positions)
-      // so only enable on non-iOS touch devices (Android Chrome benefits greatly)
+      // iOS detection: normalizeScroll causes jitter on Safari (misreports touch positions)
       const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      // On iOS: native scroll (no normalizeScroll), instant scrub (native momentum is enough)
+      // On Android: normalizeScroll for stable position, slight scrub lag for smooth feel
       if (!_isIOS) {
         ScrollTrigger.normalizeScroll(true);
       }
+      const _scrubLag = _isIOS ? 0 : 0.3;  // iOS: instant, Android: slight smoothing
 
       /* ══════════════════════════════════════════════
          HERO SECTION — tilt → upright (300vh)
@@ -1289,7 +1291,7 @@
         trigger: '#hero-section',
         start: 'top top',
         end: 'bottom top',
-        scrub: 0.3,
+        scrub: _scrubLag,
         onUpdate(self) {
           const p = self.progress;
           const clamp01 = v => Math.min(1, Math.max(0, v));
@@ -1416,7 +1418,7 @@
         trigger: '#sections',
         start: 'top top',
         end: 'bottom top',
-        scrub: 0.3,
+        scrub: _scrubLag,
         onUpdate(self) {
           // Lock phone at rest position (only on desktop — mobile is handled by feature entry)
           const portrait = window.innerWidth < window.innerHeight;
@@ -1446,7 +1448,7 @@
         trigger: '#feature-section',
         start: 'top bottom',   // start lerping as section enters from bottom
         end: 'top top',        // fully transitioned when section top hits viewport top
-        scrub: 0.3,
+        scrub: _scrubLag,
         onUpdate(self) {
           const t = self.progress; // 0 = heroRest, 1 = feature target
           const eased = t < 0.5 ? 2*t*t : -1+(4-2*t)*t; // easeInOut
@@ -1692,13 +1694,24 @@
     // No mouse parallax — phone rotation stays exactly where scroll puts it
     let glintAngle = 0, lastTime = 0;
 
+    // Dirty-flag render: only render when something changes (scroll, resize, texture)
+    window._renderDirty = true;
+    const _markDirty = () => { window._renderDirty = true; };
+    window.addEventListener('scroll', _markDirty, { passive: true });
+
     (function render(now) {
       requestAnimationFrame(render);
       const dt = Math.min((now - lastTime) / 1000, 0.05); lastTime = now;
+
+      // Subtle glint/glow animation — only update every ~100ms to save GPU
       glintAngle += dt * 0.4;
-      glint.position.set(Math.sin(glintAngle)*3.5, Math.cos(glintAngle*0.7)*2, 3);
-      const t2 = now / 1000;
-      glowPlane.material.opacity = 0.04 + Math.sin(t2 * 1.2) * 0.02;
+      if (now - (render._lastGlint || 0) > 100) {
+        glint.position.set(Math.sin(glintAngle)*3.5, Math.cos(glintAngle*0.7)*2, 3);
+        const t2 = now / 1000;
+        glowPlane.material.opacity = 0.04 + Math.sin(t2 * 1.2) * 0.02;
+        render._lastGlint = now;
+        window._renderDirty = true;
+      }
 
       // Always keep camera centered — no lateral drift ever
       camera.position.x = 0;
@@ -1708,7 +1721,10 @@
         phoneGroup.position.x = 0;
       }
 
-      renderer.render(scene, camera);
+      if (window._renderDirty) {
+        renderer.render(scene, camera);
+        window._renderDirty = false;
+      }
     })(0);
 
     // Debounced resize: ignore mobile URL bar show/hide (only width changes matter)
