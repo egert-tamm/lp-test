@@ -1329,9 +1329,9 @@
           const deg = Math.PI / 180;
 
           if (portrait) {
-            // Mobile: raise phone higher in feature section
+            // Mobile: phone peeks from bottom — top half visible, bottom cut off
             phoneGroup.position.x = lerp(phoneXOffset(), 0, eased);
-            phoneGroup.position.y = lerp(heroRest.y, 0.8, eased);
+            phoneGroup.position.y = lerp(heroRest.y, -0.4, eased);
             phoneGroup.rotation.x = 0;
             phoneGroup.rotation.y = lerp(heroRest.rotY, 0, eased);
             phoneGroup.rotation.z = 0;
