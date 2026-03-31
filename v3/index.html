@@ -1329,13 +1329,12 @@
       // boundary clamping correctly out of the box.
       ScrollTrigger.normalizeScroll(true);
 
-      // scrub: 0 = immediate (no interpolation). normalizeScroll already smooths
-      // the scroll position — adding scrub interpolation on top creates "double
-      // smoothing": two layers of lerp with different timing sources (GSAP ticker
-      // vs rAF). On iOS Safari these timers aren't synchronized, so the model
-      // position oscillates between "GSAP interpolated" and "rAF rendered" states,
-      // producing the rubbery/wobbly feel. scrub:0 = direct, no second lerp layer.
-      const _scrubLag = 0;
+      // scrub tuning: normalizeScroll on iOS skips every other touchmove event
+      // (workaround for Safari's broken position reporting). This means scroll
+      // position arrives in ~32ms jumps instead of ~16ms. scrub:0 makes those
+      // jumps visible as stuttering. A tiny scrub (0.05s) smooths just enough
+      // to bridge the gap without creating the "rubber" feel that 0.1-0.3 caused.
+      const _scrubLag = _isIOS ? 0.05 : 0;
 
       /* ══════════════════════════════════════════════
          HERO SECTION — tilt → upright (300vh)
@@ -1841,13 +1840,12 @@
         window._renderDirty = true;
       }
 
-      // Always keep camera centered — no lateral drift ever
-      camera.position.x = 0;
-      camera.position.y = 0;
-      // On portrait, force phone to horizontal center every frame
-      if (window.innerWidth < window.innerHeight) {
-        phoneGroup.position.x = 0;
-      }
+      // NOTE: removed per-frame camera/phone position overrides.
+      // These were fighting with ScrollTrigger callbacks that set the same
+      // properties — the render loop ran on rAF while ScrollTrigger ran on
+      // GSAP's ticker, causing the model to "skip back" to override values
+      // between ScrollTrigger updates. ScrollTrigger is the sole owner of
+      // phone/camera position now.
 
       if (window._renderDirty) {
         renderer.render(scene, camera);
