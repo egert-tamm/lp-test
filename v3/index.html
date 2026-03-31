@@ -1032,7 +1032,8 @@
     canvasTex.magFilter = THREE.LinearFilter;
     canvasTex.generateMipmaps = false;
     canvasTex.flipY = false;
-    canvasTex.encoding = THREE.sRGBEncoding;
+    // Use LinearEncoding to avoid double-gamma (renderer already outputs sRGB)
+    canvasTex.encoding = THREE.LinearEncoding;
     // Alias for compatibility with existing code
     const videoTex = canvasTex;
     const vid = { videoWidth: 1206, videoHeight: 2622, duration: TOTAL_FRAMES / 12 };
