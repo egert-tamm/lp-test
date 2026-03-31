@@ -918,49 +918,99 @@
     );
     glowPlane.position.set(0, 0, 0.01);
 
-    /* ── Frame-based scrubbing (Apple-style) ── */
+    /* ── Frame-based scrubbing (Apple-style two-pass) ──
+       Pass 1: tiny 100px placeholders (~3.5KB each, ~630KB total) → instant TTI
+       Pass 2: full 780px retina frames (~100KB each) → swap in progressively
+       Result: sub-second first-paint, retina quality within seconds */
     const TOTAL_FRAMES = 181;
-    const FRAME_CDN = 'https://cdn.star.io/frames/';
+    const FRAME_CDN_TINY = 'https://cdn.star.io/frames-tiny/';
+    const FRAME_CDN_FULL = 'https://cdn.star.io/frames/';
     const phoneCanvas = document.getElementById('phone-canvas');
     const phoneCtx = phoneCanvas.getContext('2d');
-    const frames = new Array(TOTAL_FRAMES);
-    let framesLoaded = 0;
+    // Two layers: tiny (placeholder) and full (retina)
+    const tinyFrames = new Array(TOTAL_FRAMES);
+    const fullFrames = new Array(TOTAL_FRAMES);
     let videoReady = false;
     let currentFrameIdx = -1;
+    let tinyLoaded = 0;
+    let fullLoaded = 0;
 
-    // Preload frames progressively
-    function loadFrame(i) {
+    // Get best available frame for index
+    function getBestFrame(i) {
+      return fullFrames[i] || tinyFrames[i] || null;
+    }
+
+    function showFrame(idx) {
+      idx = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(idx)));
+      if (idx === currentFrameIdx && (fullFrames[idx] || !fullFrames[currentFrameIdx])) return;
+      const img = getBestFrame(idx);
+      if (!img) return;
+      currentFrameIdx = idx;
+      phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
+      canvasTex.needsUpdate = true;
+      // Prioritize full-res loading around current scroll position
+      loadFullNearby(idx, 10);
+    }
+
+    // ── Pass 1: Load ALL tiny placeholders immediately (~630KB) ──
+    function loadTinyFrame(i) {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        frames[i] = img;
-        framesLoaded++;
-        // Draw first frame immediately for initial texture
-        if (i === 0) {
-          phoneCanvas.width = img.naturalWidth;
-          phoneCanvas.height = img.naturalHeight;
-          phoneCtx.drawImage(img, 0, 0);
+        tinyFrames[i] = img;
+        tinyLoaded++;
+        if (i === 0 && !videoReady) {
+          phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
           canvasTex.needsUpdate = true;
           videoReady = true;
         }
       };
-      img.src = FRAME_CDN + String(i + 1).padStart(4, '0') + '.webp';
+      img.src = FRAME_CDN_TINY + String(i + 1).padStart(4, '0') + '.webp';
+    }
+    for (let i = 0; i < TOTAL_FRAMES; i++) loadTinyFrame(i);
+
+    // ── Pass 2: Load full-res frames progressively near scroll position ──
+    const fullLoadQueue = new Set();
+    let fullLoadBusy = false;
+
+    function loadFullFrame(i) {
+      if (fullFrames[i] || fullLoadQueue.has(i)) return;
+      fullLoadQueue.add(i);
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        fullFrames[i] = img;
+        fullLoaded++;
+        fullLoadQueue.delete(i);
+        // If this is the currently displayed frame, upgrade it immediately
+        if (i === currentFrameIdx) {
+          phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
+          canvasTex.needsUpdate = true;
+        }
+      };
+      img.onerror = () => { fullLoadQueue.delete(i); };
+      img.src = FRAME_CDN_FULL + String(i + 1).padStart(4, '0') + '.webp';
     }
 
-    // Load first 30 frames immediately, then rest in background
-    for (let i = 0; i < Math.min(30, TOTAL_FRAMES); i++) loadFrame(i);
+    // Prioritize frames around current scroll position
+    function loadFullNearby(centerIdx, radius) {
+      radius = radius || 15;
+      // Load center first, then expand outward
+      for (let d = 0; d <= radius; d++) {
+        if (centerIdx + d < TOTAL_FRAMES) loadFullFrame(centerIdx + d);
+        if (d > 0 && centerIdx - d >= 0) loadFullFrame(centerIdx - d);
+      }
+    }
+
+    // Start loading full-res after tiny pass is underway (stagger 300ms)
     setTimeout(() => {
-      for (let i = 30; i < TOTAL_FRAMES; i++) loadFrame(i);
-    }, 500);
-
-    function showFrame(idx) {
-      idx = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(idx)));
-      if (idx === currentFrameIdx) return;
-      if (!frames[idx]) return; // not loaded yet
-      currentFrameIdx = idx;
-      phoneCtx.drawImage(frames[idx], 0, 0);
-      canvasTex.needsUpdate = true;
-    }
+      // Load first 20 frames full-res immediately (above fold)
+      loadFullNearby(0, 20);
+      // Then fill rest in background
+      setTimeout(() => {
+        for (let i = 0; i < TOTAL_FRAMES; i++) loadFullFrame(i);
+      }, 2000);
+    }, 300);
 
     const canvasTex = new THREE.CanvasTexture(phoneCanvas);
     canvasTex.minFilter = THREE.LinearFilter;
@@ -970,7 +1020,7 @@
     canvasTex.encoding = THREE.sRGBEncoding;
     // Alias for compatibility with existing code
     const videoTex = canvasTex;
-    const vid = { videoWidth: 390, videoHeight: 847, duration: TOTAL_FRAMES / 12 };
+    const vid = { videoWidth: 780, videoHeight: 1694, duration: TOTAL_FRAMES / 12 };
 
     function remapUVs(mesh) {
       const pos = mesh.geometry.attributes.position;
