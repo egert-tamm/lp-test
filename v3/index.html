@@ -594,10 +594,12 @@
     <div class="load-label">Loading…</div>
   </div>
 
-  <video id="phone-video"
+  <!-- Video replaced by canvas frame scrubbing for smoother scroll -->
+  <video id="phone-video" style="display:none"
     src="videos/screen-recording-v3.mp4"
-    preload="auto" muted playsinline crossorigin="anonymous">
+    preload="none" muted playsinline crossorigin="anonymous">
   </video>
+  <canvas id="phone-canvas" width="390" height="847" style="display:none"></canvas>
 
   <div id="yolo-logo"><svg width="790" height="382" viewBox="0 0 790 382" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_19_134)">
@@ -916,42 +918,59 @@
     );
     glowPlane.position.set(0, 0, 0.01);
 
-    const vid = document.getElementById('phone-video');
-    const videoTex = new THREE.VideoTexture(vid);
-    videoTex.minFilter = THREE.LinearFilter; videoTex.magFilter = THREE.LinearFilter;
-    videoTex.generateMipmaps = false; videoTex.flipY = false; videoTex.encoding = THREE.sRGBEncoding;
+    /* ── Frame-based scrubbing (Apple-style) ── */
+    const TOTAL_FRAMES = 181;
+    const FRAME_CDN = 'https://cdn.star.io/frames/';
+    const phoneCanvas = document.getElementById('phone-canvas');
+    const phoneCtx = phoneCanvas.getContext('2d');
+    const frames = new Array(TOTAL_FRAMES);
+    let framesLoaded = 0;
     let videoReady = false;
-    // iOS Safari: muted video CAN autoplay — play immediately then pause at frame 0
-    // This decodes the first frame so the texture isn't black on load
-    function bootVideo() {
-      vid.play().then(() => {
-        vid.currentTime = 0.001;
-        // Let it run briefly so texture gets a real decoded frame, then pause
-        setTimeout(() => {
-          vid.pause();
-          vid.currentTime = 0.001;
+    let currentFrameIdx = -1;
+
+    // Preload frames progressively
+    function loadFrame(i) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        frames[i] = img;
+        framesLoaded++;
+        // Draw first frame immediately for initial texture
+        if (i === 0) {
+          phoneCanvas.width = img.naturalWidth;
+          phoneCanvas.height = img.naturalHeight;
+          phoneCtx.drawImage(img, 0, 0);
+          canvasTex.needsUpdate = true;
           videoReady = true;
-        }, 80);
-      }).catch(() => {
-        // Gesture required — mark ready anyway and unlock on first touch
-        videoReady = true;
-      });
+        }
+      };
+      img.src = FRAME_CDN + String(i + 1).padStart(4, '0') + '.webp';
     }
 
-    vid.addEventListener('loadedmetadata', bootVideo, { once: true });
-    vid.addEventListener('loadeddata', () => { videoReady = true; }, { once: true });
-    vid.addEventListener('canplaythrough', () => { videoReady = true; }, { once: true });
+    // Load first 30 frames immediately, then rest in background
+    for (let i = 0; i < Math.min(30, TOTAL_FRAMES); i++) loadFrame(i);
+    setTimeout(() => {
+      for (let i = 30; i < TOTAL_FRAMES; i++) loadFrame(i);
+    }, 500);
 
-    // Fallback: unlock on first touch if autoplay was blocked
-    function unlockVideo() {
-      if (videoReady) return;
-      vid.play().then(() => {
-        setTimeout(() => { vid.pause(); vid.currentTime = 0.001; videoReady = true; }, 80);
-      }).catch(() => { videoReady = true; });
+    function showFrame(idx) {
+      idx = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(idx)));
+      if (idx === currentFrameIdx) return;
+      if (!frames[idx]) return; // not loaded yet
+      currentFrameIdx = idx;
+      phoneCtx.drawImage(frames[idx], 0, 0);
+      canvasTex.needsUpdate = true;
     }
-    ['touchstart','pointerdown','click'].forEach(e =>
-      document.addEventListener(e, unlockVideo, { once: true, passive: true })
-    );
+
+    const canvasTex = new THREE.CanvasTexture(phoneCanvas);
+    canvasTex.minFilter = THREE.LinearFilter;
+    canvasTex.magFilter = THREE.LinearFilter;
+    canvasTex.generateMipmaps = false;
+    canvasTex.flipY = false;
+    canvasTex.encoding = THREE.sRGBEncoding;
+    // Alias for compatibility with existing code
+    const videoTex = canvasTex;
+    const vid = { videoWidth: 390, videoHeight: 847, duration: TOTAL_FRAMES / 12 };
 
     function remapUVs(mesh) {
       const pos = mesh.geometry.attributes.position;
@@ -1178,11 +1197,9 @@
             heroCopy.style.transform = `translateY(-36px)`;
           }
 
-          // Scrub video through first 55% of its duration during hero
-          if (videoReady && vid.duration) {
-            const target = p * vid.duration * 0.55;
-            if (Math.abs(vid.currentTime - target) > 0.04) vid.currentTime = target;
-            videoTex.needsUpdate = true;
+          // Scrub frames through first 55% during hero
+          if (videoReady) {
+            showFrame(Math.round(p * TOTAL_FRAMES * 0.55));
           }
           camera.updateProjectionMatrix();
         }
@@ -1299,11 +1316,9 @@
           camera.fov            = heroRest.fov;
           camera.updateProjectionMatrix();
 
-          // Continue scrubbing video through remaining 45%
-          if (videoReady && vid.duration) {
-            const target = vid.duration * 0.55 + self.progress * vid.duration * 0.45;
-            if (Math.abs(vid.currentTime - target) > 0.04) vid.currentTime = target;
-            videoTex.needsUpdate = true;
+          // Continue scrubbing frames through remaining 45%
+          if (videoReady) {
+            showFrame(Math.round(TOTAL_FRAMES * 0.55 + self.progress * TOTAL_FRAMES * 0.45));
           }
         }
       });
@@ -1456,10 +1471,9 @@
               camera.updateProjectionMatrix();
             }
 
-            if (videoReady && vid.duration) {
-              const target = Math.min(p, 1) * vid.duration;
-              if (Math.abs(vid.currentTime - target) > 0.04) vid.currentTime = target;
-              videoTex.needsUpdate = true;
+            if (videoReady) {
+              showFrame(Math.round(Math.min(p, 1) * (TOTAL_FRAMES - 1)));
+
             }
           }
         }
