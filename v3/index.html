@@ -681,6 +681,7 @@
     // Three.js
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.01, 100);
+    window.camera = camera;
     camera.position.set(0, 0, 4.5);
     const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true, alpha: true });
     renderer.setSize(innerWidth, innerHeight);
@@ -770,6 +771,7 @@
     }
 
     const phoneGroup = new THREE.Group();
+    window.phoneGroup = phoneGroup;
     // Init to hero start position — corrected after setupScroll()
     const _isPortrait = () => window.innerWidth < window.innerHeight;
     const _phoneXOffset = () => _isPortrait() ? 0.0 : 0.035;
@@ -1233,5 +1235,86 @@
     // Video unlock handled above (unlockVideo)
     } // end setupScroll
   </script>
+<!-- DEBUG PANEL -->
+<div id="debug-panel" style="
+  position:fixed; top:12px; right:12px; z-index:9999;
+  background:rgba(0,0,0,0.75); backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.15); border-radius:10px;
+  padding:12px 14px; color:#fff; font:12px/1.5 monospace;
+  width:220px; user-select:none;
+">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <b style="font-size:11px;opacity:0.6;letter-spacing:0.05em">PHONE DEBUG</b>
+    <button onclick="document.getElementById('debug-panel').style.display='none'"
+      style="background:none;border:none;color:#fff;opacity:0.4;cursor:pointer;font-size:14px;line-height:1">×</button>
+  </div>
+  <label style="display:block;margin-bottom:6px">
+    X offset <span id="dbg-x-val">0.035</span>
+    <input type="range" id="dbg-x" min="-2" max="2" step="0.005" value="0.035"
+      style="width:100%;margin-top:2px">
+  </label>
+  <label style="display:block;margin-bottom:6px">
+    Y offset <span id="dbg-y-val">0.0</span>
+    <input type="range" id="dbg-y" min="-3" max="1" step="0.01" value="0"
+      style="width:100%;margin-top:2px">
+  </label>
+  <label style="display:block;margin-bottom:6px">
+    Tilt X° <span id="dbg-rx-val">0</span>
+    <input type="range" id="dbg-rx" min="-60" max="60" step="1" value="0"
+      style="width:100%;margin-top:2px">
+  </label>
+  <label style="display:block;margin-bottom:6px">
+    Tilt Y° <span id="dbg-ry-val">0</span>
+    <input type="range" id="dbg-ry" min="-60" max="60" step="1" value="0"
+      style="width:100%;margin-top:2px">
+  </label>
+  <label style="display:block;margin-bottom:6px">
+    Tilt Z° <span id="dbg-rz-val">0</span>
+    <input type="range" id="dbg-rz" min="-60" max="60" step="1" value="0"
+      style="width:100%;margin-top:2px">
+  </label>
+  <label style="display:block;margin-bottom:6px">
+    Cam Z <span id="dbg-camz-val">5.5</span>
+    <input type="range" id="dbg-camz" min="2" max="10" step="0.05" value="5.5"
+      style="width:100%;margin-top:2px">
+  </label>
+  <label style="display:block;margin-bottom:8px">
+    FOV <span id="dbg-fov-val">36</span>
+    <input type="range" id="dbg-fov" min="15" max="75" step="1" value="36"
+      style="width:100%;margin-top:2px">
+  </label>
+  <button onclick="
+    const v={x:+dbg_x.value,y:+dbg_y.value,rx:+dbg_rx.value,ry:+dbg_ry.value,rz:+dbg_rz.value,camZ:+dbg_camz.value,fov:+dbg_fov.value};
+    prompt('Copy these values:',JSON.stringify(v));
+  " style="width:100%;padding:5px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:5px;color:#fff;cursor:pointer;font:11px monospace">
+    Copy values
+  </button>
+</div>
+<script>
+(function() {
+  function $(id) { return document.getElementById(id); }
+  const sliders = [
+    { id:'dbg-x',    val:'dbg-x-val',    apply: v => { if(window.phoneGroup) window.phoneGroup.position.x = v; } },
+    { id:'dbg-y',    val:'dbg-y-val',    apply: v => { if(window.phoneGroup) window.phoneGroup.position.y = v; } },
+    { id:'dbg-rx',   val:'dbg-rx-val',   apply: v => { if(window.phoneGroup) window.phoneGroup.rotation.x = v*Math.PI/180; } },
+    { id:'dbg-ry',   val:'dbg-ry-val',   apply: v => { if(window.phoneGroup) window.phoneGroup.rotation.y = v*Math.PI/180; } },
+    { id:'dbg-rz',   val:'dbg-rz-val',   apply: v => { if(window.phoneGroup) window.phoneGroup.rotation.z = v*Math.PI/180; } },
+    { id:'dbg-camz', val:'dbg-camz-val', apply: v => { if(window.camera) { window.camera.position.z = v; window.camera.updateProjectionMatrix(); } } },
+    { id:'dbg-fov',  val:'dbg-fov-val',  apply: v => { if(window.camera) { window.camera.fov = v; window.camera.updateProjectionMatrix(); } } },
+  ];
+  // expose globals for debug (set after model loads)
+  window._dbgOverride = false;
+  sliders.forEach(s => {
+    const el = $(s.id);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const v = +el.value;
+      $(s.val).textContent = v;
+      window._dbgOverride = true;
+      s.apply(v);
+    });
+  });
+})();
+</script>
 </body>
 </html>
