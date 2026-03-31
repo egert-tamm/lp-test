@@ -77,8 +77,8 @@
     .slide-title .word-inner:nth-child(2) { transition-delay: 0.06s; }
     .slide-title .word-inner:nth-child(3) { transition-delay: 0.12s; }
 
-    /* Each slide is 200vh: 100vh for text reveal, 100vh for phone reveal */
-    .slide { height: 200vh; }
+    /* Each slide is 150vh: tighter scroll budget per slide */
+    .slide { height: 150vh; }
 
     #phone-video {
       position: fixed; width: 1px; height: 1px;
@@ -1059,7 +1059,6 @@
           }
         }
       });
-    }
 
       /* ══════════════════════════════════════════════
          FEATURE SECTION — smooth interpolation from heroRest → tilted position
