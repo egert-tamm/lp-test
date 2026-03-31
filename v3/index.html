@@ -104,21 +104,22 @@
       height: 100vh;
       display: flex;
       align-items: center;
-      padding: 0 6vw;
+      padding: 0 6.3vw;
       pointer-events: none;
     }
     #feature-copy {
       display: flex;
       flex-direction: column;
       gap: 0;
+      width: 71vw; /* matches Figma 1364/1920 = 71% */
       pointer-events: none;
     }
     /* Feature lines — Figma SVG assets */
     .feature-line {
       width: 100%;
-      opacity: 0.25;
+      opacity: 0.22;
       transition: opacity 0.35s ease;
-      margin-bottom: 18px;
+      margin-bottom: -0.4%; /* -8px gap at 1920px */
     }
     .feature-line.active {
       opacity: 1;
@@ -150,9 +151,9 @@
     @media (orientation: portrait) {
       #feature-inner {
         flex-direction: column;
-        justify-content: center;
+        justify-content: flex-start;
         align-items: center;
-        padding: 0 5vw;
+        padding: 12vh 5vw 0;
         gap: 0;
       }
       #feature-copy {
@@ -160,10 +161,11 @@
         display: flex;
         flex-direction: column;
         align-items: center;
+        text-align: center;
       }
-      /* Mobile: feature lines scale down */
+      /* Mobile: feature lines centered, tighter gap */
       .feature-line {
-        margin-bottom: 12px;
+        margin-bottom: 4px;
       }
       #feature-btn-wrap {
         width: 100%;
@@ -835,8 +837,8 @@
           }
           if (name === 'glass.002' || name === 'lensinglass') { child.visible = false; return; }
           const body = ['basecolor.001','backpanel.001','Material.005','Material.006','Material.007','gray.001'];
-          if (body.includes(name)) { mat.color?.set(0x1c1c1e); if (mat.metalness!==undefined){mat.metalness=0.7;mat.roughness=0.25;} }
-          if (name==='metalframe.002'||name==='metaL.001') { mat.color?.set(0x3a3a3c); if(mat.metalness!==undefined){mat.metalness=0.95;mat.roughness=0.1;} }
+          if (body.includes(name)) { mat.color?.set(0x1c1c1e); if (mat.metalness!==undefined){mat.metalness=0.7;mat.roughness=0.25;} window._phoneBodyMats = window._phoneBodyMats||[]; window._phoneBodyMats.push(mat); }
+          if (name==='metalframe.002'||name==='metaL.001') { mat.color?.set(0x3a3a3c); if(mat.metalness!==undefined){mat.metalness=0.95;mat.roughness=0.1;} window._phoneFrameMats = window._phoneFrameMats||[]; window._phoneFrameMats.push(mat); }
           if (name==='black.002') mat.color?.set(0x000000);
         });
       });
@@ -1294,6 +1296,31 @@
     <input type="range" id="dbg-fov" min="15" max="75" step="1" value="36"
       style="width:100%;margin-top:2px">
   </label>
+  <div style="margin-bottom:8px">
+    <div style="font-size:11px;opacity:0.6;margin-bottom:4px">Device color presets</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button onclick="setPhoneColor('#1c1c1e','#3a3a3c')" title="Default Black"
+        style="width:24px;height:24px;background:#1c1c1e;border:2px solid #555;border-radius:50%;cursor:pointer"></button>
+      <button onclick="setPhoneColor('#f5f5f0','#e0e0e0')" title="White"
+        style="width:24px;height:24px;background:#f5f5f0;border:2px solid #aaa;border-radius:50%;cursor:pointer"></button>
+      <button onclick="setPhoneColor('#9EFF78','#7acc5a')" title="Green"
+        style="width:24px;height:24px;background:#9EFF78;border:2px solid #6aaa44;border-radius:50%;cursor:pointer"></button>
+      <button onclick="setPhoneColor('#c0a882','#a08060')" title="Gold/Titanium"
+        style="width:24px;height:24px;background:#c0a882;border:2px solid #806040;border-radius:50%;cursor:pointer"></button>
+      <button onclick="setPhoneColor('#2c3e6e','#1a2540')" title="Deep Blue"
+        style="width:24px;height:24px;background:#2c3e6e;border:2px solid #111;border-radius:50%;cursor:pointer"></button>
+      <button onclick="setPhoneColor('#6e2c2c','#401a1a')" title="Deep Red"
+        style="width:24px;height:24px;background:#6e2c2c;border:2px solid #111;border-radius:50%;cursor:pointer"></button>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;margin-top:6px">
+      <label style="font-size:11px;opacity:0.6">Custom:</label>
+      <input type="color" id="dbg-body-color" value="#1c1c1e"
+        style="width:32px;height:22px;padding:1px;border:1px solid #555;border-radius:4px;background:none;cursor:pointer">
+      <input type="color" id="dbg-frame-color" value="#3a3a3c"
+        style="width:32px;height:22px;padding:1px;border:1px solid #555;border-radius:4px;background:none;cursor:pointer">
+      <span style="font-size:10px;opacity:0.5">body / frame</span>
+    </div>
+  </div>
   <button onclick="
     const v={x:+dbg_x.value,y:+dbg_y.value,rx:+dbg_rx.value,ry:+dbg_ry.value,rz:+dbg_rz.value,camZ:+dbg_camz.value,fov:+dbg_fov.value};
     prompt('Copy these values:',JSON.stringify(v));
@@ -1315,6 +1342,21 @@
   ];
   // expose globals for debug (set after model loads)
   window._dbgOverride = false;
+
+  window.setPhoneColor = function(body, frame) {
+    (window._phoneBodyMats||[]).forEach(m => m.color?.set(body));
+    (window._phoneFrameMats||[]).forEach(m => m.color?.set(frame));
+    document.getElementById('dbg-body-color').value = body;
+    document.getElementById('dbg-frame-color').value = frame;
+  };
+
+  document.getElementById('dbg-body-color').addEventListener('input', e => {
+    (window._phoneBodyMats||[]).forEach(m => m.color?.set(e.target.value));
+  });
+  document.getElementById('dbg-frame-color').addEventListener('input', e => {
+    (window._phoneFrameMats||[]).forEach(m => m.color?.set(e.target.value));
+  });
+
   sliders.forEach(s => {
     const el = $(s.id);
     if (!el) return;
