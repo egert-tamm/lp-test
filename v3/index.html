@@ -230,9 +230,9 @@
       .feature-line .fl-fill-overlay {
         background: #000;
       }
-      /* Gradient fade over phone area */
+      /* Gradient fade over phone area — mobile only, toggled by JS */
       #mobile-fade {
-        display: block;
+        display: none;
         position: fixed;
         bottom: 0;
         left: 0;
@@ -651,6 +651,7 @@
 
   <!-- Feature section: LIVE ACTION scene -->
   <section id="feature-section">
+    <div id="mobile-fade"></div>
     <div id="feature-inner">
       <div id="feature-copy">
         <div id="fl-0" class="feature-line fl-green active">
@@ -1399,8 +1400,11 @@
 
           // Drive phone + video only after entry transition is done (section top at/past viewport top)
           const entryDone = rect.top <= 0;
+          // Show mobile fade only while in feature section
+          const portrait = window.innerWidth < window.innerHeight;
+          document.getElementById('mobile-fade').style.display = (portrait && entryDone && p < 1) ? 'block' : 'none';
+
           if (entryDone && rect.bottom > 0) {
-            const portrait = window.innerWidth < window.innerHeight;
             if (window.phoneGroup) {
               const clampedP = Math.min(p, 1);
               if (portrait) {
