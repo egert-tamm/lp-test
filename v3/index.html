@@ -448,7 +448,7 @@
       font-size: clamp(2.2rem, 8vw, 6rem);
       font-weight: 800;
       font-style: italic;
-      
+      color: #fff;
       letter-spacing: -0.02em;
       line-height: 1.12;
       text-transform: uppercase;
@@ -1158,8 +1158,7 @@
           camera.position.x = 0;
           camera.position.y = 0;
 
-          // Logo fades out as hero scrolls (p 0→0.15)
-          logoEl.style.opacity = String(clamp01(1 - p / 0.15));
+          // Logo visibility handled globally below
 
           if (p <= 0.5) {
             // Phase 1: zoom out — camera pulls back, phone rises into full view
@@ -1436,8 +1435,6 @@
           const inSection = rect.top <= 0 && rect.bottom > vh;
           // Hide phone when past feature section
           canvasEl.style.opacity = (p >= 1) ? '0' : '1';
-          // Show logo in footer section (when past feature)
-          document.getElementById('yolo-logo').style.opacity = (p >= 1) ? '1' : '0';
 
           // Drive phone + video only after entry transition is done (section top at/past viewport top)
           const entryDone = rect.top <= 0;
@@ -1473,6 +1470,27 @@
         }
 
         window.addEventListener('scroll', updateFeatureLines, { passive: true });
+
+        // Global logo visibility: fade with hero scroll, reappear in footer
+        const logoEl2 = document.getElementById('yolo-logo');
+        function updateLogoVisibility() {
+          const heroEl = document.getElementById('hero-section');
+          const heroH = heroEl.offsetHeight;
+          const heroTop = heroEl.getBoundingClientRect().top;
+          const vh = window.innerHeight;
+          // Hero scroll progress: 0 at top, 1 when hero fully scrolled
+          const heroP = Math.max(0, Math.min(1, -heroTop / (heroH - vh)));
+          // Fade out over first 15% of hero scroll
+          const heroFade = Math.max(0, 1 - heroP / 0.15);
+
+          const btnRect = document.getElementById('watch-video-btn').getBoundingClientRect();
+          const inFooter = btnRect.bottom < 0;
+
+          logoEl2.style.transition = 'opacity 0.5s ease';
+          logoEl2.style.opacity = (inFooter || heroFade > 0.5) ? '1' : '0';
+        }
+        window.addEventListener('scroll', updateLogoVisibility, { passive: true });
+        updateLogoVisibility();
         updateFeatureLines();
       })();
 
