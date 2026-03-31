@@ -1086,15 +1086,15 @@
             camera.position.z     = lerp(heroRest.camZ, heroRest.camZ, eased);
             camera.fov            = lerp(heroRest.fov, heroRest.fov, eased);
           } else {
-            // Desktop: lerp to Egert's tilt values
-            phoneGroup.position.x = lerp(phoneXOffset(), 0.5, eased);
-            phoneGroup.rotation.x = lerp(0, 4  * deg, eased);
-            phoneGroup.rotation.y = lerp(heroRest.rotY, 32 * deg, eased);
-            phoneGroup.rotation.z = lerp(0, 16 * deg, eased);
-            camera.position.z     = lerp(heroRest.camZ, 4.8, eased);
-            camera.fov            = lerp(heroRest.fov, 36, eased);
+            // Desktop: lerp to Egert's tilt values (tuned 2026-03-31)
+            phoneGroup.position.x = lerp(phoneXOffset(), 0.905, eased);
+            phoneGroup.rotation.x = lerp(0, -3  * deg, eased);
+            phoneGroup.rotation.y = lerp(heroRest.rotY, -47 * deg, eased);
+            phoneGroup.rotation.z = lerp(0, -17 * deg, eased);
+            camera.position.z     = lerp(heroRest.camZ, 5.6, eased);
+            camera.fov            = lerp(heroRest.fov, 33, eased);
           }
-          phoneGroup.position.y = heroRest.y;
+          phoneGroup.position.y = lerp(heroRest.y, -0.03, eased);
           camera.position.x = 0;
           camera.position.y = 0;
           camera.updateProjectionMatrix();
