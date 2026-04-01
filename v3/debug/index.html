@@ -70,11 +70,10 @@
   <section id="word-section"></section>
   <section id="feature-section"></section>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Observer.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
   <script>
     console.log('gsap loaded:', typeof gsap, 'THREE loaded:', typeof THREE, 'ScrollTrigger loaded:', typeof ScrollTrigger);
@@ -391,7 +390,7 @@
 
     // ─── SCROLL — exact same logic as main page ───
     function setupScroll() {
-      gsap.registerPlugin(ScrollTrigger, Observer);
+      gsap.registerPlugin(ScrollTrigger);
       ScrollTrigger.config({ ignoreMobileResize: true });
 
       H.ns.textContent = _isIOS ? 'OFF (iOS)' : 'ON';
