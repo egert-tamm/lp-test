@@ -997,33 +997,14 @@
       }
     }
 
-    // Evict full-res GPU textures outside the window, downgrade to tiny
-    // No RAM eviction — 181 decoded images (~270MB) is within iOS Safari's ~1.4GB budget.
-    // Evicting caused blur on fast scroll because re-fetch can't beat scroll speed.
-    // Only GPU textures are windowed (±20 = ~200MB GPU, bounded).
-    let _lastEvictCenter = -1;
+    // GPU EVICTION DISABLED — this was the iOS Safari jank source.
+    // evictDistantTextures() was calling createGpuTexture() during scroll, triggering
+    // texImage2D on every frame change. The PRELOADED debug toggle proved that
+    // keeping all textures on GPU and just swapping material.map pointers = smooth.
+    // All 181 textures stay on GPU permanently. Cost: ~181 × 603×1311×4 ≈ 580MB GPU
+    // on mobile (within iOS Safari's GPU budget for a single tab).
     function evictDistantTextures(center) {
-      if (center === _lastEvictCenter) return;
-      _lastEvictCenter = center;
-      for (let i = 0; i < TOTAL_FRAMES; i++) {
-        const dist = Math.abs(i - center);
-        if (dist > GPU_WINDOW && gpuTexIsFull[i]) {
-          // Outside GPU window: dispose full-res GPU texture, downgrade to tiny
-          gpuTextures[i].dispose();
-          if (tinyFrames[i]) {
-            gpuTextures[i] = createGpuTexture(tinyFrames[i]);
-            gpuTexIsFull[i] = false;
-          } else {
-            gpuTextures[i] = null;
-            gpuTexIsFull[i] = false;
-          }
-        } else if (dist <= GPU_WINDOW && !gpuTexIsFull[i] && fullFrames[i]) {
-          // Inside GPU window but only has tiny: upgrade from RAM image
-          if (gpuTextures[i]) gpuTextures[i].dispose();
-          gpuTextures[i] = createGpuTexture(fullFrames[i]);
-          gpuTexIsFull[i] = true;
-        }
-      }
+      // no-op: all GPU textures stay resident, scroll just swaps material.map pointers
     }
 
     // Frame scrubbing
@@ -1169,12 +1150,13 @@
       hero.src = FRAME_CDN_FULL + '0001.webp' + FRAME_BUST;
     })();
 
-    // Two-tier strategy:
-    // 1. GPU textures: only ±GPU_WINDOW around current frame (managed by evictDistantTextures)
-    // 2. RAM images: ALL full-res kept permanently — fast scroll always has crisp frames
-    // RAM cost: 181 decoded images × ~1.5MB ≈ 270MB (within iOS Safari's ~1.4GB budget)
-    // GPU cost: ±20 textures × ~5MB ≈ 200MB (bounded by eviction)
-    setTimeout(() => { loadFullNearby(0, GPU_WINDOW); }, 100);
+    // PRELOADED strategy (ported from debug page):
+    // ALL 181 textures stay on GPU permanently. No eviction, no re-upload.
+    // Scroll just swaps material.map pointers = zero CPU/GPU work per frame.
+    // RAM cost: 181 decoded images × ~1.5MB ≈ 270MB
+    // GPU cost: 181 textures × ~3MB ≈ ~550MB (within iOS Safari single-tab budget)
+    // Seed nearby frames first so hero area is crisp immediately.
+    setTimeout(() => { loadFullNearby(0, 30); }, 100);
 
     // Background-load ALL full-res into RAM. Concurrency limiter (max 6) prevents
     // memory spikes. Queue all 181 immediately — the limiter handles pacing.
