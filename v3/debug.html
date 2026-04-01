@@ -1,257 +1,401 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>star.io — debug</title>
-  <meta name="robots" content="noindex" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>DEBUG — model + scroll only</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
-      width: 100%; height: 100%;
-      background: #000;
-      overflow: hidden;
+      background: #080808;
+      color: #fff;
+      overflow-x: clip;
+      overscroll-behavior-y: none;
     }
-    canvas { display: block; }
-    #hint {
-      position: fixed; bottom: 1.5rem; left: 50%;
-      transform: translateX(-50%);
-      font-family: system-ui, sans-serif;
-      font-size: 0.7rem; letter-spacing: 0.1em;
-      text-transform: uppercase; color: rgba(255,255,255,0.3);
-      pointer-events: none; white-space: nowrap;
-    }
-    /* Video offscreen — never opacity:0 (black box on some browsers) */
-    #vid {
-      position: fixed; left: -400px; top: 0;
-      width: 200px; height: 100px;
-      object-fit: cover;
+    #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
+    #hero-section { height: 300vh; position: relative; z-index: 1; }
+    #spacer-section { height: 300vh; position: relative; z-index: 1; }
+    #feature-section { height: 700vh; position: relative; z-index: 1; }
+    canvas#phone-canvas { display: none; }
+    /* Debug HUD */
+    #hud {
+      position: fixed; top: 10px; left: 10px; z-index: 100;
+      font: 12px/1.4 monospace; color: #0f0; background: rgba(0,0,0,0.7);
+      padding: 8px 12px; border-radius: 6px; pointer-events: none;
     }
   </style>
 </head>
 <body>
-  <video id="vid"
-    src="https://cdn.star.io/videos/screen-recording.mp4"
-    playsinline muted loop autoplay
-    crossorigin="anonymous"
-  ></video>
-  <div id="hint">Scroll to rotate</div>
+  <div id="hud">
+    <div>section: <span id="hud-section">—</span></div>
+    <div>progress: <span id="hud-progress">0</span></div>
+    <div>phone.y: <span id="hud-y">0</span></div>
+    <div>cam.z: <span id="hud-camz">0</span></div>
+    <div>fov: <span id="hud-fov">0</span></div>
+    <div>fps: <span id="hud-fps">0</span></div>
+    <div>normalizeScroll: <span id="hud-ns">—</span></div>
+  </div>
+
+  <canvas id="canvas"></canvas>
+  <canvas id="phone-canvas" width="603" height="1311"></canvas>
+
+  <section id="hero-section"></section>
+  <section id="spacer-section"></section>
+  <section id="feature-section"></section>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.2/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.2/Observer.min.js"></script>
 
   <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/"
-      }
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.183.2/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.183.2/examples/jsm/"
     }
+  }
   </script>
-
   <script type="module">
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
-    // ── Renderer ──────────────────────────────────────────────────────────────
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-    renderer.physicallyCorrectLights = true;
-    document.body.prepend(renderer.domElement);
+    // ─── Detection ───
+    const _isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const _effectiveDPR = _isMobile ? Math.min(devicePixelRatio, 2) : devicePixelRatio;
 
-    // ── Scene / Camera ────────────────────────────────────────────────────────
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
-
-    const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.01, 100);
-    camera.position.set(0, 0, 3.5);
-
-    // ── Lights (same as main landing) ─────────────────────────────────────────
-    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-    const key = new THREE.DirectionalLight(0xffffff, 2.2);
-    key.position.set(3, 5, 5);
-    scene.add(key);
-    const fill = new THREE.DirectionalLight(0xb0c8ff, 0.8);
-    fill.position.set(-4, 0, -2);
-    scene.add(fill);
-
-    // ── Video texture setup ───────────────────────────────────────────────────
-    const vid = document.getElementById('vid');
-    vid.play().catch(() => {});
-
-    const videoTex = new THREE.VideoTexture(vid);
-    videoTex.minFilter = THREE.LinearFilter;
-    videoTex.magFilter = THREE.LinearFilter;
-    videoTex.generateMipmaps = false; // REQUIRED — non-POT dims (1206×2622)
-    videoTex.flipY = false;           // REQUIRED — GLTFLoader pre-bakes V-flip
-    videoTex.encoding = THREE.sRGBEncoding;
-
-    // requestVideoFrameCallback for mobile Safari/Chrome (passive polling unreliable)
-    if ('requestVideoFrameCallback' in vid) {
-      const onFrame = () => { videoTex.needsUpdate = true; vid.requestVideoFrameCallback(onFrame); };
-      vid.requestVideoFrameCallback(onFrame);
-    } else {
-      setInterval(() => { if (vid.readyState >= 2) videoTex.needsUpdate = true; }, 33);
+    // ─── HUD ───
+    const hud = {
+      section: document.getElementById('hud-section'),
+      progress: document.getElementById('hud-progress'),
+      y: document.getElementById('hud-y'),
+      camz: document.getElementById('hud-camz'),
+      fov: document.getElementById('hud-fov'),
+      fps: document.getElementById('hud-fps'),
+      ns: document.getElementById('hud-ns'),
+    };
+    let _fpsFrames = 0, _fpsLast = performance.now(), _fpsVal = 0;
+    function updateFps(now) {
+      _fpsFrames++;
+      if (now - _fpsLast >= 500) {
+        _fpsVal = Math.round(_fpsFrames / ((now - _fpsLast) / 1000));
+        _fpsFrames = 0; _fpsLast = now;
+      }
+    }
+    function updateHud(section, progress) {
+      hud.section.textContent = section;
+      hud.progress.textContent = progress.toFixed(3);
+      hud.y.textContent = phoneGroup.position.y.toFixed(3);
+      hud.camz.textContent = camera.position.z.toFixed(2);
+      hud.fov.textContent = camera.fov.toFixed(1);
+      hud.fps.textContent = _fpsVal;
     }
 
-    // ── UV remap for screen.001 ───────────────────────────────────────────────
-    // screen.001 UVs are packed for baked PBR — need planar remap from bounding box
-    // Projection: Y→U, Z→V  (screen faces +X; Y=width, Z=height)
-    // flipU=true, flipV=true (confirmed via debug grid)
-    // Cover mode (crop edges to fill, no letterbox)
+    // ─── Three.js setup (minimal) ───
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 50);
+    camera.position.set(0, 0, 4.5);
+    const renderer = new THREE.WebGLRenderer({
+      canvas: document.getElementById('canvas'),
+      antialias: !_isMobile,
+      alpha: true,
+      powerPreference: 'high-performance',
+      stencil: false, depth: true,
+    });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(_effectiveDPR);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.NoToneMapping;
+    renderer.setClearColor(0x000000, 0);
+
+    // Lighting (minimal)
+    scene.add(new THREE.AmbientLight(0x112233, 1.5));
+    const key = new THREE.DirectionalLight(0xffffff, 3.0);
+    key.position.set(4, 6, 5); scene.add(key);
+    const fill = new THREE.DirectionalLight(0x4488ff, 1.2);
+    fill.position.set(-5, 1, -3); scene.add(fill);
+    const glint = new THREE.PointLight(0xffffff, 1.5, 8);
+    glint.position.set(2, 2, 3); scene.add(glint);
+
+    // ─── Phone canvas texture (single frame, no scrubbing for isolation) ───
+    const phoneCanvas = document.getElementById('phone-canvas');
+    const phoneCtx = phoneCanvas.getContext('2d');
+    const canvasTex = new THREE.CanvasTexture(phoneCanvas);
+    canvasTex.minFilter = THREE.LinearFilter;
+    canvasTex.magFilter = THREE.LinearFilter;
+    canvasTex.generateMipmaps = false;
+    canvasTex.flipY = false;
+    canvasTex.colorSpace = THREE.SRGBColorSpace;
+    canvasTex.anisotropy = 1;
+
+    // Load one frame for the screen
+    const heroImg = new Image();
+    heroImg.crossOrigin = 'anonymous';
+    heroImg.onload = () => {
+      phoneCtx.drawImage(heroImg, 0, 0, phoneCanvas.width, phoneCanvas.height);
+      canvasTex.needsUpdate = true;
+      window._renderDirty = true;
+    };
+    heroImg.src = 'https://cdn.star.io/frames/0001.webp?v=2';
+
+    // ─── Phone group ───
+    const phoneGroup = new THREE.Group();
+    window.phoneGroup = phoneGroup;
+    window.camera = camera;
+
+    const isPortrait = () => innerWidth < innerHeight;
+    const phoneXOffset = () => isPortrait() ? 0.0 : 0.005;
+    const startY    = isPortrait() ? -0.7  : -1.4;
+    const startCamZ = isPortrait() ? 3.2   : 3.8;
+    const startFov  = isPortrait() ? 30    : 34;
+    const startTilt = isPortrait() ? 40    : 32;
+
+    phoneGroup.position.set(phoneXOffset(), startY, 0);
+    phoneGroup.rotation.set(-startTilt * Math.PI / 180, 0, 0);
+    camera.position.z = startCamZ;
+    camera.fov = startFov;
+    camera.updateProjectionMatrix();
+    scene.add(phoneGroup);
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
     function remapUVs(mesh) {
       const pos = mesh.geometry.attributes.position;
       const box = new THREE.Box3().setFromBufferAttribute(pos);
       const size = new THREE.Vector3(); box.getSize(size);
       const meshW = size.y, meshH = size.z;
-      const vidAR = (vid.videoWidth && vid.videoHeight) ? vid.videoWidth / vid.videoHeight : 9 / 16;
+      const vidAR = 1206 / 2622;
       const meshAR = meshW / (meshH || 1);
       let scaleU = 1, scaleV = 1, offU = 0, offV = 0;
-      if (meshAR > vidAR) {
-        scaleV = meshAR / vidAR; offV = (1 - scaleV) / 2;
-      } else {
-        scaleU = vidAR / meshAR; offU = (1 - scaleU) / 2;
-      }
+      if (meshAR > vidAR) { scaleV = meshAR / vidAR; offV = (1 - scaleV) / 2; }
+      else { scaleU = vidAR / meshAR; offU = (1 - scaleU) / 2; }
       const uvArr = new Float32Array(pos.count * 2);
       for (let i = 0; i < pos.count; i++) {
         let u = (pos.getY(i) - box.min.y) / (meshW || 1);
         let v = (pos.getZ(i) - box.min.z) / (meshH || 1);
-        u = 1 - (u * scaleU + offU); // flipU
-        v = 1 - (v * scaleV + offV); // flipV
-        uvArr[i * 2]     = u;
-        uvArr[i * 2 + 1] = v;
+        u = 1 - (u * scaleU + offU); v = 1 - (v * scaleV + offV);
+        uvArr[i*2] = u; uvArr[i*2+1] = v;
       }
       mesh.geometry = mesh.geometry.clone();
       mesh.geometry.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
     }
 
-    // ── Scroll → diagonal rotation ────────────────────────────────────────────
-    // Diagonal axis: normalised [1, 1, 0] — Y=X plane
-    const DIAG_AXIS = new THREE.Vector3(1, 1, 0).normalize();
-    const SCROLL_FACTOR = (Math.PI * 2) / 2000; // 1 full rotation per 2000px
-    let scrollY = 0;
-    let totalAngle = 0;
-
-    window.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      scrollY += e.deltaY;
-      totalAngle = scrollY * SCROLL_FACTOR;
-    }, { passive: false });
-
-    // Touch
-    let lastTouchY = null;
-    window.addEventListener('touchstart', (e) => { lastTouchY = e.touches[0].clientY; }, { passive: true });
-    window.addEventListener('touchmove', (e) => {
-      if (lastTouchY === null) return;
-      const delta = lastTouchY - e.touches[0].clientY;
-      scrollY += delta * 3;
-      totalAngle = scrollY * SCROLL_FACTOR;
-      lastTouchY = e.touches[0].clientY;
-    }, { passive: true });
-
-    // ── Load GLB ──────────────────────────────────────────────────────────────
-    const phoneGroup = new THREE.Group();
-    scene.add(phoneGroup);
-
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/gltf/');
-
+    // ─── Load model ───
     const loader = new GLTFLoader();
-    loader.setDRACOLoader(dracoLoader);
-
-    loader.load('https://cdn.star.io/models/iphone17.glb', (gltf) => {
+    loader.load('models/iphone17.glb', (gltf) => {
       const model = gltf.scene;
-
-      // Fix orientation — model loads sideways (screen faces +X)
+      model.scale.setScalar(_isMobile ? 1.25 : 1.6);
       model.rotation.y = Math.PI / 2;
-
-      // Centre model
-      const box = new THREE.Box3().setFromObject(model);
-      const centre = box.getCenter(new THREE.Vector3());
-      model.position.sub(centre);
-
-      // Scale to ~2 units tall
-      const size = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-      model.scale.setScalar(2 / maxDim);
-
-      // Apply materials
       model.traverse((child) => {
         if (!child.isMesh) return;
         const mats = Array.isArray(child.material) ? child.material : [child.material];
         mats.forEach((mat, idx) => {
           if (!mat) return;
-          const name = mat.name;
-
-          // Hide artefacts
-          if (name === 'glass.002' || name === 'lensinglass') {
-            child.visible = false;
-            return;
-          }
-
-          // Video on screen
+          const name = mat.name || '';
           if (name === 'screen.001') {
             remapUVs(child);
-            const vidMat = new THREE.MeshBasicMaterial({
-              map: videoTex,
-              side: THREE.DoubleSide,
-              toneMapped: false,
-            });
-            if (Array.isArray(child.material)) {
-              child.material[idx] = vidMat;
-            } else {
-              child.material = vidMat;
-            }
+            const vm = new THREE.MeshBasicMaterial({ map: canvasTex, side: THREE.DoubleSide, toneMapped: false });
+            if (Array.isArray(child.material)) child.material[idx] = vm; else child.material = vm;
             return;
           }
-
-          // Body tinting — titanium dark
-          const bodyNames = ['basecolor.001', 'backpanel.001', 'Material.005', 'Material.006', 'Material.007', 'gray.001'];
-          if (bodyNames.includes(name)) {
-            mat.color.set(0x1c1c1e);
-            mat.metalness = 0.7;
-            mat.roughness = 0.25;
+          if (name === 'glass.002') {
+            const bm = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
+            if (Array.isArray(child.material)) child.material[idx] = bm; else child.material = bm;
+            return;
           }
-          if (name === 'metalframe.002' || name === 'metaL.001') {
-            mat.color.set(0x3a3a3c);
-            mat.metalness = 0.95;
-            mat.roughness = 0.1;
+          if (name === 'lensinglass' || name === 'gray.001' || name === 'Material.006') {
+            child.visible = false; return;
           }
+          const body = ['basecolor.001','backpanel.001','Material.005','Material.007'];
+          if (body.includes(name)) { mat.color?.set(0x9EFF78); if(mat.metalness!==undefined){mat.metalness=0.7;mat.roughness=0.25;} }
+          if (name==='metalframe.002'||name==='metaL.001') { mat.color?.set(0x3a3a3c); if(mat.metalness!==undefined){mat.metalness=0.95;mat.roughness=0.1;} }
+          if (name==='black.002') mat.color?.set(0x000000);
         });
       });
+      const bbox = new THREE.Box3().setFromObject(model);
+      const center = new THREE.Vector3();
+      bbox.getCenter(center);
+      model.position.sub(center);
+      phoneGroup.add(model);
 
-      // Re-apply UVs once video metadata is available (timing safety)
-      if (!vid.videoWidth) {
-        vid.addEventListener('loadedmetadata', () => {
-          model.traverse((child) => {
-            if (!child.isMesh) return;
-            const mats = Array.isArray(child.material) ? child.material : [child.material];
-            if (mats.some(m => m && m.map === videoTex)) remapUVs(child);
-          });
-        }, { once: true });
+      setupScroll();
+    });
+
+    // ─── Scroll setup (ONLY model position, NO text/words/SVG/features) ───
+    function setupScroll() {
+      gsap.registerPlugin(ScrollTrigger, Observer);
+
+      ScrollTrigger.config({ ignoreMobileResize: true });
+
+      hud.ns.textContent = _isIOS ? 'OFF (iOS)' : 'ON';
+
+      if (!_isIOS) {
+        ScrollTrigger.normalizeScroll(true);
       }
 
-      phoneGroup.add(model);
-    });
+      const _scrubLag = 0.1;
 
-    // ── Render loop ───────────────────────────────────────────────────────────
-    const rotationQuat = new THREE.Quaternion();
-    function animate() {
-      requestAnimationFrame(animate);
-      rotationQuat.setFromAxisAngle(DIAG_AXIS, totalAngle);
-      phoneGroup.quaternion.copy(rotationQuat);
-      renderer.render(scene, camera);
+      // Cached viewport height (ignore URL bar changes)
+      let _cachedVH = window.innerHeight;
+
+      const heroRest = {
+        y: 0.0, rotY: 0.0,
+        camZ: isPortrait() ? 5.5 : 5.5,
+        fov:  isPortrait() ? 36  : 36
+      };
+
+      // ── HERO: tilt → upright ──
+      ScrollTrigger.create({
+        trigger: '#hero-section',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: _scrubLag,
+        onUpdate(self) {
+          const p = self.progress;
+          const eOut3 = t => 1 - Math.pow(1-t, 3);
+
+          phoneGroup.position.x = phoneXOffset();
+
+          if (p <= 0.5) {
+            const t = eOut3(p / 0.5);
+            phoneGroup.position.y = lerp(startY, heroRest.y, t);
+            phoneGroup.rotation.x = lerp(-startTilt * Math.PI / 180, 0, t);
+            camera.position.z     = lerp(startCamZ, heroRest.camZ, t);
+            camera.fov            = lerp(startFov, heroRest.fov, t);
+          } else {
+            phoneGroup.position.y = heroRest.y;
+            phoneGroup.rotation.x = 0;
+            camera.position.z     = heroRest.camZ;
+            camera.fov            = heroRest.fov;
+          }
+          camera.updateProjectionMatrix();
+          window._renderDirty = true;
+          updateHud('hero', p);
+        }
+      });
+
+      // ── SPACER: phone stays at hero rest (word section equivalent) ──
+      ScrollTrigger.create({
+        trigger: '#spacer-section',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: _scrubLag,
+        onUpdate(self) {
+          // Phone locked at heroRest — just track progress
+          phoneGroup.position.x = phoneXOffset();
+          phoneGroup.position.y = heroRest.y;
+          phoneGroup.rotation.x = 0;
+          phoneGroup.rotation.y = heroRest.rotY;
+          camera.position.z = heroRest.camZ;
+          camera.fov = heroRest.fov;
+          camera.updateProjectionMatrix();
+          window._renderDirty = true;
+          updateHud('spacer', self.progress);
+        }
+      });
+
+      // ── FEATURE ENTRY: hero rest → feature position ──
+      const deg = Math.PI / 180;
+      ScrollTrigger.create({
+        trigger: '#feature-section',
+        start: 'top bottom',
+        end: 'top top',
+        scrub: _scrubLag,
+        onUpdate(self) {
+          const t = self.progress;
+          const eased = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+
+          if (isPortrait()) {
+            phoneGroup.position.x = lerp(phoneXOffset(), 0, eased);
+            phoneGroup.position.y = lerp(heroRest.y, -0.6, eased);
+            phoneGroup.rotation.x = 0;
+            phoneGroup.rotation.y = lerp(heroRest.rotY, 0, eased);
+            phoneGroup.rotation.z = 0;
+            camera.position.z = lerp(heroRest.camZ, 5.0, eased);
+            camera.fov = lerp(heroRest.fov, 38, eased);
+          } else {
+            phoneGroup.position.x = lerp(phoneXOffset(), 1.35, eased);
+            phoneGroup.rotation.x = lerp(0, -5 * deg, eased);
+            phoneGroup.rotation.y = lerp(heroRest.rotY, -40 * deg, eased);
+            phoneGroup.rotation.z = lerp(0, -12 * deg, eased);
+            phoneGroup.position.y = lerp(heroRest.y, -0.03, eased);
+            camera.position.z = lerp(heroRest.camZ, 5.2, eased);
+            camera.fov = lerp(heroRest.fov, 34, eased);
+          }
+          camera.updateProjectionMatrix();
+          window._renderDirty = true;
+          updateHud('feat-entry', t);
+        }
+      });
+
+      // ── FEATURE MAIN: spin phone through section ──
+      const featureRest = { x: isPortrait() ? 0 : 1.35, y: isPortrait() ? -0.6 : -0.03, camZ: isPortrait() ? 5.0 : 5.2, fov: isPortrait() ? 38 : 34 };
+      const spinPerLine = 15 * deg;
+      ScrollTrigger.create({
+        trigger: '#feature-section',
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: _scrubLag,
+        onUpdate(self) {
+          const p = self.progress;
+          if (isPortrait()) {
+            // Mobile: keep at peeking position
+          } else {
+            const rotY0 = -40 * deg;
+            phoneGroup.rotation.y = rotY0 + p * spinPerLine * 5;
+            phoneGroup.rotation.x = -5*deg + Math.sin(p * Math.PI * 2) * 3 * deg;
+            phoneGroup.rotation.z = -12*deg + Math.sin(p * Math.PI * 3) * 2 * deg;
+            phoneGroup.position.x = featureRest.x;
+            phoneGroup.position.y = featureRest.y;
+            camera.position.z = featureRest.camZ;
+            camera.fov = featureRest.fov;
+          }
+          camera.updateProjectionMatrix();
+          window._renderDirty = true;
+          updateHud('feature', p);
+        }
+      });
+
+      // Width-only resize
+      let _lastW = innerWidth;
+      window.addEventListener('resize', () => {
+        const newW = innerWidth;
+        if (newW !== _lastW) {
+          _lastW = newW;
+          camera.aspect = newW / innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(newW, innerHeight);
+          renderer.setPixelRatio(_effectiveDPR);
+          _cachedVH = innerHeight;
+          ScrollTrigger.refresh();
+        }
+      });
     }
-    animate();
 
-    // ── Resize ────────────────────────────────────────────────────────────────
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    // ─── Render loop (minimal — NO position overrides) ───
+    window._renderDirty = true;
+    let glintAngle = 0, lastTime = 0;
+    (function render(now) {
+      requestAnimationFrame(render);
+      updateFps(now);
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+
+      // Subtle glint animation
+      glintAngle += dt * 0.4;
+      if (now - (render._lastGlint || 0) > 250) {
+        glint.position.set(Math.sin(glintAngle)*3.5, Math.cos(glintAngle*0.7)*2, 3);
+        render._lastGlint = now;
+        window._renderDirty = true;
+      }
+
+      if (window._renderDirty) {
+        renderer.render(scene, camera);
+        window._renderDirty = false;
+      }
+    })(0);
   </script>
 </body>
 </html>
