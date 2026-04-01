@@ -1367,43 +1367,54 @@
       // Only real resizes (width change) update this — see resize handler below
       let _cachedVH = window.innerHeight;
 
-      // Word overlay driven by ScrollTrigger (uses normalizeScroll, immune to URL bar)
+      // Cache word-line dimensions — reading offsetWidth/offsetHeight per scroll tick
+      // forces synchronous layout reflow, which is expensive on iOS Safari.
+      let _wl1W = 0, _wl2W = 0, _wlH = 0;
+      (function cacheWordDims() {
+        const was = wordOverlay.style.display;
+        wordOverlay.style.display = 'block';
+        _wl1W = wl1.offsetWidth || innerWidth * 2;
+        _wl2W = wl2.offsetWidth || innerWidth * 2;
+        _wlH  = wl1.offsetHeight || 100;
+        wordOverlay.style.display = was;
+      })();
+      // Re-cache on real resize (width change)
+      window.addEventListener('resize', () => {
+        if (innerWidth === _lastW) return;
+        const was = wordOverlay.style.display;
+        wordOverlay.style.display = 'block';
+        _wl1W = wl1.offsetWidth || innerWidth * 2;
+        _wl2W = wl2.offsetWidth || innerWidth * 2;
+        _wlH  = wl1.offsetHeight || 100;
+        wordOverlay.style.display = was;
+      });
+
+      // Word overlay driven by ScrollTrigger
       ScrollTrigger.create({
         trigger: '#word-section',
-        start: () => `top-=${_cachedVH * 0.8} top`,  // start ~0.8vh before section enters
+        start: () => `top-=${_cachedVH * 0.8} top`,
         end: 'bottom top',
-        scrub: 0,  // immediate, no lag
+        scrub: 0,
         onUpdate(self) {
           const p = self.progress;
-          const W = window.innerWidth;
+          if (p <= 0 || p >= 1) {
+            wordOverlay.style.display = 'none';
+            return;
+          }
+          wordOverlay.style.display = 'block';
+
+          // All values from cache — zero layout reads in scroll callback
+          const W = innerWidth;
           const h = _cachedVH;
-          const lineH = wl1.offsetHeight || 100;
           const isPortrait = W < h;
 
-          wordOverlay.style.display = (p <= 0 || p >= 1) ? 'none' : 'block';
-          if (p <= 0 || p >= 1) return;
+          const y1 = isPortrait ? (h * 0.22 - _wlH * 0.9) : (h / 2 - _wlH * 1.1);
+          const y2 = isPortrait ? (h * 0.78 - _wlH * 0.2) : (h / 2 + _wlH * 0.1);
+          const x1 = -_wl1W + p * (W + _wl1W);
+          const x2 = W      - p * (W + _wl2W);
 
-          if (isPortrait) {
-            const phoneTop    = h * 0.22;
-            const phoneBottom = h * 0.78;
-            const y1 = phoneTop - lineH * 0.9;
-            const y2 = phoneBottom - lineH * 0.2;
-            const w1w = wl1.offsetWidth || W * 2;
-            const w2w = wl2.offsetWidth || W * 2;
-            const x1 = -w1w + p * (W + w1w);
-            const x2 = W    - p * (W + w2w);
-            wl1.style.transform = `translate(${x1}px, ${y1}px)`;
-            wl2.style.transform = `translate(${x2}px, ${y2}px)`;
-          } else {
-            const y1 = h / 2 - lineH * 1.1;
-            const y2 = h / 2 + lineH * 0.1;
-            const w1w = wl1.offsetWidth || W * 2;
-            const w2w = wl2.offsetWidth || W * 2;
-            const x1 = -w1w + p * (W + w1w);
-            const x2 = W    - p * (W + w2w);
-            wl1.style.transform = `translate(${x1}px, ${y1}px)`;
-            wl2.style.transform = `translate(${x2}px, ${y2}px)`;
-          }
+          wl1.style.transform = `translate(${x1}px, ${y1}px)`;
+          wl2.style.transform = `translate(${x2}px, ${y2}px)`;
         },
         onLeave:     () => { wordOverlay.style.display = 'none'; },
         onLeaveBack: () => { wordOverlay.style.display = 'none'; },
