@@ -439,18 +439,14 @@
       top: 0; left: 0;
       white-space: nowrap;
       width: max-content;
-      /* Padding prevents iOS Safari will-change layer clipping on italic overhang.
-         Safari rasterizes will-change layers to layout bounds, not ink bounds.
-         Bold italic at 140px overhangs significantly — needs room on all sides. */
-      padding: 0.15em 0.3em 0.05em 0.15em; /* top right bottom left */
-      margin: -0.15em -0.3em -0.05em -0.15em; /* cancel out padding so position stays correct */
+      padding-right: 2vw;
       font-family: "obviously-variable", sans-serif;
       font-size: clamp(60px, 11vw, 140px);
       font-weight: 800;
       font-style: italic;
       text-transform: uppercase;
       letter-spacing: -0.02em;
-      line-height: 1.15;
+      line-height: 1.12;
       will-change: transform;
     }
     #word-line-1 { color: rgba(255,255,255,0.9); }
@@ -832,21 +828,11 @@
     <div class="slide-title" id="slide-title"></div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.2/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.2/ScrollTrigger.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.2/Observer.min.js"></script>
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.183.2/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.183.2/examples/jsm/"
-    }
-  }
-  </script>
-  <script type="module">
-    import * as THREE from 'three';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script>
     const SLIDES = [
       'Introducing\nYapp App',
       'Find Your\nFast Edge',
@@ -919,43 +905,28 @@
       sectionsEl.appendChild(div);
     });
 
-    // Three.js — iOS performance: cap DPR, skip antialias on mobile, request high-perf GPU
-    const _isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const _effectiveDPR = _isMobile ? Math.min(devicePixelRatio, 2) : devicePixelRatio;
-
+    // Three.js
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 50);
+    const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.01, 100);
     window.camera = camera;
     camera.position.set(0, 0, 4.5);
-    const renderer = new THREE.WebGLRenderer({
-      canvas: document.getElementById('canvas'),
-      antialias: !_isMobile,  // pointless at DPR ≥ 2, saves ~2x fill rate
-      alpha: true,
-      powerPreference: 'high-performance',  // request discrete/high-perf GPU on iOS
-      stencil: false,   // not used — free perf
-      depth: true,
-    });
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true, alpha: true });
     renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(_effectiveDPR);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.setPixelRatio(devicePixelRatio);
+    renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.NoToneMapping;
-    // physicallyCorrectLights removed — no visual difference for this scene, saves GPU
+    renderer.physicallyCorrectLights = true;
     renderer.setClearColor(0x000000, 0); // fully transparent canvas so DOM word layer shows through
     // Background handled by CSS on body
 
-    // Lighting: reduced for mobile — merge fill+rim into single stronger fill
-    scene.add(new THREE.AmbientLight(0x112233, _isMobile ? 1.5 : 1.0));
+    scene.add(new THREE.AmbientLight(0x112233, 1.0));
     const key = new THREE.DirectionalLight(0xffffff, 3.0);
     key.position.set(4, 6, 5); scene.add(key);
-    const fill = new THREE.DirectionalLight(0x4488ff, _isMobile ? 1.6 : 1.2);
+    const fill = new THREE.DirectionalLight(0x4488ff, 1.2);
     fill.position.set(-5, 1, -3); scene.add(fill);
-    if (!_isMobile) {
-      // Rim light only on desktop — 3rd directional light is expensive on mobile GPU
-      const rim = new THREE.DirectionalLight(0x00ffcc, 0.6);
-      rim.position.set(0, -4, -5); scene.add(rim);
-    }
-    const glint = new THREE.PointLight(0xffffff, _isMobile ? 1.5 : 2.5, 8);
+    const rim = new THREE.DirectionalLight(0x00ffcc, 0.6);
+    rim.position.set(0, -4, -5); scene.add(rim);
+    const glint = new THREE.PointLight(0xffffff, 2.5, 8);
     glint.position.set(2, 2, 3); scene.add(glint);
 
 
@@ -990,43 +961,19 @@
       return fullFrames[i] || tinyFrames[i] || null;
     }
 
-    // Throttle showFrame: only redraw canvas + upload texture at most once per rAF.
-    // Scroll events fire at 60-120Hz; drawImage + GPU texture upload per tick = main jank source.
-    let _pendingFrameIdx = -1;
-    let _frameRafQueued = false;
-
-    function _flushFrame() {
-      _frameRafQueued = false;
-      const idx = _pendingFrameIdx;
-      if (idx < 0) return;
+    function showFrame(idx) {
+      idx = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(idx)));
+      if (idx === currentFrameIdx && (fullFrames[idx] || !fullFrames[currentFrameIdx])) return;
       const img = getBestFrame(idx);
       if (!img) return;
       currentFrameIdx = idx;
       phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
       canvasTex.needsUpdate = true;
-      if (window._renderDirty !== undefined) window._renderDirty = true;
+      // Prioritize full-res loading around current scroll position
+      loadFullNearby(idx, 10);
     }
 
-    // Throttle loadFullNearby: at most every 200ms (not every scroll tick)
-    let _lastNearbyLoad = 0;
-
-    function showFrame(idx) {
-      idx = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(idx)));
-      if (idx === currentFrameIdx) return;
-      _pendingFrameIdx = idx;
-      if (!_frameRafQueued) {
-        _frameRafQueued = true;
-        requestAnimationFrame(_flushFrame);
-      }
-      // Throttle nearby preloading — don't spam on every scroll tick
-      const now = performance.now();
-      if (now - _lastNearbyLoad > 200) {
-        _lastNearbyLoad = now;
-        loadFullNearby(idx, _isMobile ? 5 : 10);
-      }
-    }
-
-    // ── Pass 1: Load tiny placeholders — batched on mobile to avoid decode pipeline stall ──
+    // ── Pass 1: Load ALL tiny placeholders immediately (~630KB) ──
     function loadTinyFrame(i) {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -1041,18 +988,7 @@
       };
       img.src = FRAME_CDN_TINY + String(i + 1).padStart(4, '0') + '.webp' + FRAME_BUST;
     }
-    if (_isMobile) {
-      // Stagger tiny frame loads in batches of 20 — iOS Safari chokes on 181 concurrent decodes
-      (function loadTinyBatch(start) {
-        const batchSize = 20;
-        for (let i = start; i < Math.min(start + batchSize, TOTAL_FRAMES); i++) loadTinyFrame(i);
-        if (start + batchSize < TOTAL_FRAMES) {
-          setTimeout(() => loadTinyBatch(start + batchSize), 50);
-        }
-      })(0);
-    } else {
-      for (let i = 0; i < TOTAL_FRAMES; i++) loadTinyFrame(i);
-    }
+    for (let i = 0; i < TOTAL_FRAMES; i++) loadTinyFrame(i);
 
     // ── Pass 2: Load full-res frames progressively near scroll position ──
     const fullLoadQueue = new Set();
@@ -1106,30 +1042,20 @@
     })();
 
     // Load remaining full-res after tiny pass is underway
-    // Mobile: skip bulk preload — only load full-res on-demand near scroll position
     setTimeout(() => {
-      loadFullNearby(1, _isMobile ? 10 : 20);
-      if (!_isMobile) {
-        // Desktop: preload all full-res frames after short delay
-        setTimeout(() => {
-          for (let i = 0; i < TOTAL_FRAMES; i++) loadFullFrame(i);
-        }, 2000);
-      }
-      // Mobile: full-res loaded on-demand via loadFullNearby() in showFrame()
+      loadFullNearby(1, 20);
+      setTimeout(() => {
+        for (let i = 0; i < TOTAL_FRAMES; i++) loadFullFrame(i);
+      }, 2000);
     }, 300);
 
-    // On mobile, downsize the phone screen canvas — 1206×2622 is overkill for a phone-sized viewport element
-    if (_isMobile) {
-      phoneCanvas.width = 603;   // half res — still sharp at phone-in-scene scale
-      phoneCanvas.height = 1311;
-    }
     const canvasTex = new THREE.CanvasTexture(phoneCanvas);
     canvasTex.minFilter = THREE.LinearFilter;
     canvasTex.magFilter = THREE.LinearFilter;
     canvasTex.generateMipmaps = false;
     canvasTex.flipY = false;
-    canvasTex.colorSpace = THREE.SRGBColorSpace;
-    canvasTex.anisotropy = _isMobile ? 1 : renderer.capabilities.getMaxAnisotropy();  // aniso expensive on mobile GPU
+    canvasTex.encoding = THREE.sRGBEncoding;
+    canvasTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     // Alias for compatibility with existing code
     const videoTex = canvasTex;
     const vid = { videoWidth: 1206, videoHeight: 2622, duration: TOTAL_FRAMES / 12 };
@@ -1175,7 +1101,7 @@
     const slideTextEl = document.getElementById('slide-text');
     let currentSlideIdx = -1;
 
-    const loader = new GLTFLoader();
+    const loader = new THREE.GLTFLoader();
     loader.load('models/iphone17.glb', (gltf) => {
       const model = gltf.scene;
       const isMobile = innerWidth < 768;
@@ -1307,64 +1233,20 @@
     }
 
     function setupScroll() {
-      gsap.registerPlugin(ScrollTrigger, Observer);
+      gsap.registerPlugin(ScrollTrigger);
 
       // Prevent ScrollTrigger from recalculating on mobile URL bar show/hide
       ScrollTrigger.config({
         ignoreMobileResize: true  // ignore height-only viewport changes (URL bar)
       });
-
+      // Normalize scroll: intercepts native scroll for stable position tracking
+      // iOS Safari: normalizeScroll causes jitter (Safari misreports touch positions)
+      // so only enable on non-iOS touch devices (Android Chrome benefits greatly)
       const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-      // normalizeScroll: DISABLED on iOS, ENABLED everywhere else.
-      // On Android/desktop, normalizeScroll gives butter-smooth scroll-driven
-      // animation by moving scroll to the JS thread. On iOS Safari it fights
-      // the platform — Safari's compositor expects to own scroll, and
-      // normalizeScroll's workarounds (skipping every other touchmove, JS-thread
-      // momentum) create more jank than they solve.
-      // ignoreMobileResize:true handles the address bar issue without scroll-jacking.
       if (!_isIOS) {
         ScrollTrigger.normalizeScroll(true);
       }
-
-      // iOS: prevent overscroll bounce at page boundaries without full scroll-jacking.
-      // Safari ignores CSS overscroll-behavior:none, so we use GSAP's helper that
-      // intercepts touchmove ONLY at scroll boundaries (much lighter than normalizeScroll).
-      if (_isIOS) {
-        (function stopOverscroll(el) {
-          el = window;
-          const scroller = document.scrollingElement;
-          const getMax = () => scroller.scrollHeight - window.innerHeight;
-          const addL = (t, f) => el.addEventListener(t, f, { passive: false });
-          let lastTouch, lastScroll = 0, forcing, forward = true;
-          const revert = () => { scroller.style.overflowY = 'auto'; forcing = false; };
-          const kill = () => {
-            forcing = true; scroller.style.overflowY = 'hidden';
-            !forward ? (scroller.scrollTop = 1) : (scroller.scrollTop = getMax() - 1);
-            setTimeout(revert, 1);
-          };
-          const handleTouch = e => {
-            const evt = e.changedTouches ? e.changedTouches[0] : e;
-            const fwd = evt.pageY <= lastTouch;
-            if (((!fwd && scroller.scrollTop <= 1) || (fwd && scroller.scrollTop >= getMax() - 1)) && e.type === 'touchmove') {
-              e.preventDefault();
-            } else { lastTouch = evt.pageY; }
-          };
-          const handleScroll = e => {
-            if (!forcing) {
-              const st = scroller.scrollTop; forward = st > lastScroll;
-              if ((!forward && st < 1) || (forward && st >= getMax() - 1)) { e.preventDefault(); kill(); }
-              lastScroll = st;
-            }
-          };
-          addL('scroll', handleScroll); addL('touchstart', handleTouch); addL('touchmove', handleTouch);
-          scroller.style.overscrollBehavior = 'none';
-        })();
-      }
-
-      // scrub: slight smoothing to bridge touch event timing gaps
-      const _scrubLag = 0.1;
 
       /* ══════════════════════════════════════════════
          HERO SECTION — tilt → upright (300vh)
@@ -1403,72 +1285,52 @@
         fov:  isPortrait() ? 36  : 36
       };
 
-      // Cache last hero progress to skip redundant updates (scroll fires faster than
-      // visual change at 60-120Hz). Quantize to ~0.3% steps = ~300 distinct positions.
-      let _lastHeroP = -1;
-
       ScrollTrigger.create({
         trigger: '#hero-section',
         start: 'top top',
         end: 'bottom top',
-        scrub: _scrubLag,
+        scrub: 0.3,
         onUpdate(self) {
           const p = self.progress;
-
-          // Quantize: skip if progress hasn't changed enough to be visible (~0.3%)
-          const quantized = Math.round(p * 300) / 300;
-          if (quantized === _lastHeroP) return;
-          _lastHeroP = quantized;
-
           const clamp01 = v => Math.min(1, Math.max(0, v));
           const eOut3   = t => 1 - Math.pow(1-t, 3);
+          const eInOut  = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
 
-          // ── WebGL updates (all pure JS, no layout thrash) ──
+          // Always keep phone centered and camera x=0 during hero
           phoneGroup.position.x = phoneXOffset();
           camera.position.x = 0;
           camera.position.y = 0;
 
+          // Logo visibility handled globally below
+
           if (p <= 0.5) {
+            // Phase 1: zoom out — camera pulls back, phone rises into full view
             const t = eOut3(p / 0.5);
             phoneGroup.position.y = lerp(startY, heroRest.y, t);
             phoneGroup.rotation.x = lerp(-startTilt * Math.PI / 180, 0, t);
             camera.position.z     = lerp(startCamZ, heroRest.camZ, t);
-            const newFov = lerp(startFov, heroRest.fov, t);
-            if (camera.fov !== newFov) {
-              camera.fov = newFov;
-              camera.updateProjectionMatrix();
-            }
+            camera.fov            = lerp(startFov,  heroRest.fov,  t);
+            // Fade copy: starts at p=0.1, gone by p=0.28
+            const fadeT = clamp01((p - 0.1) / 0.18);
+            heroCopy.style.display   = 'flex';
+            heroCopy.style.opacity   = String(1 - fadeT);
+            heroCopy.style.transform = `translateY(${-fadeT * 36}px)`;
           } else {
+            // Phase 2: copy gone, phone stays locked
             phoneGroup.position.y = heroRest.y;
             phoneGroup.rotation.x = 0;
             camera.position.z     = heroRest.camZ;
-            if (camera.fov !== heroRest.fov) {
-              camera.fov = heroRest.fov;
-              camera.updateProjectionMatrix();
-            }
+            camera.fov            = heroRest.fov;
+            heroCopy.style.display   = 'flex';
+            heroCopy.style.opacity   = '0';
+            heroCopy.style.transform = `translateY(-36px)`;
           }
 
-          // Mark WebGL dirty so render loop picks up the position/rotation changes
-          window._renderDirty = true;
-
-          // Frame scrubbing (deferred to rAF via showFrame throttle)
+          // Scrub frames through first 55% during hero
           if (videoReady) {
             showFrame(Math.round(p * TOTAL_FRAMES * 0.55));
           }
-
-          // ── DOM updates LAST (batched, separated from WebGL) ──
-          // Use requestAnimationFrame to avoid interleaving DOM style writes
-          // with WebGL context operations in the same microtask.
-          const fadeT = p <= 0.5 ? clamp01((p - 0.1) / 0.18) : 1;
-          requestAnimationFrame(() => {
-            if (fadeT >= 1) {
-              heroCopy.style.opacity   = '0';
-              heroCopy.style.transform = 'translateY(-36px)';
-            } else {
-              heroCopy.style.opacity   = String(1 - fadeT);
-              heroCopy.style.transform = `translateY(${-fadeT * 36}px)`;
-            }
-          });
+          camera.updateProjectionMatrix();
         }
       });
 
@@ -1505,53 +1367,40 @@
       // Only real resizes (width change) update this — see resize handler below
       let _cachedVH = window.innerHeight;
 
-      // ── Word overlay: pre-rasterize + cache dimensions ──
-      // Cache word-line dimensions — reading offsetWidth/offsetHeight per scroll tick
-      // forces synchronous layout reflow, which is the main jank source on iOS Safari.
-      // Safari's forced layout is measurably slower than Chrome's, and with normalizeScroll
-      // processing touch events on the JS thread, every reflow blocks the next paint.
-      let _wl1W = 0, _wl2W = 0, _wlH = 0;
-      function _cacheWordDims() {
-        // Ensure measurable
-        const wasHidden = wordOverlay.style.display === 'none';
-        if (wasHidden) wordOverlay.style.display = 'block';
-        _wl1W = wl1.offsetWidth || innerWidth * 2;
-        _wl2W = wl2.offsetWidth || innerWidth * 2;
-        _wlH = wl1.offsetHeight || 100;
-        if (wasHidden) wordOverlay.style.display = 'none';
-      }
-      _cacheWordDims();
-
       // Word overlay driven by ScrollTrigger (uses normalizeScroll, immune to URL bar)
       ScrollTrigger.create({
         trigger: '#word-section',
-        start: () => `top-=${_cachedVH * 0.8} top`,
+        start: () => `top-=${_cachedVH * 0.8} top`,  // start ~0.8vh before section enters
         end: 'bottom top',
-        scrub: 0,
+        scrub: 0,  // immediate, no lag
         onUpdate(self) {
           const p = self.progress;
           const W = window.innerWidth;
           const h = _cachedVH;
+          const lineH = wl1.offsetHeight || 100;
           const isPortrait = W < h;
 
           wordOverlay.style.display = (p <= 0 || p >= 1) ? 'none' : 'block';
           if (p <= 0 || p >= 1) return;
 
-          // Use cached dimensions — NO offsetWidth/offsetHeight reads during scroll
           if (isPortrait) {
             const phoneTop    = h * 0.22;
             const phoneBottom = h * 0.78;
-            const y1 = phoneTop - _wlH * 0.9;
-            const y2 = phoneBottom - _wlH * 0.2;
-            const x1 = -_wl1W + p * (W + _wl1W);
-            const x2 = W      - p * (W + _wl2W);
+            const y1 = phoneTop - lineH * 0.9;
+            const y2 = phoneBottom - lineH * 0.2;
+            const w1w = wl1.offsetWidth || W * 2;
+            const w2w = wl2.offsetWidth || W * 2;
+            const x1 = -w1w + p * (W + w1w);
+            const x2 = W    - p * (W + w2w);
             wl1.style.transform = `translate(${x1}px, ${y1}px)`;
             wl2.style.transform = `translate(${x2}px, ${y2}px)`;
           } else {
-            const y1 = h / 2 - _wlH * 1.1;
-            const y2 = h / 2 + _wlH * 0.1;
-            const x1 = -_wl1W + p * (W + _wl1W);
-            const x2 = W      - p * (W + _wl2W);
+            const y1 = h / 2 - lineH * 1.1;
+            const y2 = h / 2 + lineH * 0.1;
+            const w1w = wl1.offsetWidth || W * 2;
+            const w2w = wl2.offsetWidth || W * 2;
+            const x1 = -w1w + p * (W + w1w);
+            const x2 = W    - p * (W + w2w);
             wl1.style.transform = `translate(${x1}px, ${y1}px)`;
             wl2.style.transform = `translate(${x2}px, ${y2}px)`;
           }
@@ -1567,7 +1416,7 @@
         trigger: '#sections',
         start: 'top top',
         end: 'bottom top',
-        scrub: _scrubLag,
+        scrub: 0.3,
         onUpdate(self) {
           // Lock phone at rest position (only on desktop — mobile is handled by feature entry)
           const portrait = window.innerWidth < window.innerHeight;
@@ -1597,7 +1446,7 @@
         trigger: '#feature-section',
         start: 'top bottom',   // start lerping as section enters from bottom
         end: 'top top',        // fully transitioned when section top hits viewport top
-        scrub: _scrubLag,
+        scrub: 0.3,
         onUpdate(self) {
           const t = self.progress; // 0 = heroRest, 1 = feature target
           const eased = t < 0.5 ? 2*t*t : -1+(4-2*t)*t; // easeInOut
@@ -1843,69 +1692,39 @@
     // No mouse parallax — phone rotation stays exactly where scroll puts it
     let glintAngle = 0, lastTime = 0;
 
-    // Dirty-flag render: only render when something changes (scroll, resize, texture)
-    window._renderDirty = true;
-    // NOTE: removed per-scroll _markDirty listener — the ScrollTrigger onUpdate
-    // callbacks and _flushFrame already set _renderDirty when there's actual visual
-    // change. Firing renderer.render() on every scroll event (60-120Hz) when nothing
-    // changed was a major source of jank on mobile.
-
-    // Mobile: throttle glint updates more aggressively, disable glow plane entirely
-    const _glintInterval = _isMobile ? 250 : 100;  // ms between glint position updates
-    if (_isMobile) glowPlane.material.opacity = 0;  // skip glow — transparent overdraw is expensive
-
     (function render(now) {
       requestAnimationFrame(render);
       const dt = Math.min((now - lastTime) / 1000, 0.05); lastTime = now;
-
-      // Subtle glint animation — throttled more on mobile
       glintAngle += dt * 0.4;
-      if (now - (render._lastGlint || 0) > _glintInterval) {
-        glint.position.set(Math.sin(glintAngle)*3.5, Math.cos(glintAngle*0.7)*2, 3);
-        if (!_isMobile) {
-          const t2 = now / 1000;
-          glowPlane.material.opacity = 0.04 + Math.sin(t2 * 1.2) * 0.02;
-        }
-        render._lastGlint = now;
-        window._renderDirty = true;
+      glint.position.set(Math.sin(glintAngle)*3.5, Math.cos(glintAngle*0.7)*2, 3);
+      const t2 = now / 1000;
+      glowPlane.material.opacity = 0.04 + Math.sin(t2 * 1.2) * 0.02;
+
+      // Always keep camera centered — no lateral drift ever
+      camera.position.x = 0;
+      camera.position.y = 0;
+      // On portrait, force phone to horizontal center every frame
+      if (window.innerWidth < window.innerHeight) {
+        phoneGroup.position.x = 0;
       }
 
-      // NOTE: removed per-frame camera/phone position overrides.
-      // These were fighting with ScrollTrigger callbacks that set the same
-      // properties — the render loop ran on rAF while ScrollTrigger ran on
-      // GSAP's ticker, causing the model to "skip back" to override values
-      // between ScrollTrigger updates. ScrollTrigger is the sole owner of
-      // phone/camera position now.
-
-      if (window._renderDirty) {
-        renderer.render(scene, camera);
-        window._renderDirty = false;
-      }
+      renderer.render(scene, camera);
     })(0);
 
     // Resize: only react to WIDTH changes (orientation, real resize).
-    // Safari URL bar show/hide fires resize with height-only change — if we
-    // resize the renderer + camera aspect on those, the 3D model visibly
-    // rescales and the canvas re-allocates. Lock to width changes only.
+    // Safari URL bar show/hide fires resize with height-only change — updating
+    // camera.aspect + renderer.setSize on those causes model rescaling flicker.
     let _lastW = innerWidth;
-    let _lastH = innerHeight;
     window.addEventListener('resize', () => {
       const newW = innerWidth;
-      const newH = innerHeight;
       if (newW !== _lastW) {
-        // Real resize (orientation change, window resize) — update everything
         _lastW = newW;
-        _lastH = newH;
-        camera.aspect = newW / newH;
+        camera.aspect = newW / innerHeight;
         camera.updateProjectionMatrix();
-        renderer.setSize(newW, newH);
-        renderer.setPixelRatio(_effectiveDPR);
-        _cachedVH = newH;
-        _cacheWordDims();
+        renderer.setSize(newW, innerHeight);
+        _cachedVH = innerHeight;
         ScrollTrigger.refresh();
       }
-      // Height-only change (Safari URL bar) — ignore entirely.
-      // The canvas stays at the last real size. position:fixed makes this invisible.
     });
     // Video unlock handled above (unlockVideo)
     } // end setupScroll
