@@ -958,8 +958,8 @@
     }
     const phoneCtx = phoneCanvas.getContext('2d');
     // Two layers: tiny (placeholder) and full (retina)
-    const tinyFrames = new Array(TOTAL_FRAMES);
-    const fullFrames = new Array(TOTAL_FRAMES);
+    const tinyFrames = window._tinyFrames = new Array(TOTAL_FRAMES);
+    const fullFrames = window._fullFrames = new Array(TOTAL_FRAMES);
     let videoReady = false;
     let currentFrameIdx = -1;
     let tinyLoaded = 0;
@@ -973,8 +973,8 @@
     // ── Pre-uploaded GPU textures (zero-cost swap during scroll) ──
     // Tiny frames: all 181 pre-uploaded (~15MB GPU total — safe)
     // Full-res frames: sliding window of ±20 around current frame
-    const gpuTextures = new Array(TOTAL_FRAMES).fill(null);
-    const gpuTexIsFull = new Array(TOTAL_FRAMES).fill(false);
+    const gpuTextures = window._gpuTextures = new Array(TOTAL_FRAMES).fill(null);
+    const gpuTexIsFull = window._gpuTexIsFull = new Array(TOTAL_FRAMES).fill(false);
     let screenMaterial = null;
     const GPU_WINDOW = 20; // keep ±20 full-res textures around current frame
 
@@ -998,6 +998,7 @@
     }
 
     // Evict full-res GPU textures outside the window, downgrade to tiny
+    const RAM_WINDOW = 60; // keep ±60 full-res in RAM (wider than GPU window)
     let _lastEvictCenter = -1;
     function evictDistantTextures(center) {
       if (center === _lastEvictCenter) return;
@@ -1005,7 +1006,7 @@
       for (let i = 0; i < TOTAL_FRAMES; i++) {
         const dist = Math.abs(i - center);
         if (dist > GPU_WINDOW && gpuTexIsFull[i]) {
-          // Outside window: dispose full-res GPU texture, downgrade to tiny
+          // Outside GPU window: dispose full-res GPU texture, downgrade to tiny
           gpuTextures[i].dispose();
           if (tinyFrames[i]) {
             gpuTextures[i] = createGpuTexture(tinyFrames[i]);
@@ -1014,12 +1015,16 @@
             gpuTextures[i] = null;
             gpuTexIsFull[i] = false;
           }
-          // Keep fullFrames[i] in RAM — don't null it (avoids blur on fast re-scroll)
         } else if (dist <= GPU_WINDOW && !gpuTexIsFull[i] && fullFrames[i]) {
-          // Inside window but only has tiny GPU texture: upgrade from RAM image
+          // Inside GPU window but only has tiny: upgrade from RAM image
           if (gpuTextures[i]) gpuTextures[i].dispose();
           gpuTextures[i] = createGpuTexture(fullFrames[i]);
           gpuTexIsFull[i] = true;
+        }
+        // RAM eviction: free decoded images beyond ±RAM_WINDOW
+        // Browser cache keeps the encoded file — re-fetch is near-instant
+        if (dist > RAM_WINDOW && fullFrames[i]) {
+          fullFrames[i] = null;
         }
       }
     }
@@ -1086,29 +1091,48 @@
     }
     for (let i = 0; i < TOTAL_FRAMES; i++) loadTinyFrame(i);
 
-    // ── Pass 2: Load full-res frames progressively near scroll position ──
-    const fullLoadQueue = new Set();
-    let fullLoadBusy = false;
+    // ── Pass 2: Load full-res frames with concurrency limiter ──
+    const fullLoadQueue = new Set();   // indices waiting or in-flight
+    const fullLoadActive = window._fullLoadActive = new Set();  // indices currently fetching
+    const fullLoadPending = window._fullLoadPending = [];        // FIFO queue of indices waiting for a slot
+    const MAX_CONCURRENT = 6;          // match browser TCP limit per host
+
+    function _pumpFullLoad() {
+      while (fullLoadActive.size < MAX_CONCURRENT && fullLoadPending.length > 0) {
+        const i = fullLoadPending.shift();
+        if (fullFrames[i]) { fullLoadQueue.delete(i); continue; } // loaded while queued
+        fullLoadActive.add(i);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          fullFrames[i] = img;
+          fullLoaded++;
+          fullLoadQueue.delete(i);
+          fullLoadActive.delete(i);
+          // Keep tinyFrames[i] alive — only ~3KB each, needed for eviction fallback
+          onFrameLoaded(i, img, true);
+          if (i === currentFrameIdx && screenMaterial && gpuTextures[i]) {
+            screenMaterial.map = gpuTextures[i];
+            screenMaterial.needsUpdate = true;
+          }
+          _pumpFullLoad(); // fill freed slot
+        };
+        img.onerror = () => { fullLoadQueue.delete(i); fullLoadActive.delete(i); _pumpFullLoad(); };
+        img.src = FRAME_CDN_FULL + String(i + 1).padStart(4, '0') + '.webp' + FRAME_BUST;
+      }
+    }
 
     function loadFullFrame(i) {
       if (fullFrames[i] || fullLoadQueue.has(i)) return;
       fullLoadQueue.add(i);
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        fullFrames[i] = img;
-        fullLoaded++;
-        fullLoadQueue.delete(i);
-        // Keep tinyFrames[i] alive — only ~3KB each, needed for eviction fallback
-        onFrameLoaded(i, img, true);
-        // If this is the currently displayed frame, upgrade it immediately
-        if (i === currentFrameIdx && screenMaterial && gpuTextures[i]) {
-          screenMaterial.map = gpuTextures[i];
-          screenMaterial.needsUpdate = true;
-        }
-      };
-      img.onerror = () => { fullLoadQueue.delete(i); };
-      img.src = FRAME_CDN_FULL + String(i + 1).padStart(4, '0') + '.webp' + FRAME_BUST;
+      // Prioritize: add to front if near current frame, back otherwise
+      const dist = Math.abs(i - (currentFrameIdx >= 0 ? currentFrameIdx : 0));
+      if (dist <= GPU_WINDOW) {
+        fullLoadPending.unshift(i); // high priority — near scroll position
+      } else {
+        fullLoadPending.push(i);    // low priority — background fill
+      }
+      _pumpFullLoad();
     }
 
     // Prioritize frames around current scroll position
@@ -1154,31 +1178,13 @@
     // RAM cost: 181 decoded images × ~1.5MB each ≈ 270MB (acceptable, no GPU pressure)
     setTimeout(() => { loadFullNearby(1, GPU_WINDOW); }, 300);
 
-    // Background-load all remaining full-res into RAM (staggered, low priority)
+    // Background-load all remaining full-res into RAM (staggered, uses loadFullFrame to avoid dupes)
     setTimeout(() => {
       let bgIdx = 0;
       const bgBatch = 5;
       const bgInterval = setInterval(() => {
         for (let n = 0; n < bgBatch && bgIdx < TOTAL_FRAMES; bgIdx++, n++) {
-          if (!fullFrames[bgIdx] && !fullLoadQueue.has(bgIdx)) {
-            // Load into RAM but don't force GPU upload — evictDistantTextures handles GPU window
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            const fi = bgIdx;
-            img.onload = () => {
-              fullFrames[fi] = img;
-              fullLoaded++;
-              // Only upload to GPU if within current window
-              if (Math.abs(fi - (currentFrameIdx >= 0 ? currentFrameIdx : 0)) <= GPU_WINDOW) {
-                onFrameLoaded(fi, img, true);
-                if (fi === currentFrameIdx && screenMaterial && gpuTextures[fi]) {
-                  screenMaterial.map = gpuTextures[fi];
-                  screenMaterial.needsUpdate = true;
-                }
-              }
-            };
-            img.src = FRAME_CDN_FULL + String(fi + 1).padStart(4, '0') + '.webp' + FRAME_BUST;
-          }
+          loadFullFrame(bgIdx); // deduped via fullLoadQueue
         }
         if (bgIdx >= TOTAL_FRAMES) clearInterval(bgInterval);
       }, 600);
@@ -1215,6 +1221,9 @@
       const oldGeom = mesh.geometry;
       mesh.geometry = oldGeom.clone();
       oldGeom.dispose(); // free original GPU buffers
+      // Dispose cloned UV attribute before replacing (clone copies the old UVs)
+      const clonedUV = mesh.geometry.getAttribute('uv');
+      if (clonedUV && clonedUV.array) mesh.geometry.deleteAttribute('uv');
       mesh.geometry.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
     }
 
@@ -2006,6 +2015,38 @@
     });
   });
 })();
+</script>
+<!-- Memory diagnostic: call window.memStats() in console -->
+<script>
+window.memStats = function() {
+  const tf = typeof tinyFrames !== 'undefined' ? tinyFrames : window._tinyFrames;
+  const ff = typeof fullFrames !== 'undefined' ? fullFrames : window._fullFrames;
+  const gt = typeof gpuTextures !== 'undefined' ? gpuTextures : window._gpuTextures;
+  const gf = typeof gpuTexIsFull !== 'undefined' ? gpuTexIsFull : window._gpuTexIsFull;
+  // Count non-null entries
+  let tinyCount = 0, fullCount = 0, gpuFullCount = 0, gpuTinyCount = 0, gpuNullCount = 0;
+  for (let i = 0; i < 181; i++) {
+    if (tf && tf[i]) tinyCount++;
+    if (ff && ff[i]) fullCount++;
+    if (gt && gt[i]) { if (gf && gf[i]) gpuFullCount++; else gpuTinyCount++; }
+    else gpuNullCount++;
+  }
+  const info = typeof performance !== 'undefined' && performance.memory ? performance.memory : null;
+  const result = {
+    tinyInRAM: tinyCount,
+    fullInRAM: fullCount,
+    gpuFull: gpuFullCount,
+    gpuTiny: gpuTinyCount,
+    gpuNull: gpuNullCount,
+    estRAM_MB: Math.round(tinyCount * 0.003 + fullCount * 1.5 + gpuFullCount * 5 + gpuTinyCount * 0.08 + 40),
+    jsHeap_MB: info ? Math.round(info.usedJSHeapSize / 1048576) : 'N/A (Safari)',
+    currentFrame: typeof currentFrameIdx !== 'undefined' ? currentFrameIdx : '?',
+    pendingLoads: typeof fullLoadActive !== 'undefined' ? fullLoadActive.size : '?',
+    queuedLoads: typeof fullLoadPending !== 'undefined' ? fullLoadPending.length : '?',
+  };
+  console.table(result);
+  return result;
+};
 </script>
 <!-- Dev auto-refresh: polls file content hash every 1s (only with ?dev=1) -->
 <script>
