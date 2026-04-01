@@ -262,10 +262,13 @@
       return tex;
     }
 
-    // Build GPU textures as frames load
-    function onFrameLoaded(i, img) {
-      if (!gpuTextures[i]) {
+    // Build GPU textures as frames load — always upgrade to latest (full > tiny)
+    const gpuTexIsFull = new Array(TOTAL_FRAMES).fill(false);
+    function onFrameLoaded(i, img, isFull) {
+      if (!gpuTextures[i] || (isFull && !gpuTexIsFull[i])) {
+        if (gpuTextures[i]) gpuTextures[i].dispose(); // free old tiny texture
         gpuTextures[i] = createGpuTexture(img);
+        gpuTexIsFull[i] = !!isFull;
       }
     }
 
@@ -316,7 +319,7 @@
       img.onload = () => {
         tinyFrames[i] = img;
         tinyLoaded++;
-        onFrameLoaded(i, img); // pre-upload to GPU
+        onFrameLoaded(i, img, false); // tiny
         if (i === 0 && !videoReady) {
           phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
           canvasTex.needsUpdate = true;
@@ -338,7 +341,7 @@
         fullFrames[i] = img;
         fullLoaded++;
         fullLoadQueue.delete(i);
-        onFrameLoaded(i, img); // upgrade GPU texture to full-res
+        onFrameLoaded(i, img, true); // upgrade GPU texture to full-res
         if (i === currentFrameIdx) {
           phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
           canvasTex.needsUpdate = true;
