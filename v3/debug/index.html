@@ -59,6 +59,8 @@
 
   <div id="controls">
     <button id="btn-scrub" onclick="toggleScrub()">SCRUB: ON</button>
+    <button id="btn-blit" onclick="toggleBlit()">BLIT: ON</button>
+    <button id="btn-upload" onclick="toggleUpload()">UPLOAD: ON</button>
     <button id="btn-model" onclick="toggleModel()">MODEL: ON</button>
     <button id="btn-render" onclick="toggleRender()">RENDER: ON</button>
   </div>
@@ -86,6 +88,8 @@
 
     // ─── Feature toggles ───
     let scrubEnabled = true;
+    let blitEnabled = true;   // drawImage (CPU canvas blit)
+    let uploadEnabled = true; // canvasTex.needsUpdate (GPU texture upload)
     let modelEnabled = true;
     let renderEnabled = true;
 
@@ -94,6 +98,18 @@
       const btn = document.getElementById('btn-scrub');
       btn.textContent = 'SCRUB: ' + (scrubEnabled ? 'ON' : 'OFF');
       btn.className = scrubEnabled ? '' : 'off';
+    }
+    function toggleBlit() {
+      blitEnabled = !blitEnabled;
+      const btn = document.getElementById('btn-blit');
+      btn.textContent = 'BLIT: ' + (blitEnabled ? 'ON' : 'OFF');
+      btn.className = blitEnabled ? '' : 'off';
+    }
+    function toggleUpload() {
+      uploadEnabled = !uploadEnabled;
+      const btn = document.getElementById('btn-upload');
+      btn.textContent = 'UPLOAD: ' + (uploadEnabled ? 'ON' : 'OFF');
+      btn.className = uploadEnabled ? '' : 'off';
     }
     function toggleModel() {
       modelEnabled = !modelEnabled;
@@ -223,8 +239,12 @@
       const img = getBestFrame(idx);
       if (!img) return;
       currentFrameIdx = idx;
-      phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
-      canvasTex.needsUpdate = true;
+      if (blitEnabled) {
+        phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
+      }
+      if (uploadEnabled) {
+        canvasTex.needsUpdate = true;
+      }
       _flushCount++;
     }
 
