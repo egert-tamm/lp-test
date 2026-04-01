@@ -961,15 +961,14 @@
       return fullFrames[i] || tinyFrames[i] || null;
     }
 
-    // Throttle showFrame to at most once per rAF. Scroll fires at 60-120Hz;
-    // each drawImage + GPU texture upload takes ~8-16ms on iOS. Without
-    // throttling, every scroll event triggers a full canvas redraw + texture
-    // upload, which is the primary source of scrub-section jank.
+    // Frame scrubbing: scroll sets the desired frame index, the render loop
+    // flushes it (drawImage + texture upload) right before renderer.render().
+    // This guarantees texture and 3D scene are always in sync — no one-frame
+    // lag from separate rAF callbacks.
     let _pendingFrameIdx = -1;
-    let _frameRafQueued = false;
 
+    // Called by render loop — not by rAF separately
     function _flushFrame() {
-      _frameRafQueued = false;
       const idx = _pendingFrameIdx;
       if (idx < 0 || idx === currentFrameIdx) return;
       const img = getBestFrame(idx);
@@ -985,10 +984,6 @@
       idx = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(idx)));
       if (idx === currentFrameIdx) return;
       _pendingFrameIdx = idx;
-      if (!_frameRafQueued) {
-        _frameRafQueued = true;
-        requestAnimationFrame(_flushFrame);
-      }
       // Throttle nearby preloading — at most every 200ms
       const now = performance.now();
       if (now - _lastNearbyLoad > 200) {
@@ -1742,6 +1737,9 @@
       if (window.innerWidth < window.innerHeight) {
         phoneGroup.position.x = 0;
       }
+
+      // Flush pending frame BEFORE render — ensures texture and scene are in sync
+      _flushFrame();
 
       renderer.render(scene, camera);
     })(0);
