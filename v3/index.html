@@ -947,6 +947,13 @@
     const FRAME_CDN_FULL = 'https://cdn.star.io/frames/';
     const FRAME_BUST = '?v=2';  // cache bust after re-extraction at 1206px
     const phoneCanvas = document.getElementById('phone-canvas');
+    // Mobile: halve canvas to 603×1311 — quarter the pixels for drawImage + GPU upload.
+    // At DPR 2 on iPhone, 603×1311 texture pixels map ~1:1 to device pixels on the
+    // phone model surface. Full 1206×2622 is only needed for desktop/high-DPR displays.
+    if (_isMobile) {
+      phoneCanvas.width = 603;
+      phoneCanvas.height = 1311;
+    }
     const phoneCtx = phoneCanvas.getContext('2d');
     // Two layers: tiny (placeholder) and full (retina)
     const tinyFrames = new Array(TOTAL_FRAMES);
@@ -1051,9 +1058,12 @@
         fullLoaded++;
         // Force redraw if frame 0 is currently shown
         if (currentFrameIdx <= 0) {
-          phoneCanvas.width = hero.naturalWidth;
-          phoneCanvas.height = hero.naturalHeight;
-          phoneCtx.drawImage(hero, 0, 0);
+          // Don't resize canvas on mobile — keep at 603×1311 for performance
+          if (!_isMobile) {
+            phoneCanvas.width = hero.naturalWidth;
+            phoneCanvas.height = hero.naturalHeight;
+          }
+          phoneCtx.drawImage(hero, 0, 0, phoneCanvas.width, phoneCanvas.height);
           canvasTex.needsUpdate = true;
         }
       };
