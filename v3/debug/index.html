@@ -341,6 +341,7 @@
         fullFrames[i] = img;
         fullLoaded++;
         fullLoadQueue.delete(i);
+        tinyFrames[i] = null; // free tiny decoded bitmap (~100KB each)
         onFrameLoaded(i, img, true); // upgrade GPU texture to full-res
         if (i === currentFrameIdx) {
           phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
@@ -377,7 +378,18 @@
       };
       hero.src = FRAME_CDN_FULL + '0001.webp' + FRAME_BUST;
     })();
-    setTimeout(() => { loadFullNearby(1, 20); setTimeout(() => { for (let i = 0; i < TOTAL_FRAMES; i++) loadFullFrame(i); }, 2000); }, 500);
+    // Staggered full-res loading — batch 10 at a time to avoid memory spike
+    setTimeout(() => {
+      loadFullNearby(1, 20);
+      let batchStart = 0;
+      const batchSize = 10;
+      const batchInterval = setInterval(() => {
+        const end = Math.min(batchStart + batchSize, TOTAL_FRAMES);
+        for (let i = batchStart; i < end; i++) loadFullFrame(i);
+        batchStart = end;
+        if (batchStart >= TOTAL_FRAMES) clearInterval(batchInterval);
+      }, 500);
+    }, 500);
 
     // ─── Phone group + model ───
     const phoneGroup = new THREE.Group();
