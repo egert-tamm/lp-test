@@ -970,21 +970,50 @@
       return fullFrames[i] || tinyFrames[i] || null;
     }
 
+    // ── Pre-uploaded GPU textures (zero-cost swap during scroll) ──
+    const gpuTextures = new Array(TOTAL_FRAMES).fill(null);
+    const gpuTexIsFull = new Array(TOTAL_FRAMES).fill(false);
+    let screenMaterial = null; // set during model load
+
+    function createGpuTexture(img) {
+      const tex = new THREE.Texture(img);
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.generateMipmaps = false;
+      tex.flipY = false;
+      tex.encoding = THREE.sRGBEncoding;
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    function onFrameLoaded(i, img, isFull) {
+      if (!gpuTextures[i] || (isFull && !gpuTexIsFull[i])) {
+        if (gpuTextures[i]) gpuTextures[i].dispose();
+        gpuTextures[i] = createGpuTexture(img);
+        gpuTexIsFull[i] = !!isFull;
+      }
+    }
+
     // Frame scrubbing: scroll sets the desired frame index, the render loop
-    // flushes it (drawImage + texture upload) right before renderer.render().
-    // This guarantees texture and 3D scene are always in sync — no one-frame
-    // lag from separate rAF callbacks.
+    // flushes it right before renderer.render().
     let _pendingFrameIdx = -1;
 
-    // Called by render loop — not by rAF separately
+    // Called by render loop — swaps pre-uploaded GPU texture (no drawImage, no texImage2D)
     function _flushFrame() {
       const idx = _pendingFrameIdx;
       if (idx < 0 || idx === currentFrameIdx) return;
-      const img = getBestFrame(idx);
-      if (!img) return;
-      currentFrameIdx = idx;
-      phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
-      canvasTex.needsUpdate = true;
+      if (screenMaterial && gpuTextures[idx]) {
+        currentFrameIdx = idx;
+        screenMaterial.map = gpuTextures[idx];
+        screenMaterial.needsUpdate = true;
+      } else {
+        // Fallback: canvas blit (used before model loads or if GPU texture missing)
+        const img = getBestFrame(idx);
+        if (!img) return;
+        currentFrameIdx = idx;
+        phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
+        canvasTex.needsUpdate = true;
+      }
     }
 
     let _lastNearbyLoad = 0;
@@ -1008,6 +1037,7 @@
       img.onload = () => {
         tinyFrames[i] = img;
         tinyLoaded++;
+        onFrameLoaded(i, img, false);
         if (i === 0 && !videoReady) {
           phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
           canvasTex.needsUpdate = true;
@@ -1031,10 +1061,12 @@
         fullFrames[i] = img;
         fullLoaded++;
         fullLoadQueue.delete(i);
+        tinyFrames[i] = null; // free tiny decoded bitmap
+        onFrameLoaded(i, img, true);
         // If this is the currently displayed frame, upgrade it immediately
-        if (i === currentFrameIdx) {
-          phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
-          canvasTex.needsUpdate = true;
+        if (i === currentFrameIdx && screenMaterial && gpuTextures[i]) {
+          screenMaterial.map = gpuTextures[i];
+          screenMaterial.needsUpdate = true;
         }
       };
       img.onerror = () => { fullLoadQueue.delete(i); };
@@ -1058,26 +1090,37 @@
       hero.onload = () => {
         fullFrames[0] = hero;
         fullLoaded++;
+        onFrameLoaded(0, hero, true);
         // Force redraw if frame 0 is currently shown
         if (currentFrameIdx <= 0) {
-          // Don't resize canvas on mobile — keep at 603×1311 for performance
           if (!_isMobileDevice) {
             phoneCanvas.width = hero.naturalWidth;
             phoneCanvas.height = hero.naturalHeight;
           }
-          phoneCtx.drawImage(hero, 0, 0, phoneCanvas.width, phoneCanvas.height);
-          canvasTex.needsUpdate = true;
+          // Use GPU texture if available, fallback to canvas
+          if (screenMaterial && gpuTextures[0]) {
+            screenMaterial.map = gpuTextures[0];
+            screenMaterial.needsUpdate = true;
+          } else {
+            phoneCtx.drawImage(hero, 0, 0, phoneCanvas.width, phoneCanvas.height);
+            canvasTex.needsUpdate = true;
+          }
         }
       };
       hero.src = FRAME_CDN_FULL + '0001.webp' + FRAME_BUST;
     })();
 
-    // Load remaining full-res after tiny pass is underway
+    // Load remaining full-res — staggered to avoid memory spike
     setTimeout(() => {
       loadFullNearby(1, 20);
-      setTimeout(() => {
-        for (let i = 0; i < TOTAL_FRAMES; i++) loadFullFrame(i);
-      }, 2000);
+      let batchStart = 0;
+      const batchSize = 10;
+      const batchInterval = setInterval(() => {
+        const end = Math.min(batchStart + batchSize, TOTAL_FRAMES);
+        for (let i = batchStart; i < end; i++) loadFullFrame(i);
+        batchStart = end;
+        if (batchStart >= TOTAL_FRAMES) clearInterval(batchInterval);
+      }, 500);
     }, 300);
 
     const canvasTex = new THREE.CanvasTexture(phoneCanvas);
@@ -1146,6 +1189,7 @@
           if (name === 'screen.001') {
             remapUVs(child);
             const vm = new THREE.MeshBasicMaterial({ map: videoTex, side: THREE.DoubleSide, toneMapped: false });
+            screenMaterial = vm;
             if (Array.isArray(child.material)) child.material[idx] = vm; else child.material = vm; return;
           }
           if (name === 'glass.002') {
