@@ -1314,27 +1314,57 @@
         ignoreMobileResize: true  // ignore height-only viewport changes (URL bar)
       });
 
-      // iOS detection (used for scrub tuning only — normalizeScroll now enabled everywhere)
       const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-      // normalizeScroll on ALL devices including iOS:
-      // - Prevents address bar show/hide viewport jumps
-      // - Works around iOS Safari's broken scroll/touch position reporting
-      // - Eliminates overscroll bounce (iOS ignores overscroll-behavior CSS)
-      // - Synchronizes scroll + repaint on JS thread (no pin jumping)
-      // GSAP 3.14.2 has extensive iOS fixes vs 3.12.x where this was unreliable.
-      // NOTE: use boolean `true` — custom momentum callbacks can cause boundary
-      // overshoot leading to rubberbanding. GSAP's internal momentum handles
-      // boundary clamping correctly out of the box.
-      ScrollTrigger.normalizeScroll(true);
+      // normalizeScroll: DISABLED on iOS, ENABLED everywhere else.
+      // On Android/desktop, normalizeScroll gives butter-smooth scroll-driven
+      // animation by moving scroll to the JS thread. On iOS Safari it fights
+      // the platform — Safari's compositor expects to own scroll, and
+      // normalizeScroll's workarounds (skipping every other touchmove, JS-thread
+      // momentum) create more jank than they solve.
+      // ignoreMobileResize:true handles the address bar issue without scroll-jacking.
+      if (!_isIOS) {
+        ScrollTrigger.normalizeScroll(true);
+      }
 
-      // scrub tuning: normalizeScroll on iOS skips every other touchmove event
-      // (workaround for Safari's broken position reporting). This means scroll
-      // position arrives in ~32ms jumps instead of ~16ms. scrub:0 makes those
-      // jumps visible as stuttering. A tiny scrub (0.05s) smooths just enough
-      // to bridge the gap without creating the "rubber" feel that 0.1-0.3 caused.
-      const _scrubLag = _isIOS ? 0.05 : 0;
+      // iOS: prevent overscroll bounce at page boundaries without full scroll-jacking.
+      // Safari ignores CSS overscroll-behavior:none, so we use GSAP's helper that
+      // intercepts touchmove ONLY at scroll boundaries (much lighter than normalizeScroll).
+      if (_isIOS) {
+        (function stopOverscroll(el) {
+          el = window;
+          const scroller = document.scrollingElement;
+          const getMax = () => scroller.scrollHeight - window.innerHeight;
+          const addL = (t, f) => el.addEventListener(t, f, { passive: false });
+          let lastTouch, lastScroll = 0, forcing, forward = true;
+          const revert = () => { scroller.style.overflowY = 'auto'; forcing = false; };
+          const kill = () => {
+            forcing = true; scroller.style.overflowY = 'hidden';
+            !forward ? (scroller.scrollTop = 1) : (scroller.scrollTop = getMax() - 1);
+            setTimeout(revert, 1);
+          };
+          const handleTouch = e => {
+            const evt = e.changedTouches ? e.changedTouches[0] : e;
+            const fwd = evt.pageY <= lastTouch;
+            if (((!fwd && scroller.scrollTop <= 1) || (fwd && scroller.scrollTop >= getMax() - 1)) && e.type === 'touchmove') {
+              e.preventDefault();
+            } else { lastTouch = evt.pageY; }
+          };
+          const handleScroll = e => {
+            if (!forcing) {
+              const st = scroller.scrollTop; forward = st > lastScroll;
+              if ((!forward && st < 1) || (forward && st >= getMax() - 1)) { e.preventDefault(); kill(); }
+              lastScroll = st;
+            }
+          };
+          addL('scroll', handleScroll); addL('touchstart', handleTouch); addL('touchmove', handleTouch);
+          scroller.style.overscrollBehavior = 'none';
+        })();
+      }
+
+      // scrub: slight smoothing to bridge touch event timing gaps
+      const _scrubLag = 0.1;
 
       /* ══════════════════════════════════════════════
          HERO SECTION — tilt → upright (300vh)
