@@ -7,3 +7,9 @@
 
 /v2/
   Cache-Control: no-store, must-revalidate
+
+/v3/
+  Cache-Control: no-store, must-revalidate
+
+/v3/debug/
+  Cache-Control: no-store, must-revalidate
