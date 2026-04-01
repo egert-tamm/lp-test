@@ -62,6 +62,7 @@
     <button id="btn-blit" onclick="toggleBlit()">BLIT: ON</button>
     <button id="btn-upload" onclick="toggleUpload()">UPLOAD: ON</button>
     <button id="btn-direct" onclick="toggleDirect()">DIRECT TEX: OFF</button>
+    <button id="btn-preload" onclick="togglePreload()">PRELOADED: OFF</button>
     <button id="btn-model" onclick="toggleModel()">MODEL: ON</button>
     <button id="btn-render" onclick="toggleRender()">RENDER: ON</button>
   </div>
@@ -92,6 +93,7 @@
     let blitEnabled = true;   // drawImage (CPU canvas blit)
     let uploadEnabled = true; // canvasTex.needsUpdate (GPU texture upload)
     let directTexEnabled = false; // skip canvas, set texture.image directly
+    let preloadedEnabled = false; // use pre-uploaded GPU textures
     let modelEnabled = true;
     let renderEnabled = true;
 
@@ -100,6 +102,12 @@
       const btn = document.getElementById('btn-scrub');
       btn.textContent = 'SCRUB: ' + (scrubEnabled ? 'ON' : 'OFF');
       btn.className = scrubEnabled ? '' : 'off';
+    }
+    function togglePreload() {
+      preloadedEnabled = !preloadedEnabled;
+      const btn = document.getElementById('btn-preload');
+      btn.textContent = 'PRELOADED: ' + (preloadedEnabled ? 'ON' : 'OFF');
+      btn.className = preloadedEnabled ? '' : 'off';
     }
     function toggleDirect() {
       directTexEnabled = !directTexEnabled;
@@ -239,6 +247,28 @@
 
     function getBestFrame(i) { return fullFrames[i] || tinyFrames[i] || null; }
 
+    // Pre-uploaded GPU textures — created once, swapped by reference (zero upload cost)
+    const gpuTextures = new Array(TOTAL_FRAMES).fill(null);
+    let screenMaterial = null; // set during model load
+
+    function createGpuTexture(img) {
+      const tex = new THREE.Texture(img);
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.generateMipmaps = false;
+      tex.flipY = false;
+      tex.encoding = THREE.sRGBEncoding;
+      tex.needsUpdate = true; // triggers one-time GPU upload
+      return tex;
+    }
+
+    // Build GPU textures as frames load
+    function onFrameLoaded(i, img) {
+      if (!gpuTextures[i]) {
+        gpuTextures[i] = createGpuTexture(img);
+      }
+    }
+
     // Flush inside render loop
     let _pendingFrameIdx = -1;
     function _flushFrame() {
@@ -248,9 +278,11 @@
       if (!img) return;
       currentFrameIdx = idx;
 
-      if (directTexEnabled) {
-        // Skip 2D canvas entirely — set image directly on the texture
-        // GPU does the scaling in hardware, no CPU drawImage blocking main thread
+      if (preloadedEnabled && screenMaterial && gpuTextures[idx]) {
+        // Zero-cost swap — texture already on GPU, just change the pointer
+        screenMaterial.map = gpuTextures[idx];
+        screenMaterial.needsUpdate = true;
+      } else if (directTexEnabled) {
         canvasTex.image = img;
         canvasTex.needsUpdate = true;
       } else {
@@ -284,6 +316,7 @@
       img.onload = () => {
         tinyFrames[i] = img;
         tinyLoaded++;
+        onFrameLoaded(i, img); // pre-upload to GPU
         if (i === 0 && !videoReady) {
           phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
           canvasTex.needsUpdate = true;
@@ -305,6 +338,7 @@
         fullFrames[i] = img;
         fullLoaded++;
         fullLoadQueue.delete(i);
+        onFrameLoaded(i, img); // upgrade GPU texture to full-res
         if (i === currentFrameIdx) {
           phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
           canvasTex.needsUpdate = true;
@@ -398,6 +432,7 @@
           if (name === 'screen.001') {
             remapUVs(child);
             const vm = new THREE.MeshBasicMaterial({ map: canvasTex, side: THREE.DoubleSide, toneMapped: false });
+            screenMaterial = vm; // capture for preloaded texture swap
             if (Array.isArray(child.material)) child.material[idx] = vm; else child.material = vm;
             return;
           }
