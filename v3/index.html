@@ -1022,6 +1022,7 @@
     // Frame scrubbing
     let _pendingFrameIdx = -1;
 
+    let _canvasReleased = false;
     function _flushFrame() {
       const idx = _pendingFrameIdx;
       if (idx < 0 || idx === currentFrameIdx) return;
@@ -1029,7 +1030,16 @@
         currentFrameIdx = idx;
         screenMaterial.map = gpuTextures[idx];
         screenMaterial.needsUpdate = true;
+        // Release phoneCanvas once GPU textures are active — frees ~12MB
+        if (!_canvasReleased) {
+          _canvasReleased = true;
+          phoneCanvas.width = 1;
+          phoneCanvas.height = 1;
+          canvasTex.dispose();
+        }
       } else {
+        // Fallback: only if canvas not yet released
+        if (_canvasReleased) return;
         const img = getBestFrame(idx);
         if (!img) return;
         currentFrameIdx = idx;
@@ -1084,7 +1094,7 @@
         fullFrames[i] = img;
         fullLoaded++;
         fullLoadQueue.delete(i);
-        tinyFrames[i] = null; // free tiny decoded bitmap
+        // Keep tinyFrames[i] alive — only ~3KB each, needed for eviction fallback
         onFrameLoaded(i, img, true);
         // If this is the currently displayed frame, upgrade it immediately
         if (i === currentFrameIdx && screenMaterial && gpuTextures[i]) {
@@ -1133,18 +1143,10 @@
       hero.src = FRAME_CDN_FULL + '0001.webp' + FRAME_BUST;
     })();
 
-    // Load remaining full-res — staggered to avoid memory spike
-    setTimeout(() => {
-      loadFullNearby(1, 20);
-      let batchStart = 0;
-      const batchSize = 10;
-      const batchInterval = setInterval(() => {
-        const end = Math.min(batchStart + batchSize, TOTAL_FRAMES);
-        for (let i = batchStart; i < end; i++) loadFullFrame(i);
-        batchStart = end;
-        if (batchStart >= TOTAL_FRAMES) clearInterval(batchInterval);
-      }, 500);
-    }, 300);
+    // Demand-driven: only preload full-res within ±GPU_WINDOW of current scroll
+    // (triggered by showFrame → loadFullNearby). No batch-all loader.
+    // Seed the first few frames around hero on load.
+    setTimeout(() => { loadFullNearby(1, GPU_WINDOW); }, 300);
 
     const canvasTex = new THREE.CanvasTexture(phoneCanvas);
     canvasTex.minFilter = THREE.LinearFilter;
@@ -1174,7 +1176,9 @@
         u = 1 - (u * scaleU + offU); v = 1 - (v * scaleV + offV);
         uvArr[i*2] = u; uvArr[i*2+1] = v;
       }
-      mesh.geometry = mesh.geometry.clone();
+      const oldGeom = mesh.geometry;
+      mesh.geometry = oldGeom.clone();
+      oldGeom.dispose(); // free original GPU buffers
       mesh.geometry.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
     }
 
@@ -1778,10 +1782,12 @@
 
       function animateMarquee() {
         if (!itemW) itemW = getItemW();
-        offset -= speed;
-        // Reset after one full item width — seamless loop
-        if (Math.abs(offset) >= itemW) offset += itemW;
-        track.style.transform = `translateX(${offset}px)`;
+        if (!document.hidden) {
+          offset -= speed;
+          // Reset after one full item width — seamless loop
+          if (Math.abs(offset) >= itemW) offset += itemW;
+          track.style.transform = `translateX(${offset}px)`;
+        }
         requestAnimationFrame(animateMarquee);
       }
 
@@ -1799,9 +1805,12 @@
 
     // No mouse parallax — phone rotation stays exactly where scroll puts it
     let glintAngle = 0, lastTime = 0;
+    let _pageHidden = false;
+    document.addEventListener('visibilitychange', () => { _pageHidden = document.hidden; });
 
     (function render(now) {
       requestAnimationFrame(render);
+      if (_pageHidden) return; // skip GPU work when tab is hidden
       const dt = Math.min((now - lastTime) / 1000, 0.05); lastTime = now;
       glintAngle += dt * 0.4;
       glint.position.set(Math.sin(glintAngle)*3.5, Math.cos(glintAngle*0.7)*2, 3);
@@ -1962,9 +1971,10 @@
   });
 })();
 </script>
-<!-- Dev auto-refresh: polls file content hash every 1s -->
+<!-- Dev auto-refresh: polls file content hash every 1s (only with ?dev=1) -->
 <script>
 (function(){
+  if (!new URLSearchParams(location.search).has('dev')) return;
   let lastHash = null;
   async function hash(text) {
     const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(text));
