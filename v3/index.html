@@ -107,7 +107,7 @@
     #sections { position: relative; z-index: 1; }
 
     /* ── WORD SECTION ── */
-    #word-section { height: 300vh; position: relative; z-index: 2; }
+    #word-section { height: 400vh; position: relative; z-index: 2; }
 
     /* ── FEATURE SECTION (after word scroll) ── */
     #feature-section {
@@ -211,7 +211,7 @@
       transition: opacity 0.2s;
     }
     #watch-video-btn:hover { opacity: 0.85; }
-    #watch-video-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+    #feature-btn-wrap { transition: opacity 0.3s; }
 
     /* Portrait / mobile — section 3 */
     @media (orientation: portrait) {
@@ -477,7 +477,9 @@
     .hero-line {
       display: block;
       white-space: nowrap;
+      margin-bottom: 0.15em;
     }
+    .hero-line:last-child { margin-bottom: 0; }
     .hero-char-wrap {
       display: inline-block;
       overflow: hidden;
@@ -572,7 +574,7 @@
       #hero-copy { padding-top: 8vh; }
     }
     @media (orientation: portrait) {
-      .word-line { font-size: clamp(56px, 18vw, 120px); }
+      .word-line { font-size: clamp(42px, 13vw, 120px); }
       #hero-copy {
         justify-content: flex-start;
         padding-top: 18vh;
@@ -580,6 +582,7 @@
       }
       #hero-copy h1 {
         font-size: clamp(2rem, 9vw, 5rem);
+        padding: 0 4vw;
       }
     }
 
@@ -1312,8 +1315,8 @@
             line.style.display = 'inline-block';
             maxLineW = Math.max(maxLineW, line.scrollWidth);
           });
-          if (maxLineW > containerW) {
-            const scale = containerW / maxLineW;
+          if (maxLineW > containerW * 0.92) {
+            const scale = (containerW * 0.92) / maxLineW;
             h1.style.transform = `scale(${scale})`;
             h1.style.transformOrigin = 'center top';
           } else {
@@ -1427,11 +1430,13 @@
             phoneGroup.rotation.x = lerp(-startTilt * Math.PI / 180, 0, t);
             camera.position.z     = lerp(startCamZ, heroRest.camZ, t);
             camera.fov            = lerp(startFov,  heroRest.fov,  t);
-            // Fade copy: starts at p=0.1, gone by p=0.28
+            // Scroll copy UP: starts at p=0.1, gone by p=0.28
             const fadeT = clamp01((p - 0.1) / 0.18);
             heroCopy.style.display   = 'flex';
-            heroCopy.style.opacity   = String(1 - fadeT);
-            heroCopy.style.transform = `translateY(${-fadeT * 36}px)`;
+            heroCopy.style.opacity   = fadeT > 0.8 ? String(1 - (fadeT - 0.8) / 0.2) : '1';
+            heroCopy.style.transform = `translateY(${-fadeT * 100}vh)`;
+            // Logo scrolls up with hero copy
+            logoEl.style.transform = isPortrait() ? `translateX(-50%) translateY(${-fadeT * 100}vh)` : `translateY(${-fadeT * 100}vh)`;
           } else {
             // Phase 2: copy gone, phone stays locked
             phoneGroup.position.y = heroRest.y;
@@ -1440,7 +1445,8 @@
             camera.fov            = heroRest.fov;
             heroCopy.style.display   = 'flex';
             heroCopy.style.opacity   = '0';
-            heroCopy.style.transform = `translateY(-36px)`;
+            heroCopy.style.transform = `translateY(-100vh)`;
+            logoEl.style.transform = isPortrait() ? 'translateX(-50%) translateY(-100vh)' : 'translateY(-100vh)';
           }
 
           // Scrub frames through first 55% during hero
@@ -1687,6 +1693,10 @@
 
           // Hide phone when past feature section
           canvasEl.style.opacity = (p >= 1) ? '0' : '1';
+
+          // Hide button before phone exits — prevent overlap with coming-soon section
+          btnWrap.style.opacity = (p >= 0.85) ? '0' : '1';
+          btnWrap.style.pointerEvents = (p >= 0.85) ? 'none' : 'all';
 
           // p > 0 means section top is at/past viewport top (entry done)
           const entryDone = p > 0;
