@@ -961,16 +961,40 @@
       return fullFrames[i] || tinyFrames[i] || null;
     }
 
-    function showFrame(idx) {
-      idx = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(idx)));
-      if (idx === currentFrameIdx && (fullFrames[idx] || !fullFrames[currentFrameIdx])) return;
+    // Throttle showFrame to at most once per rAF. Scroll fires at 60-120Hz;
+    // each drawImage + GPU texture upload takes ~8-16ms on iOS. Without
+    // throttling, every scroll event triggers a full canvas redraw + texture
+    // upload, which is the primary source of scrub-section jank.
+    let _pendingFrameIdx = -1;
+    let _frameRafQueued = false;
+
+    function _flushFrame() {
+      _frameRafQueued = false;
+      const idx = _pendingFrameIdx;
+      if (idx < 0 || idx === currentFrameIdx) return;
       const img = getBestFrame(idx);
       if (!img) return;
       currentFrameIdx = idx;
       phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
       canvasTex.needsUpdate = true;
-      // Prioritize full-res loading around current scroll position
-      loadFullNearby(idx, 10);
+    }
+
+    let _lastNearbyLoad = 0;
+
+    function showFrame(idx) {
+      idx = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(idx)));
+      if (idx === currentFrameIdx) return;
+      _pendingFrameIdx = idx;
+      if (!_frameRafQueued) {
+        _frameRafQueued = true;
+        requestAnimationFrame(_flushFrame);
+      }
+      // Throttle nearby preloading — at most every 200ms
+      const now = performance.now();
+      if (now - _lastNearbyLoad > 200) {
+        _lastNearbyLoad = now;
+        loadFullNearby(idx, 10);
+      }
     }
 
     // ── Pass 1: Load ALL tiny placeholders immediately (~630KB) ──
