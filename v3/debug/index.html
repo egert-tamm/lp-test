@@ -364,6 +364,7 @@
       hero.onload = () => {
         fullFrames[0] = hero;
         fullLoaded++;
+        onFrameLoaded(0, hero, true); // pre-upload full-res frame 0 to GPU
         if (currentFrameIdx <= 0) {
           if (!_isMobile) {
             phoneCanvas.width = hero.naturalWidth;
