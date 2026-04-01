@@ -249,7 +249,9 @@
 
     // Pre-uploaded GPU textures — created once, swapped by reference (zero upload cost)
     const gpuTextures = new Array(TOTAL_FRAMES).fill(null);
-    let screenMaterial = null; // set during model load
+    const gpuTexIsFull = new Array(TOTAL_FRAMES).fill(false);
+    let screenMaterial = null;
+    const GPU_WINDOW = 20;
 
     function createGpuTexture(img) {
       const tex = new THREE.Texture(img);
@@ -258,17 +260,34 @@
       tex.generateMipmaps = false;
       tex.flipY = false;
       tex.encoding = THREE.sRGBEncoding;
-      tex.needsUpdate = true; // triggers one-time GPU upload
+      tex.needsUpdate = true;
       return tex;
     }
 
-    // Build GPU textures as frames load — always upgrade to latest (full > tiny)
-    const gpuTexIsFull = new Array(TOTAL_FRAMES).fill(false);
     function onFrameLoaded(i, img, isFull) {
       if (!gpuTextures[i] || (isFull && !gpuTexIsFull[i])) {
-        if (gpuTextures[i]) gpuTextures[i].dispose(); // free old tiny texture
+        if (gpuTextures[i]) gpuTextures[i].dispose();
         gpuTextures[i] = createGpuTexture(img);
         gpuTexIsFull[i] = !!isFull;
+      }
+    }
+
+    let _lastEvictCenter = -1;
+    function evictDistantTextures(center) {
+      if (center === _lastEvictCenter) return;
+      _lastEvictCenter = center;
+      for (let i = 0; i < TOTAL_FRAMES; i++) {
+        if (Math.abs(i - center) > GPU_WINDOW && gpuTexIsFull[i]) {
+          gpuTextures[i].dispose();
+          if (tinyFrames[i]) {
+            gpuTextures[i] = createGpuTexture(tinyFrames[i]);
+            gpuTexIsFull[i] = false;
+          } else {
+            gpuTextures[i] = null;
+            gpuTexIsFull[i] = false;
+          }
+          fullFrames[i] = null;
+        }
       }
     }
 
@@ -305,6 +324,7 @@
       idx = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(idx)));
       if (idx === currentFrameIdx) return;
       _pendingFrameIdx = idx;
+      evictDistantTextures(idx);
       const now = performance.now();
       if (now - _lastNearbyLoad > 200) {
         _lastNearbyLoad = now;

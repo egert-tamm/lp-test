@@ -971,9 +971,12 @@
     }
 
     // ── Pre-uploaded GPU textures (zero-cost swap during scroll) ──
+    // Tiny frames: all 181 pre-uploaded (~15MB GPU total — safe)
+    // Full-res frames: sliding window of ±20 around current frame
     const gpuTextures = new Array(TOTAL_FRAMES).fill(null);
     const gpuTexIsFull = new Array(TOTAL_FRAMES).fill(false);
-    let screenMaterial = null; // set during model load
+    let screenMaterial = null;
+    const GPU_WINDOW = 20; // keep ±20 full-res textures around current frame
 
     function createGpuTexture(img) {
       const tex = new THREE.Texture(img);
@@ -994,11 +997,31 @@
       }
     }
 
-    // Frame scrubbing: scroll sets the desired frame index, the render loop
-    // flushes it right before renderer.render().
+    // Evict full-res GPU textures outside the window, downgrade to tiny
+    let _lastEvictCenter = -1;
+    function evictDistantTextures(center) {
+      if (center === _lastEvictCenter) return;
+      _lastEvictCenter = center;
+      for (let i = 0; i < TOTAL_FRAMES; i++) {
+        if (Math.abs(i - center) > GPU_WINDOW && gpuTexIsFull[i]) {
+          gpuTextures[i].dispose();
+          // Downgrade to tiny if available
+          if (tinyFrames[i]) {
+            gpuTextures[i] = createGpuTexture(tinyFrames[i]);
+            gpuTexIsFull[i] = false;
+          } else {
+            gpuTextures[i] = null;
+            gpuTexIsFull[i] = false;
+          }
+          // Free decoded full-res image from RAM
+          fullFrames[i] = null;
+        }
+      }
+    }
+
+    // Frame scrubbing
     let _pendingFrameIdx = -1;
 
-    // Called by render loop — swaps pre-uploaded GPU texture (no drawImage, no texImage2D)
     function _flushFrame() {
       const idx = _pendingFrameIdx;
       if (idx < 0 || idx === currentFrameIdx) return;
@@ -1007,7 +1030,6 @@
         screenMaterial.map = gpuTextures[idx];
         screenMaterial.needsUpdate = true;
       } else {
-        // Fallback: canvas blit (used before model loads or if GPU texture missing)
         const img = getBestFrame(idx);
         if (!img) return;
         currentFrameIdx = idx;
@@ -1022,6 +1044,7 @@
       idx = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(idx)));
       if (idx === currentFrameIdx) return;
       _pendingFrameIdx = idx;
+      evictDistantTextures(idx);
       // Throttle nearby preloading — at most every 200ms
       const now = performance.now();
       if (now - _lastNearbyLoad > 200) {
