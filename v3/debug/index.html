@@ -61,6 +61,7 @@
     <button id="btn-scrub" onclick="toggleScrub()">SCRUB: ON</button>
     <button id="btn-blit" onclick="toggleBlit()">BLIT: ON</button>
     <button id="btn-upload" onclick="toggleUpload()">UPLOAD: ON</button>
+    <button id="btn-direct" onclick="toggleDirect()">DIRECT TEX: OFF</button>
     <button id="btn-model" onclick="toggleModel()">MODEL: ON</button>
     <button id="btn-render" onclick="toggleRender()">RENDER: ON</button>
   </div>
@@ -90,6 +91,7 @@
     let scrubEnabled = true;
     let blitEnabled = true;   // drawImage (CPU canvas blit)
     let uploadEnabled = true; // canvasTex.needsUpdate (GPU texture upload)
+    let directTexEnabled = false; // skip canvas, set texture.image directly
     let modelEnabled = true;
     let renderEnabled = true;
 
@@ -98,6 +100,12 @@
       const btn = document.getElementById('btn-scrub');
       btn.textContent = 'SCRUB: ' + (scrubEnabled ? 'ON' : 'OFF');
       btn.className = scrubEnabled ? '' : 'off';
+    }
+    function toggleDirect() {
+      directTexEnabled = !directTexEnabled;
+      const btn = document.getElementById('btn-direct');
+      btn.textContent = 'DIRECT TEX: ' + (directTexEnabled ? 'ON' : 'OFF');
+      btn.className = directTexEnabled ? '' : 'off';
     }
     function toggleBlit() {
       blitEnabled = !blitEnabled;
@@ -239,11 +247,19 @@
       const img = getBestFrame(idx);
       if (!img) return;
       currentFrameIdx = idx;
-      if (blitEnabled) {
-        phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
-      }
-      if (uploadEnabled) {
+
+      if (directTexEnabled) {
+        // Skip 2D canvas entirely — set image directly on the texture
+        // GPU does the scaling in hardware, no CPU drawImage blocking main thread
+        canvasTex.image = img;
         canvasTex.needsUpdate = true;
+      } else {
+        if (blitEnabled) {
+          phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
+        }
+        if (uploadEnabled) {
+          canvasTex.needsUpdate = true;
+        }
       }
       _flushCount++;
     }
