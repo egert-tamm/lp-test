@@ -1258,14 +1258,9 @@
       ScrollTrigger.config({
         ignoreMobileResize: true  // ignore height-only viewport changes (URL bar)
       });
-      // Normalize scroll: intercepts native scroll for stable position tracking
-      // iOS Safari: normalizeScroll causes jitter (Safari misreports touch positions)
-      // so only enable on non-iOS touch devices (Android Chrome benefits greatly)
-      const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      if (!_isIOS) {
-        ScrollTrigger.normalizeScroll(true);
-      }
+      // normalizeScroll on ALL platforms including iOS
+      // GSAP 3.14.2 fixed iOS touch position bugs — smoke testing with deploy
+      ScrollTrigger.normalizeScroll(true);
 
       /* ══════════════════════════════════════════════
          HERO SECTION — tilt → upright (300vh)
