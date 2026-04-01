@@ -1603,15 +1603,16 @@
           const deg = Math.PI / 180;
 
           if (portrait) {
-            // Mobile: phone centered between headings (top) and button (bottom)
+            // Mobile: phone pushed down so text headings sit above it (Figma 18:103)
+            // Phone center at y=-1.2 places it in the bottom ~55% of viewport
             phoneGroup.position.x = lerp(phoneXOffset(), 0, eased);
-            phoneGroup.position.y = lerp(heroRest.y, -0.6, eased);
+            phoneGroup.position.y = lerp(heroRest.y, -1.2, eased);
             phoneGroup.rotation.x = 0;
             phoneGroup.rotation.y = lerp(heroRest.rotY, 0, eased);
             phoneGroup.rotation.z = 0;
             camera.position.y = 0;
-            camera.position.z = lerp(heroRest.camZ, 5.0, eased);
-            camera.fov = lerp(heroRest.fov, 38, eased);
+            camera.position.z = lerp(heroRest.camZ, 4.8, eased);
+            camera.fov = lerp(heroRest.fov, 36, eased);
           } else {
             // Desktop: lerp to Figma feature-section position (phone right, tilted)
             phoneGroup.position.x = lerp(phoneXOffset(), 1.35, eased);
