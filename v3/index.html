@@ -1003,9 +1003,10 @@
       if (center === _lastEvictCenter) return;
       _lastEvictCenter = center;
       for (let i = 0; i < TOTAL_FRAMES; i++) {
-        if (Math.abs(i - center) > GPU_WINDOW && gpuTexIsFull[i]) {
+        const dist = Math.abs(i - center);
+        if (dist > GPU_WINDOW && gpuTexIsFull[i]) {
+          // Outside window: dispose full-res GPU texture, downgrade to tiny
           gpuTextures[i].dispose();
-          // Downgrade to tiny if available
           if (tinyFrames[i]) {
             gpuTextures[i] = createGpuTexture(tinyFrames[i]);
             gpuTexIsFull[i] = false;
@@ -1013,8 +1014,12 @@
             gpuTextures[i] = null;
             gpuTexIsFull[i] = false;
           }
-          // Free decoded full-res image from RAM
-          fullFrames[i] = null;
+          // Keep fullFrames[i] in RAM — don't null it (avoids blur on fast re-scroll)
+        } else if (dist <= GPU_WINDOW && !gpuTexIsFull[i] && fullFrames[i]) {
+          // Inside window but only has tiny GPU texture: upgrade from RAM image
+          if (gpuTextures[i]) gpuTextures[i].dispose();
+          gpuTextures[i] = createGpuTexture(fullFrames[i]);
+          gpuTexIsFull[i] = true;
         }
       }
     }
@@ -1143,10 +1148,41 @@
       hero.src = FRAME_CDN_FULL + '0001.webp' + FRAME_BUST;
     })();
 
-    // Demand-driven: only preload full-res within ±GPU_WINDOW of current scroll
-    // (triggered by showFrame → loadFullNearby). No batch-all loader.
-    // Seed the first few frames around hero on load.
+    // Two-tier strategy:
+    // 1. GPU textures: only ±GPU_WINDOW around current frame (managed by evictDistantTextures)
+    // 2. RAM images: load ALL full-res progressively so fast scroll never shows blurry tiny
+    // RAM cost: 181 decoded images × ~1.5MB each ≈ 270MB (acceptable, no GPU pressure)
     setTimeout(() => { loadFullNearby(1, GPU_WINDOW); }, 300);
+
+    // Background-load all remaining full-res into RAM (staggered, low priority)
+    setTimeout(() => {
+      let bgIdx = 0;
+      const bgBatch = 5;
+      const bgInterval = setInterval(() => {
+        for (let n = 0; n < bgBatch && bgIdx < TOTAL_FRAMES; bgIdx++, n++) {
+          if (!fullFrames[bgIdx] && !fullLoadQueue.has(bgIdx)) {
+            // Load into RAM but don't force GPU upload — evictDistantTextures handles GPU window
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            const fi = bgIdx;
+            img.onload = () => {
+              fullFrames[fi] = img;
+              fullLoaded++;
+              // Only upload to GPU if within current window
+              if (Math.abs(fi - (currentFrameIdx >= 0 ? currentFrameIdx : 0)) <= GPU_WINDOW) {
+                onFrameLoaded(fi, img, true);
+                if (fi === currentFrameIdx && screenMaterial && gpuTextures[fi]) {
+                  screenMaterial.map = gpuTextures[fi];
+                  screenMaterial.needsUpdate = true;
+                }
+              }
+            };
+            img.src = FRAME_CDN_FULL + String(fi + 1).padStart(4, '0') + '.webp' + FRAME_BUST;
+          }
+        }
+        if (bgIdx >= TOTAL_FRAMES) clearInterval(bgInterval);
+      }, 600);
+    }, 2000);
 
     const canvasTex = new THREE.CanvasTexture(phoneCanvas);
     canvasTex.minFilter = THREE.LinearFilter;
