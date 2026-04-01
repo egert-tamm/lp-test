@@ -950,7 +950,9 @@
     // Mobile: halve canvas to 603×1311 — quarter the pixels for drawImage + GPU upload.
     // At DPR 2 on iPhone, 603×1311 texture pixels map ~1:1 to device pixels on the
     // phone model surface. Full 1206×2622 is only needed for desktop/high-DPR displays.
-    if (_isMobile) {
+    const _isMobileDevice = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+                            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (_isMobileDevice) {
       phoneCanvas.width = 603;
       phoneCanvas.height = 1311;
     }
@@ -1059,7 +1061,7 @@
         // Force redraw if frame 0 is currently shown
         if (currentFrameIdx <= 0) {
           // Don't resize canvas on mobile — keep at 603×1311 for performance
-          if (!_isMobile) {
+          if (!_isMobileDevice) {
             phoneCanvas.width = hero.naturalWidth;
             phoneCanvas.height = hero.naturalHeight;
           }
