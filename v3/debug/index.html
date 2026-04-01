@@ -347,7 +347,7 @@
 
     // Load model
     const loader = new THREE.GLTFLoader();
-    loader.load('models/iphone17.glb', (gltf) => {
+    loader.load('../models/iphone17.glb', (gltf) => {
       const model = gltf.scene;
       const isMobile = innerWidth < 768;
       model.scale.setScalar(isMobile ? 1.25 : 1.6);
