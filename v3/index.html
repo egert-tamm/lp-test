@@ -272,15 +272,13 @@
       #arrow-drawing { display: none; }
       /* Button: centered at bottom with safe margin from viewport edge */
       #feature-btn-wrap {
-        position: relative;
+        position: static;
         transform: none;
         width: 100%;
         display: flex;
         justify-content: center;
         z-index: 2;
         padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
-        bottom: 0;
-        right: auto;
       }
       #watch-video-btn {
         width: 328px;
