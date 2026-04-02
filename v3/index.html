@@ -10,6 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=DM+Sans:wght@600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --app-height: 100vh;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       background-color: #080808;
@@ -34,7 +37,7 @@
     @media (orientation: portrait) {
       #bg-pattern { background-size: cover; }
     }
-    #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; }
+    #canvas { position: fixed; top: 0; left: 0; width: 100%; height: var(--app-height); z-index: 4; pointer-events: none; }
     @media (orientation: portrait) {
       #canvas { z-index: 2; }
       #word-overlay { z-index: 0; }
@@ -64,7 +67,7 @@
     .slide-text {
       position: fixed;
       top: 0; left: 0;
-      width: 100%; height: 100vh; height: 100dvh;
+      width: 100%; height: var(--app-height);
       display: flex; align-items: flex-end;
       padding: 0 6vw 10vh;
       pointer-events: none;
@@ -98,7 +101,7 @@
     .slide-title .word-inner:nth-child(3) { transition-delay: 0.12s; }
 
     /* Each slide is 150vh: tighter scroll budget per slide */
-    .slide { height: 150vh; }
+    .slide { height: calc(var(--app-height) * 1.5); }
 
     #phone-video {
       position: fixed; width: 1px; height: 1px;
@@ -106,22 +109,22 @@
     }
 
     /* ── HERO section (prepended before slides) ── */
-    #hero-section { height: 300vh; position: relative; z-index: 2; }
+    #hero-section { height: calc(var(--app-height) * 3); position: relative; z-index: 2; }
     #sections { position: relative; z-index: 1; }
 
     /* ── WORD SECTION ── */
-    #word-section { height: 400vh; position: relative; z-index: 2; }
+    #word-section { height: calc(var(--app-height) * 4); position: relative; z-index: 2; }
 
     /* ── FEATURE SECTION (after word scroll) ── */
     #feature-section {
-      height: 700vh; /* 6 lines × ~100vh each + exit room */
+      height: calc(var(--app-height) * 7); /* 6 lines × ~100vh each + exit room */
       position: relative;
       z-index: 3;
     }
     #feature-inner {
       position: sticky;
       top: 0;
-      height: 100vh; height: 100dvh;
+      height: var(--app-height);
       display: flex;
       align-items: center;
       padding: 0 6.3vw;
@@ -293,7 +296,7 @@
     /* ── SECTION 4: Coming Soon Marquee ── */
     #cs-section {
       position: relative;
-      height: 100vh; height: 100dvh;
+      height: var(--app-height);
       min-height: 500px;
       background: #000;
       overflow: hidden;
@@ -430,7 +433,7 @@
     #word-overlay {
       position: fixed;
       top: 0; left: 0;
-      width: 100%; height: 100%;
+      width: 100%; height: var(--app-height);
       pointer-events: none;
       z-index: 1;   /* below canvas (z:2) — phone occludes words */
       display: none;
@@ -456,12 +459,18 @@
 
     #hero-copy {
       position: sticky; top: 0;
-      height: 100vh; height: 100dvh;
+      height: var(--app-height);
+      width: 100%;
+      overflow: visible;
       display: flex; flex-direction: column;
       justify-content: flex-start;
       align-items: center;
       text-align: center;
-      padding: 12vh 6vw 0;
+      padding:
+        12vh
+        max(24px, calc(env(safe-area-inset-right, 0px) + 24px))
+        0
+        max(24px, calc(env(safe-area-inset-left, 0px) + 24px));
       pointer-events: none;
       z-index: 10;   /* above canvas (z:2) */
     }
@@ -475,12 +484,21 @@
       line-height: 1.12;
       text-transform: uppercase;
       overflow: visible;
-      padding: 0 0.15em;
+      width: 100%;
+      max-width: 980px;
+      margin: 0 auto;
+      padding:
+        0
+        max(28px, calc(env(safe-area-inset-right, 0px) + 26px))
+        0
+        max(20px, calc(env(safe-area-inset-left, 0px) + 18px));
     }
     #hero-copy h1 .accent { color: #fff; display: block; }
     .hero-line {
       display: block;
       overflow: visible;
+      width: 100%;
+      padding-inline: 0.04em 0.1em;
     }
     .hero-char {
       display: inline-block;
@@ -603,8 +621,16 @@
       }
       #hero-copy h1 {
         font-size: clamp(2rem, 9vw, 5rem);
-        padding: 0 6vw;
+        max-width: 100%;
+        padding:
+          0
+          max(42px, calc(env(safe-area-inset-right, 0px) + 34px))
+          0
+          max(28px, calc(env(safe-area-inset-left, 0px) + 22px));
         overflow: visible;
+      }
+      .hero-line {
+        padding-inline: 0.05em 0.14em;
       }
     }
 
@@ -857,6 +883,19 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script>
+    function syncViewportVars() {
+      const viewport = window.visualViewport;
+      const height = Math.round(viewport ? viewport.height : window.innerHeight);
+      document.documentElement.style.setProperty('--app-height', `${height}px`);
+    }
+    syncViewportVars();
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', syncViewportVars);
+    }
+    window.addEventListener('orientationchange', () => {
+      requestAnimationFrame(syncViewportVars);
+    });
+
     const SLIDES = [
       'Introducing\nYapp App',
       'Find Your\nFast Edge',
@@ -994,6 +1033,14 @@
       return fullFrames[i] || tinyFrames[i] || null;
     }
 
+    function hideLoadingOverlay() {
+      const loadingEl = document.getElementById('loading');
+      if (!loadingEl) return;
+      loadingEl.style.opacity = '0';
+      loadingEl.style.pointerEvents = 'none';
+      setTimeout(() => loadingEl.remove(), 600);
+    }
+
     // ── Pre-uploaded GPU textures (zero-cost swap during scroll) ──
     // Tiny frames: all 181 pre-uploaded (~15MB GPU total — safe)
     // Full-res frames: sliding window of ±20 around current frame
@@ -1043,7 +1090,7 @@
         screenMaterial.map = gpuTextures[idx];
         screenMaterial.needsUpdate = true;
         // Release phoneCanvas once GPU textures are active — frees ~12MB
-        if (!_canvasReleased) {
+        if (!_canvasReleased && idx > 0) {
           _canvasReleased = true;
           phoneCanvas.width = 1;
           phoneCanvas.height = 1;
@@ -1075,6 +1122,43 @@
       }
     }
 
+    function applyInitialFrame() {
+      if (!screenMaterial) return false;
+
+      const firstGpuFrame = gpuTextures[0];
+      if (firstGpuFrame) {
+        screenMaterial.map = firstGpuFrame;
+        screenMaterial.needsUpdate = true;
+        currentFrameIdx = 0;
+        _pendingFrameIdx = 0;
+        return true;
+      }
+
+      const firstFrame = getBestFrame(0);
+      if (!firstFrame || _canvasReleased) return false;
+
+      phoneCtx.clearRect(0, 0, phoneCanvas.width, phoneCanvas.height);
+      phoneCtx.drawImage(firstFrame, 0, 0, phoneCanvas.width, phoneCanvas.height);
+      canvasTex.needsUpdate = true;
+      screenMaterial.map = videoTex;
+      screenMaterial.needsUpdate = true;
+      currentFrameIdx = 0;
+      _pendingFrameIdx = 0;
+      return true;
+    }
+
+    function ensureInitialFrameVisible(attempt = 0) {
+      if (applyInitialFrame()) {
+        hideLoadingOverlay();
+        return;
+      }
+      if (attempt >= 40) {
+        hideLoadingOverlay();
+        return;
+      }
+      setTimeout(() => ensureInitialFrameVisible(attempt + 1), 75);
+    }
+
     // ── Pass 1: Load ALL tiny placeholders immediately (~630KB) ──
     function loadTinyFrame(i) {
       const img = new Image();
@@ -1088,6 +1172,7 @@
           canvasTex.needsUpdate = true;
           videoReady = true;
           _pendingFrameIdx = 0;
+          applyInitialFrame();
         }
       };
       img.src = FRAME_CDN_TINY + String(i + 1).padStart(4, '0') + '.webp' + FRAME_BUST;
@@ -1170,6 +1255,7 @@
             phoneCtx.drawImage(hero, 0, 0, phoneCanvas.width, phoneCanvas.height);
             canvasTex.needsUpdate = true;
           }
+          applyInitialFrame();
         }
       };
       hero.src = FRAME_CDN_FULL + '0001.webp' + FRAME_BUST;
@@ -1296,9 +1382,6 @@
         }, { once: true });
       }
 
-      document.getElementById('loading').style.opacity = '0';
-      setTimeout(() => document.getElementById('loading')?.remove(), 600);
-
       // Per-character reveal for hero text — GSAP powered
       (function() {
         function splitLine(el) {
@@ -1343,19 +1426,11 @@
       })();
 
       setupScroll();
-      // Show frame 0 immediately so phone screen isn't blank on load
-      _pendingFrameIdx = 0;
-      // Retry until frame 0 is visible (GPU texture might not be ready yet)
-      (function waitForFrame0() {
-        if (gpuTextures[0] && screenMaterial) {
-          screenMaterial.map = gpuTextures[0];
-          screenMaterial.needsUpdate = true;
-          currentFrameIdx = 0;
-        } else {
-          setTimeout(waitForFrame0, 100);
-        }
-      })();
-    }, null, err => { console.error(err); document.getElementById('loading').style.opacity='0'; });
+      ensureInitialFrameVisible();
+    }, null, err => {
+      console.error(err);
+      hideLoadingOverlay();
+    });
 
     function setSlideText(title) {
       // Split into words, each wrapped for mask animation
@@ -1502,7 +1577,7 @@
 
       // Cache viewport height to prevent jumps from mobile URL bar show/hide
       // Only real resizes (width change) update this — see resize handler below
-      let _cachedVH = window.innerHeight;
+      let _cachedVH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-height')) || window.innerHeight;
 
       // Cache word-line dimensions — reading offsetWidth/offsetHeight per scroll tick
       // forces synchronous layout reflow, which is expensive on iOS Safari.
@@ -1881,13 +1956,14 @@
     // camera.aspect + renderer.setSize on those causes model rescaling flicker.
     let _lastW = innerWidth;
     window.addEventListener('resize', () => {
+      syncViewportVars();
+      _cachedVH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-height')) || innerHeight;
       const newW = innerWidth;
       if (newW !== _lastW) {
         _lastW = newW;
         camera.aspect = newW / innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(newW, innerHeight);
-        _cachedVH = innerHeight;
         ScrollTrigger.refresh();
       }
     });
@@ -2107,6 +2183,9 @@ window.memStats = function() {
     modal.classList.remove('active');
     video.pause();
     video.currentTime = 0;
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
   });
 
   // Close on ESC
@@ -2121,6 +2200,9 @@ window.memStats = function() {
     modal.classList.remove('active');
     video.pause();
     video.currentTime = 0;
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
   });
 
   // Handle native fullscreen exit (iOS)
