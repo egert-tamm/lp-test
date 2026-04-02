@@ -13,11 +13,6 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       background-color: #080808;
-      background-image: url('svgs/bg-pattern.svg');
-      background-size: inherit;
-      background-position: center;
-      background-repeat: no-repeat;
-      background-attachment: fixed;
       color: #fff;
       font-family: "obviously-variable", sans-serif;
       overflow-x: clip;
@@ -26,10 +21,18 @@
       text-size-adjust: 100%;
       overscroll-behavior-y: none; /* prevent iOS rubber-band bounce at edges */
     }
+    #bg-pattern {
+      position: fixed;
+      inset: 0;
+      background-image: url('svgs/bg-pattern.svg');
+      background-size: inherit;
+      background-position: center;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      z-index: 0;
+    }
     @media (orientation: portrait) {
-      html, body {
-        background-size: cover;
-      }
+      #bg-pattern { background-size: cover; }
     }
     #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 4; }
     @media (orientation: portrait) {
@@ -611,6 +614,8 @@
   </style>
 </head>
 <body>
+
+  <div id="bg-pattern"></div>
 
   <div id="loading">
     <div class="spinner"></div>
