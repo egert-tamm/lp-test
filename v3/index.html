@@ -1343,8 +1343,17 @@
 
       setupScroll();
       // Show frame 0 immediately so phone screen isn't blank on load
-      showFrame(0);
       _pendingFrameIdx = 0;
+      // Retry until frame 0 is visible (GPU texture might not be ready yet)
+      (function waitForFrame0() {
+        if (gpuTextures[0] && screenMaterial) {
+          screenMaterial.map = gpuTextures[0];
+          screenMaterial.needsUpdate = true;
+          currentFrameIdx = 0;
+        } else {
+          setTimeout(waitForFrame0, 100);
+        }
+      })();
     }, null, err => { console.error(err); document.getElementById('loading').style.opacity='0'; });
 
     function setSlideText(title) {
