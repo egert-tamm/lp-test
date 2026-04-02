@@ -1319,12 +1319,12 @@
         const line2Chars = splitLine(document.getElementById('hero-line-2'));
         const allChars = [...line1Chars, ...line2Chars];
 
-        // Set initial state
-        gsap.set(allChars, { opacity: 0, y: '100%', filter: 'blur(8px)' });
+        // Set initial state — use fixed pixels instead of % to avoid iOS clipping
+        gsap.set(allChars, { opacity: 0, y: 40, filter: 'blur(8px)' });
 
         // Animate line 1
         gsap.to(line1Chars, {
-          opacity: 1, y: '0%', filter: 'blur(0px)',
+          opacity: 1, y: 0, filter: 'blur(0px)',
           duration: 0.6,
           ease: 'power2.out',
           stagger: 0.04,
@@ -1333,7 +1333,7 @@
 
         // Animate line 2 — starts 150ms after line 1's last char begins
         gsap.to(line2Chars, {
-          opacity: 1, y: '0%', filter: 'blur(0px)',
+          opacity: 1, y: 0, filter: 'blur(0px)',
           duration: 0.6,
           ease: 'power2.out',
           stagger: 0.04,
