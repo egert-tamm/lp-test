@@ -479,33 +479,12 @@
     #hero-copy h1 .accent { color: #fff; display: block; }
     .hero-line {
       display: block;
-      white-space: nowrap;
-      margin-bottom: 0.15em;
-    }
-    .hero-line:last-child { margin-bottom: 0; }
-    .hero-char-wrap {
-      display: inline-block;
-      overflow: hidden;
-      vertical-align: top;
-      padding: 0.2em 0.2em 0.3em;
-      margin: -0.2em -0.2em -0.3em;
     }
     .hero-char {
       display: inline-block;
       opacity: 0;
-      transform: translateY(100%);
-      filter: blur(8px);
     }
-    .hero-char.revealed {
-      opacity: 1;
-      transform: translateY(0);
-      filter: blur(0px);
-      transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-                  transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-                  filter 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-    /* Spaces need width */
-    .hero-char-space { width: 0.6em; display: inline-block; }
+    .hero-char-space { display: inline-block; width: 0.3em; }
     .coming-soon-badge {
       position: relative;
       display: inline-block;
@@ -1280,7 +1259,7 @@
       document.getElementById('loading').style.opacity = '0';
       setTimeout(() => document.getElementById('loading')?.remove(), 600);
 
-      // Per-character reveal for hero text
+      // Per-character reveal for hero text — GSAP powered
       (function() {
         function splitLine(el) {
           const text = el.textContent;
@@ -1288,61 +1267,38 @@
           const chars = [];
           for (let i = 0; i < text.length; i++) {
             const c = text[i];
-            if (c === ' ') {
-              const space = document.createElement('span');
-              space.className = 'hero-char-wrap hero-char-space';
-              space.innerHTML = '<span class="hero-char">&nbsp;</span>';
-              el.appendChild(space);
-              chars.push(space.firstChild);
-            } else {
-              const wrap = document.createElement('span');
-              wrap.className = 'hero-char-wrap';
-              const charEl = document.createElement('span');
-              charEl.className = 'hero-char';
-              charEl.textContent = c;
-              wrap.appendChild(charEl);
-              el.appendChild(wrap);
-              chars.push(charEl);
-            }
+            const span = document.createElement('span');
+            span.className = c === ' ' ? 'hero-char hero-char-space' : 'hero-char';
+            span.textContent = c === ' ' ? '\u00A0' : c;
+            el.appendChild(span);
+            chars.push(span);
           }
           return chars;
         }
 
         const line1Chars = splitLine(document.getElementById('hero-line-1'));
         const line2Chars = splitLine(document.getElementById('hero-line-2'));
+        const allChars = [...line1Chars, ...line2Chars];
 
-        // Auto-scale hero title to fit within container padding
-        function fitHeroTitle() {
-          const h1 = document.querySelector('#hero-copy h1');
-          if (!h1) return;
-          const containerW = h1.clientWidth;
-          let maxLineW = 0;
-          document.querySelectorAll('.hero-line').forEach(line => {
-            line.style.display = 'inline-block';
-            maxLineW = Math.max(maxLineW, line.scrollWidth);
-          });
-          if (maxLineW > containerW * 0.92) {
-            const scale = (containerW * 0.92) / maxLineW;
-            h1.style.transform = `scale(${scale})`;
-            h1.style.transformOrigin = 'center top';
-          } else {
-            h1.style.transform = '';
-          }
-        }
-        fitHeroTitle();
-        window.addEventListener('resize', fitHeroTitle);
+        // Set initial state
+        gsap.set(allChars, { opacity: 0, y: '100%', filter: 'blur(8px)' });
 
-        const baseDelay = 400; // ms
-        const stagger = 40;    // ms per character
-        const line2Offset = 150; // ms gap between lines
-
-        line1Chars.forEach((ch, i) => {
-          setTimeout(() => ch.classList.add('revealed'), baseDelay + i * stagger);
+        // Animate line 1
+        gsap.to(line1Chars, {
+          opacity: 1, y: '0%', filter: 'blur(0px)',
+          duration: 0.6,
+          ease: 'power2.out',
+          stagger: 0.04,
+          delay: 0.4
         });
 
-        const line2Start = baseDelay + line1Chars.length * stagger + line2Offset;
-        line2Chars.forEach((ch, i) => {
-          setTimeout(() => ch.classList.add('revealed'), line2Start + i * stagger);
+        // Animate line 2 — starts 150ms after line 1's last char begins
+        gsap.to(line2Chars, {
+          opacity: 1, y: '0%', filter: 'blur(0px)',
+          duration: 0.6,
+          ease: 'power2.out',
+          stagger: 0.04,
+          delay: 0.4 + line1Chars.length * 0.04 + 0.15
         });
       })();
 
