@@ -2066,19 +2066,23 @@ window.memStats = function() {
   const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
   watchBtn.addEventListener('click', () => {
-    if (isMobile) {
-      // Native fullscreen — iOS auto-rotates to landscape
+    if (isIOS && video.webkitEnterFullscreen) {
+      // iOS: native fullscreen auto-rotates to landscape
       video.play();
-      if (video.webkitEnterFullscreen) {
-        video.webkitEnterFullscreen();
-      } else if (video.requestFullscreen) {
-        video.requestFullscreen();
-      }
+      video.webkitEnterFullscreen();
       return;
     }
+    // Desktop + Android: use our modal
     modal.classList.add('active');
     video.play();
+    // Android: try fullscreen on the modal for immersive experience
+    if (isMobile && modal.requestFullscreen) {
+      modal.requestFullscreen().catch(() => {});
+    }
   });
 
   closeBtn.addEventListener('click', () => {
@@ -2101,10 +2105,19 @@ window.memStats = function() {
     video.currentTime = 0;
   });
 
-  // Handle native fullscreen exit (mobile)
+  // Handle native fullscreen exit (iOS)
   video.addEventListener('webkitendfullscreen', () => {
     video.pause();
     video.currentTime = 0;
+  });
+
+  // Handle fullscreen exit (Android)
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && modal.classList.contains('active')) {
+      modal.classList.remove('active');
+      video.pause();
+      video.currentTime = 0;
+    }
   });
 })();
 </script>
