@@ -1111,7 +1111,7 @@
     // Load frame 0 full-res IMMEDIATELY (hero view — must be crisp)
     (function() {
       const hero = new Image();
-      hero.crossOrigin = 'anonymous';
+      // hero.crossOrigin = 'anonymous';
       hero.onload = () => {
         fullFrames[0] = hero;
         fullLoaded++;
