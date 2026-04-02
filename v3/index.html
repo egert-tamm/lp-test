@@ -220,9 +220,9 @@
     @media (orientation: portrait) {
       #feature-inner {
         flex-direction: column;
-        justify-content: space-between;
+        justify-content: flex-start;
         align-items: center;
-        padding: 32px 0;
+        padding: 32px 0 0;
         gap: 0;
       }
       #feature-copy {
@@ -272,13 +272,14 @@
       #arrow-drawing { display: none; }
       /* Button: centered at bottom with safe margin from viewport edge */
       #feature-btn-wrap {
-        position: static;
-        transform: none;
-        width: 100%;
+        position: fixed;
+        bottom: max(env(safe-area-inset-bottom, 0px), 24px);
+        left: 50%;
+        transform: translateX(-50%);
+        width: auto;
         display: flex;
         justify-content: center;
-        z-index: 2;
-        padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+        z-index: 6;
       }
       #watch-video-btn {
         width: 328px;
@@ -1707,6 +1708,10 @@
           const showFades = portrait && entryDone && p < 1;
           document.getElementById('mobile-fade').style.display = showFades ? 'block' : 'none';
           document.getElementById('mobile-fade-top').style.display = showFades ? 'block' : 'none';
+          // Show/hide fixed button on mobile
+          if (portrait) {
+            document.getElementById('feature-btn-wrap').style.display = (entryDone && p < 1) ? 'flex' : 'none';
+          }
 
           if (entryDone && p < 1) {
             if (window.phoneGroup) {
