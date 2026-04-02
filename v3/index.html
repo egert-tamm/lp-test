@@ -642,9 +642,9 @@
   </div>
 
   <!-- Video replaced by canvas frame scrubbing for smoother scroll -->
-  <video id="phone-video"
+  <video id="phone-video" style="display:none"
     src="videos/screen-recording-v3.mp4"
-    preload="auto" muted playsinline crossorigin="anonymous">
+    preload="none" muted playsinline crossorigin="anonymous">
   </video>
   <canvas id="phone-canvas" width="1206" height="2622" style="display:none"></canvas>
 
@@ -1087,6 +1087,7 @@
           phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
           canvasTex.needsUpdate = true;
           videoReady = true;
+          _pendingFrameIdx = 0;
         }
       };
       img.src = FRAME_CDN_TINY + String(i + 1).padStart(4, '0') + '.webp' + FRAME_BUST;
