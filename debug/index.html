@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>DEBUG — model + scroll + frame scrub</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      background: #080808;
+      color: #fff;
+      overflow-x: clip;
+      overscroll-behavior-y: none;
+    }
+    #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+    #hero-section { height: 300vh; position: relative; z-index: 1; }
+    #word-section { height: 300vh; position: relative; z-index: 1; }
+    #feature-section { height: 700vh; position: relative; z-index: 1; }
+    canvas#phone-canvas { display: none; }
+
+    /* Debug HUD */
+    #hud {
+      position: fixed; top: 10px; left: 10px; z-index: 100;
+      font: 11px/1.5 monospace; color: #0f0; background: rgba(0,0,0,0.8);
+      padding: 8px 12px; border-radius: 6px; pointer-events: none;
+      min-width: 200px;
+    }
+    #hud .warn { color: #f80; }
+    #hud .bad { color: #f33; }
+
+    /* Toggle buttons */
+    #controls {
+      position: fixed; top: 10px; right: 10px; z-index: 100;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    #controls button {
+      font: 11px/1 monospace; padding: 6px 10px; border: 1px solid #0f0;
+      background: rgba(0,0,0,0.8); color: #0f0; border-radius: 4px;
+      cursor: pointer; white-space: nowrap;
+    }
+    #controls button.off { border-color: #f33; color: #f33; }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div>section: <span id="h-sect">—</span></div>
+    <div>progress: <span id="h-prog">0</span></div>
+    <div>frame: <span id="h-frame">0</span> / 181</div>
+    <div>phone.y: <span id="h-py">0</span></div>
+    <div>phone.rx: <span id="h-prx">0</span></div>
+    <div>cam.z: <span id="h-cz">0</span></div>
+    <div>fov: <span id="h-fov">0</span></div>
+    <div>fps: <span id="h-fps">0</span></div>
+    <div>canvas: <span id="h-canvas">—</span></div>
+    <div>dpr: <span id="h-dpr">—</span></div>
+    <div>normalizeScroll: <span id="h-ns">—</span></div>
+    <div>scrub flush: <span id="h-flush">—</span></div>
+  </div>
+
+  <div id="controls">
+    <button id="btn-scrub" onclick="toggleScrub()">SCRUB: ON</button>
+    <button id="btn-blit" onclick="toggleBlit()">BLIT: ON</button>
+    <button id="btn-upload" onclick="toggleUpload()">UPLOAD: ON</button>
+    <button id="btn-direct" onclick="toggleDirect()">DIRECT TEX: OFF</button>
+    <button id="btn-preload" onclick="togglePreload()">PRELOADED: OFF</button>
+    <button id="btn-model" onclick="toggleModel()">MODEL: ON</button>
+    <button id="btn-render" onclick="toggleRender()">RENDER: ON</button>
+  </div>
+
+  <canvas id="canvas"></canvas>
+  <canvas id="phone-canvas" width="1206" height="2622"></canvas>
+
+  <section id="hero-section"></section>
+  <section id="word-section"></section>
+  <section id="feature-section"></section>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <script>
+    console.log('gsap loaded:', typeof gsap, 'THREE loaded:', typeof THREE, 'ScrollTrigger loaded:', typeof ScrollTrigger);
+    // ─── Detection ───
+    const _isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const _effectiveDPR = _isMobile ? Math.min(devicePixelRatio, 2) : devicePixelRatio;
+
+    // ─── Feature toggles ───
+    let scrubEnabled = true;
+    let blitEnabled = true;   // drawImage (CPU canvas blit)
+    let uploadEnabled = true; // canvasTex.needsUpdate (GPU texture upload)
+    let directTexEnabled = false; // skip canvas, set texture.image directly
+    let preloadedEnabled = false; // use pre-uploaded GPU textures
+    let modelEnabled = true;
+    let renderEnabled = true;
+
+    function toggleScrub() {
+      scrubEnabled = !scrubEnabled;
+      const btn = document.getElementById('btn-scrub');
+      btn.textContent = 'SCRUB: ' + (scrubEnabled ? 'ON' : 'OFF');
+      btn.className = scrubEnabled ? '' : 'off';
+    }
+    function togglePreload() {
+      preloadedEnabled = !preloadedEnabled;
+      const btn = document.getElementById('btn-preload');
+      btn.textContent = 'PRELOADED: ' + (preloadedEnabled ? 'ON' : 'OFF');
+      btn.className = preloadedEnabled ? '' : 'off';
+    }
+    function toggleDirect() {
+      directTexEnabled = !directTexEnabled;
+      const btn = document.getElementById('btn-direct');
+      btn.textContent = 'DIRECT TEX: ' + (directTexEnabled ? 'ON' : 'OFF');
+      btn.className = directTexEnabled ? '' : 'off';
+    }
+    function toggleBlit() {
+      blitEnabled = !blitEnabled;
+      const btn = document.getElementById('btn-blit');
+      btn.textContent = 'BLIT: ' + (blitEnabled ? 'ON' : 'OFF');
+      btn.className = blitEnabled ? '' : 'off';
+    }
+    function toggleUpload() {
+      uploadEnabled = !uploadEnabled;
+      const btn = document.getElementById('btn-upload');
+      btn.textContent = 'UPLOAD: ' + (uploadEnabled ? 'ON' : 'OFF');
+      btn.className = uploadEnabled ? '' : 'off';
+    }
+    function toggleModel() {
+      modelEnabled = !modelEnabled;
+      const btn = document.getElementById('btn-model');
+      btn.textContent = 'MODEL: ' + (modelEnabled ? 'ON' : 'OFF');
+      btn.className = modelEnabled ? '' : 'off';
+      if (window.phoneGroup) window.phoneGroup.visible = modelEnabled;
+      window._renderDirty = true;
+    }
+    function toggleRender() {
+      renderEnabled = !renderEnabled;
+      const btn = document.getElementById('btn-render');
+      btn.textContent = 'RENDER: ' + (renderEnabled ? 'ON' : 'OFF');
+      btn.className = renderEnabled ? '' : 'off';
+    }
+
+    // ─── HUD ───
+    const H = {};
+    ['sect','prog','frame','py','prx','cz','fov','fps','canvas','dpr','ns','flush'].forEach(k => {
+      H[k] = document.getElementById('h-' + k);
+    });
+    let _fpsFrames = 0, _fpsLast = performance.now(), _fpsVal = 0;
+    let _flushCount = 0, _flushLast = performance.now();
+    let _flushRate = 0;
+
+    function updateFps(now) {
+      _fpsFrames++;
+      if (now - _fpsLast >= 500) {
+        _fpsVal = Math.round(_fpsFrames / ((now - _fpsLast) / 1000));
+        _fpsFrames = 0; _fpsLast = now;
+      }
+    }
+
+    function updateHud(section, progress) {
+      H.sect.textContent = section;
+      H.prog.textContent = progress.toFixed(3);
+      H.frame.textContent = currentFrameIdx;
+      if (window.phoneGroup) {
+        H.py.textContent = window.phoneGroup.position.y.toFixed(3);
+        H.prx.textContent = (window.phoneGroup.rotation.x * 180 / Math.PI).toFixed(1) + '°';
+      }
+      if (window.camera) {
+        H.cz.textContent = window.camera.position.z.toFixed(2);
+        H.fov.textContent = window.camera.fov.toFixed(1);
+      }
+      H.fps.textContent = _fpsVal;
+      H.fps.className = _fpsVal >= 55 ? '' : (_fpsVal >= 30 ? 'warn' : 'bad');
+      H.flush.textContent = _flushRate + '/s';
+    }
+
+    // ─── Three.js setup ───
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 50);
+    window.camera = camera;
+    camera.position.set(0, 0, 4.5);
+    const renderer = new THREE.WebGLRenderer({
+      canvas: document.getElementById('canvas'),
+      antialias: !_isMobile,
+      alpha: true,
+      powerPreference: 'high-performance',
+      stencil: false, depth: true,
+    });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(_effectiveDPR);
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.NoToneMapping;
+    renderer.physicallyCorrectLights = true;
+    renderer.setClearColor(0x000000, 0);
+
+    H.dpr.textContent = _effectiveDPR.toFixed(1) + ' (native ' + devicePixelRatio + ')';
+    H.canvas.textContent = '—';
+
+    // Lighting (same as main)
+    scene.add(new THREE.AmbientLight(0x112233, 1.0));
+    const key = new THREE.DirectionalLight(0xffffff, 3.0);
+    key.position.set(4, 6, 5); scene.add(key);
+    const fill = new THREE.DirectionalLight(0x4488ff, 1.2);
+    fill.position.set(-5, 1, -3); scene.add(fill);
+    const rim = new THREE.DirectionalLight(0x00ffcc, 0.6);
+    rim.position.set(0, -4, -5); scene.add(rim);
+    const glint = new THREE.PointLight(0xffffff, 2.5, 8);
+    glint.position.set(2, 2, 3); scene.add(glint);
+
+    // Glow plane
+    const glowPlane = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.72, 1.55),
+      new THREE.MeshBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.0, depthWrite: false })
+    );
+    glowPlane.position.set(0, 0, 0.01);
+
+    // ─── Phone canvas + frame scrubbing (same as main) ───
+    const TOTAL_FRAMES = 181;
+    const FRAME_CDN_TINY = 'https://cdn.star.io/frames-tiny/';
+    const FRAME_CDN_FULL = 'https://cdn.star.io/frames/';
+    const FRAME_BUST = '?v=2';
+    const phoneCanvas = document.getElementById('phone-canvas');
+
+    if (_isMobile) {
+      phoneCanvas.width = 603;
+      phoneCanvas.height = 1311;
+    }
+    H.canvas.textContent = phoneCanvas.width + '×' + phoneCanvas.height;
+
+    const phoneCtx = phoneCanvas.getContext('2d');
+    const canvasTex = new THREE.CanvasTexture(phoneCanvas);
+    canvasTex.minFilter = THREE.LinearFilter;
+    canvasTex.magFilter = THREE.LinearFilter;
+    canvasTex.generateMipmaps = false;
+    canvasTex.flipY = false;
+    canvasTex.encoding = THREE.sRGBEncoding;
+    canvasTex.anisotropy = 1;
+
+    const tinyFrames = new Array(TOTAL_FRAMES);
+    const fullFrames = new Array(TOTAL_FRAMES);
+    let videoReady = false;
+    let currentFrameIdx = -1;
+    let tinyLoaded = 0;
+    let fullLoaded = 0;
+
+    function getBestFrame(i) { return fullFrames[i] || tinyFrames[i] || null; }
+
+    // Pre-uploaded GPU textures — created once, swapped by reference (zero upload cost)
+    const gpuTextures = new Array(TOTAL_FRAMES).fill(null);
+    const gpuTexIsFull = new Array(TOTAL_FRAMES).fill(false);
+    let screenMaterial = null;
+    const GPU_WINDOW = 20;
+
+    function createGpuTexture(img) {
+      const tex = new THREE.Texture(img);
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.generateMipmaps = false;
+      tex.flipY = false;
+      tex.encoding = THREE.sRGBEncoding;
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    function onFrameLoaded(i, img, isFull) {
+      if (!gpuTextures[i] || (isFull && !gpuTexIsFull[i])) {
+        if (gpuTextures[i]) gpuTextures[i].dispose();
+        gpuTextures[i] = createGpuTexture(img);
+        gpuTexIsFull[i] = !!isFull;
+      }
+    }
+
+    let _lastEvictCenter = -1;
+    function evictDistantTextures(center) {
+      if (center === _lastEvictCenter) return;
+      _lastEvictCenter = center;
+      for (let i = 0; i < TOTAL_FRAMES; i++) {
+        if (Math.abs(i - center) > GPU_WINDOW && gpuTexIsFull[i]) {
+          gpuTextures[i].dispose();
+          if (tinyFrames[i]) {
+            gpuTextures[i] = createGpuTexture(tinyFrames[i]);
+            gpuTexIsFull[i] = false;
+          } else {
+            gpuTextures[i] = null;
+            gpuTexIsFull[i] = false;
+          }
+          fullFrames[i] = null;
+        }
+      }
+    }
+
+    // Flush inside render loop
+    let _pendingFrameIdx = -1;
+    function _flushFrame() {
+      const idx = _pendingFrameIdx;
+      if (idx < 0 || idx === currentFrameIdx) return;
+      const img = getBestFrame(idx);
+      if (!img) return;
+      currentFrameIdx = idx;
+
+      if (preloadedEnabled && screenMaterial && gpuTextures[idx]) {
+        // Zero-cost swap — texture already on GPU, just change the pointer
+        screenMaterial.map = gpuTextures[idx];
+        screenMaterial.needsUpdate = true;
+      } else if (directTexEnabled) {
+        canvasTex.image = img;
+        canvasTex.needsUpdate = true;
+      } else {
+        if (blitEnabled) {
+          phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
+        }
+        if (uploadEnabled) {
+          canvasTex.needsUpdate = true;
+        }
+      }
+      _flushCount++;
+    }
+
+    let _lastNearbyLoad = 0;
+    function showFrame(idx) {
+      if (!scrubEnabled) return;
+      idx = Math.max(0, Math.min(TOTAL_FRAMES - 1, Math.round(idx)));
+      if (idx === currentFrameIdx) return;
+      _pendingFrameIdx = idx;
+      evictDistantTextures(idx);
+      const now = performance.now();
+      if (now - _lastNearbyLoad > 200) {
+        _lastNearbyLoad = now;
+        loadFullNearby(idx, 10);
+      }
+    }
+
+    // Pass 1: tiny
+    function loadTinyFrame(i) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        tinyFrames[i] = img;
+        tinyLoaded++;
+        onFrameLoaded(i, img, false); // tiny
+        if (i === 0 && !videoReady) {
+          phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
+          canvasTex.needsUpdate = true;
+          videoReady = true;
+        }
+      };
+      img.src = FRAME_CDN_TINY + String(i + 1).padStart(4, '0') + '.webp' + FRAME_BUST;
+    }
+    for (let i = 0; i < TOTAL_FRAMES; i++) loadTinyFrame(i);
+
+    // Pass 2: full-res
+    const fullLoadQueue = new Set();
+    function loadFullFrame(i) {
+      if (fullFrames[i] || fullLoadQueue.has(i)) return;
+      fullLoadQueue.add(i);
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        fullFrames[i] = img;
+        fullLoaded++;
+        fullLoadQueue.delete(i);
+        tinyFrames[i] = null; // free tiny decoded bitmap (~100KB each)
+        onFrameLoaded(i, img, true); // upgrade GPU texture to full-res
+        if (i === currentFrameIdx) {
+          phoneCtx.drawImage(img, 0, 0, phoneCanvas.width, phoneCanvas.height);
+          canvasTex.needsUpdate = true;
+        }
+      };
+      img.onerror = () => { fullLoadQueue.delete(i); };
+      img.src = FRAME_CDN_FULL + String(i + 1).padStart(4, '0') + '.webp' + FRAME_BUST;
+    }
+    function loadFullNearby(centerIdx, radius) {
+      for (let d = 0; d <= radius; d++) {
+        if (centerIdx + d < TOTAL_FRAMES) loadFullFrame(centerIdx + d);
+        if (d > 0 && centerIdx - d >= 0) loadFullFrame(centerIdx - d);
+      }
+    }
+
+    // Hero frame 0 immediate
+    (function() {
+      const hero = new Image();
+      hero.crossOrigin = 'anonymous';
+      hero.onload = () => {
+        fullFrames[0] = hero;
+        fullLoaded++;
+        onFrameLoaded(0, hero, true); // pre-upload full-res frame 0 to GPU
+        if (currentFrameIdx <= 0) {
+          if (!_isMobile) {
+            phoneCanvas.width = hero.naturalWidth;
+            phoneCanvas.height = hero.naturalHeight;
+            H.canvas.textContent = phoneCanvas.width + '×' + phoneCanvas.height;
+          }
+          phoneCtx.drawImage(hero, 0, 0, phoneCanvas.width, phoneCanvas.height);
+          canvasTex.needsUpdate = true;
+        }
+      };
+      hero.src = FRAME_CDN_FULL + '0001.webp' + FRAME_BUST;
+    })();
+    // Staggered full-res loading — batch 10 at a time to avoid memory spike
+    setTimeout(() => {
+      loadFullNearby(1, 20);
+      let batchStart = 0;
+      const batchSize = 10;
+      const batchInterval = setInterval(() => {
+        const end = Math.min(batchStart + batchSize, TOTAL_FRAMES);
+        for (let i = batchStart; i < end; i++) loadFullFrame(i);
+        batchStart = end;
+        if (batchStart >= TOTAL_FRAMES) clearInterval(batchInterval);
+      }, 500);
+    }, 500);
+
+    // ─── Phone group + model ───
+    const phoneGroup = new THREE.Group();
+    window.phoneGroup = phoneGroup;
+
+    const isPortrait = () => innerWidth < innerHeight;
+    const phoneXOffset = () => isPortrait() ? 0.0 : 0.005;
+    const startY    = isPortrait() ? -0.7  : -1.4;
+    const startCamZ = isPortrait() ? 3.2   : 3.8;
+    const startFov  = isPortrait() ? 30    : 34;
+    const startTilt = isPortrait() ? 40    : 32;
+
+    phoneGroup.position.set(phoneXOffset(), startY, 0);
+    phoneGroup.rotation.set(-startTilt * Math.PI / 180, 0, 0);
+    camera.position.z = startCamZ;
+    camera.fov = startFov;
+    camera.updateProjectionMatrix();
+    scene.add(phoneGroup);
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    function remapUVs(mesh) {
+      const pos = mesh.geometry.attributes.position;
+      const box = new THREE.Box3().setFromBufferAttribute(pos);
+      const size = new THREE.Vector3(); box.getSize(size);
+      const meshW = size.y, meshH = size.z;
+      const vidAR = 1206 / 2622;
+      const meshAR = meshW / (meshH || 1);
+      let scaleU = 1, scaleV = 1, offU = 0, offV = 0;
+      if (meshAR > vidAR) { scaleV = meshAR / vidAR; offV = (1 - scaleV) / 2; }
+      else { scaleU = vidAR / meshAR; offU = (1 - scaleU) / 2; }
+      const uvArr = new Float32Array(pos.count * 2);
+      for (let i = 0; i < pos.count; i++) {
+        let u = (pos.getY(i) - box.min.y) / (meshW || 1);
+        let v = (pos.getZ(i) - box.min.z) / (meshH || 1);
+        u = 1 - (u * scaleU + offU); v = 1 - (v * scaleV + offV);
+        uvArr[i*2] = u; uvArr[i*2+1] = v;
+      }
+      mesh.geometry = mesh.geometry.clone();
+      mesh.geometry.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
+    }
+
+    // Load model
+    const loader = new THREE.GLTFLoader();
+    loader.load('../models/iphone17.glb', (gltf) => {
+      const model = gltf.scene;
+      const isMobile = innerWidth < 768;
+      model.scale.setScalar(isMobile ? 1.25 : 1.6);
+      model.rotation.y = Math.PI / 2;
+      model.traverse((child) => {
+        if (!child.isMesh) return;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach((mat, idx) => {
+          if (!mat) return;
+          const name = mat.name || '';
+          if (name === 'screen.001') {
+            remapUVs(child);
+            const vm = new THREE.MeshBasicMaterial({ map: canvasTex, side: THREE.DoubleSide, toneMapped: false });
+            screenMaterial = vm; // capture for preloaded texture swap
+            if (Array.isArray(child.material)) child.material[idx] = vm; else child.material = vm;
+            return;
+          }
+          if (name === 'glass.002') {
+            const bm = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
+            if (Array.isArray(child.material)) child.material[idx] = bm; else child.material = bm;
+            return;
+          }
+          if (name === 'lensinglass' || name === 'gray.001' || name === 'Material.006') {
+            child.visible = false; return;
+          }
+          const body = ['basecolor.001','backpanel.001','Material.005','Material.007'];
+          if (body.includes(name)) { mat.color?.set(0x9EFF78); if(mat.metalness!==undefined){mat.metalness=0.7;mat.roughness=0.25;} }
+          if (name==='metalframe.002'||name==='metaL.001') { mat.color?.set(0x3a3a3c); if(mat.metalness!==undefined){mat.metalness=0.95;mat.roughness=0.1;} }
+          if (name==='black.002') mat.color?.set(0x000000);
+        });
+      });
+      const bbox = new THREE.Box3().setFromObject(model);
+      const center = new THREE.Vector3(); bbox.getCenter(center);
+      model.position.sub(center);
+      phoneGroup.add(model);
+      phoneGroup.add(glowPlane);
+
+      setupScroll();
+    }, null, err => { console.error('GLB load error:', err); });
+
+    // ─── SCROLL — exact same logic as main page ───
+    function setupScroll() {
+      gsap.registerPlugin(ScrollTrigger);
+      ScrollTrigger.config({ ignoreMobileResize: true });
+
+      H.ns.textContent = _isIOS ? 'OFF (iOS)' : 'ON';
+      if (!_isIOS) {
+        ScrollTrigger.normalizeScroll(true);
+      }
+
+      let _cachedVH = innerHeight;
+
+      const heroRest = {
+        x: phoneXOffset(), y: 0.0, rotY: 0.0, rotZ: 0,
+        camZ: isPortrait() ? 5.5 : 5.5,
+        fov:  isPortrait() ? 36  : 36
+      };
+
+      // ── HERO ──
+      ScrollTrigger.create({
+        trigger: '#hero-section',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 0.3,
+        onUpdate(self) {
+          const p = self.progress;
+          const eOut3 = t => 1 - Math.pow(1-t, 3);
+
+          phoneGroup.position.x = phoneXOffset();
+          camera.position.x = 0;
+          camera.position.y = 0;
+
+          if (p <= 0.5) {
+            const t = eOut3(p / 0.5);
+            phoneGroup.position.y = lerp(startY, heroRest.y, t);
+            phoneGroup.rotation.x = lerp(-startTilt * Math.PI / 180, 0, t);
+            camera.position.z     = lerp(startCamZ, heroRest.camZ, t);
+            camera.fov            = lerp(startFov, heroRest.fov, t);
+          } else {
+            phoneGroup.position.y = heroRest.y;
+            phoneGroup.rotation.x = 0;
+            camera.position.z     = heroRest.camZ;
+            camera.fov            = heroRest.fov;
+          }
+
+          if (videoReady) showFrame(Math.round(p * TOTAL_FRAMES * 0.55));
+          camera.updateProjectionMatrix();
+          updateHud('hero', p);
+        }
+      });
+
+      // ── WORD SECTION (spacer — no text, just scroll space) ──
+      ScrollTrigger.create({
+        trigger: '#word-section',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 0.3,
+        onUpdate(self) {
+          // Phone locked at heroRest during word section
+          updateHud('word', self.progress);
+        }
+      });
+
+      // ── FEATURE ENTRY ──
+      const deg = Math.PI / 180;
+      ScrollTrigger.create({
+        trigger: '#feature-section',
+        start: 'top bottom',
+        end: 'top top',
+        scrub: 0.3,
+        onUpdate(self) {
+          const t = self.progress;
+          const eased = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+
+          if (isPortrait()) {
+            phoneGroup.position.x = lerp(phoneXOffset(), 0, eased);
+            phoneGroup.position.y = lerp(heroRest.y, -0.6, eased);
+            phoneGroup.rotation.x = 0;
+            phoneGroup.rotation.y = lerp(heroRest.rotY, 0, eased);
+            phoneGroup.rotation.z = 0;
+            camera.position.y = 0;
+            camera.position.z = lerp(heroRest.camZ, 5.0, eased);
+            camera.fov = lerp(heroRest.fov, 38, eased);
+          } else {
+            phoneGroup.position.x = lerp(phoneXOffset(), 1.35, eased);
+            phoneGroup.rotation.x = lerp(0, -5 * deg, eased);
+            phoneGroup.rotation.y = lerp(heroRest.rotY, -40 * deg, eased);
+            phoneGroup.rotation.z = lerp(0, -12 * deg, eased);
+            phoneGroup.position.y = lerp(heroRest.y, -0.03, eased);
+            camera.position.z     = lerp(heroRest.camZ, 5.2, eased);
+            camera.fov            = lerp(heroRest.fov, 34, eased);
+          }
+          camera.position.x = 0;
+          camera.position.y = 0;
+          camera.updateProjectionMatrix();
+          updateHud('feat-entry', t);
+        }
+      });
+
+      // ── FEATURE MAIN (scrub remaining frames) ──
+      ScrollTrigger.create({
+        trigger: '#feature-section',
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: 0.3,
+        onUpdate(self) {
+          if (videoReady) {
+            showFrame(Math.round(Math.min(self.progress, 1) * (TOTAL_FRAMES - 1)));
+          }
+          updateHud('feature', self.progress);
+        }
+      });
+
+      // Width-only resize
+      let _lastW = innerWidth;
+      window.addEventListener('resize', () => {
+        const newW = innerWidth;
+        if (newW !== _lastW) {
+          _lastW = newW;
+          camera.aspect = newW / innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(newW, innerHeight);
+          renderer.setPixelRatio(_effectiveDPR);
+          _cachedVH = innerHeight;
+          ScrollTrigger.refresh();
+        }
+      });
+    }
+
+    // ─── Render loop ───
+    window._renderDirty = true;
+    let glintAngle = 0, lastTime = 0;
+
+    (function render(now) {
+      requestAnimationFrame(render);
+      updateFps(now);
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+
+      glintAngle += dt * 0.4;
+      glint.position.set(Math.sin(glintAngle)*3.5, Math.cos(glintAngle*0.7)*2, 3);
+      const t2 = now / 1000;
+      glowPlane.material.opacity = 0.04 + Math.sin(t2 * 1.2) * 0.02;
+
+      camera.position.x = 0;
+      camera.position.y = 0;
+      if (isPortrait()) phoneGroup.position.x = 0;
+
+      // Flush frame BEFORE render
+      _flushFrame();
+
+      // Flush rate tracking
+      if (now - _flushLast >= 1000) {
+        _flushRate = _flushCount;
+        _flushCount = 0;
+        _flushLast = now;
+      }
+
+      if (renderEnabled) {
+        renderer.render(scene, camera);
+      }
+    })(0);
+  </script>
+
+
+</body>
+</html>
