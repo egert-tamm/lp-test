@@ -2063,7 +2063,20 @@ window.memStats = function() {
   const closeBtn = document.getElementById('video-modal-close');
   const watchBtn = document.getElementById('watch-video-btn');
 
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
   watchBtn.addEventListener('click', () => {
+    if (isMobile) {
+      // Native fullscreen — iOS auto-rotates to landscape
+      video.play();
+      if (video.webkitEnterFullscreen) {
+        video.webkitEnterFullscreen();
+      } else if (video.requestFullscreen) {
+        video.requestFullscreen();
+      }
+      return;
+    }
     modal.classList.add('active');
     video.play();
   });
@@ -2084,6 +2097,13 @@ window.memStats = function() {
   // Close when video ends
   video.addEventListener('ended', () => {
     modal.classList.remove('active');
+    video.pause();
+    video.currentTime = 0;
+  });
+
+  // Handle native fullscreen exit (mobile)
+  video.addEventListener('webkitendfullscreen', () => {
+    video.pause();
     video.currentTime = 0;
   });
 })();
